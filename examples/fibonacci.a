@@ -1,0 +1,40 @@
+// computes fibonacci
+// in:  r0 contains the index to iteration count
+// out: r3 contains the result
+
+    LOAD r0, 5 // target
+
+    LOAD r3, 0 // fib(0)
+    LOAD r4, 1 // fib(1)
+
+    LOAD r1, 0 // current
+    LOAD r2, 1 // increment
+
+    // if n == 0, we have the result in r3
+    CMP  r0, r1
+    JE   @end
+
+    // if n == 1, we have the result in r2, let's move it to r3
+    CMP  r0, r2
+    JE   @move
+    JMP  @loop
+
+:move
+    MOV  r3, r2
+    JMP  @end
+
+:loop
+    // if current == target, we have the result in r3
+    CMP  r0, r1
+    JE   @end
+
+    // compute next index
+    MOV r5, r3
+    MOV r3, r4
+    ADD r4, r5
+    ADD r1, r2
+
+    JMP @loop
+
+:end
+    HALT
