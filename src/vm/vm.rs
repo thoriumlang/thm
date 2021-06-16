@@ -1,4 +1,5 @@
-use crate::opcodes::Opcode;
+extern crate vmlib;
+use vmlib::opcodes::Opcode;
 
 pub struct Flags {
     zero: bool,
@@ -6,9 +7,9 @@ pub struct Flags {
 }
 
 pub struct VM {
-    registers: [i32; 32],
+    pub registers: [i32; 32], // FIXME remove pub
     pc: usize,
-    program: Vec<u8>,
+    pub program: Vec<u8>, // FIXME remove pub
     flags: Flags,
 }
 

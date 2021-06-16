@@ -7,3 +7,15 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+
+[lib]
+name = "vmlib"
+path = "src/vm-api/lib.rs"
+
+[[bin]]
+name = "thm"
+path = "src/vm/main.rs"
+
+[[bin]]
+name = "tha"
+path = "src/asm/main.rs"
