@@ -1,10 +1,12 @@
 use crate::address_resolver::AddressResolver;
 use crate::lexer::Lexer;
 use crate::parser::Parser;
+use crate::emitter::Emitter;
 
 mod lexer;
 mod parser;
 mod address_resolver;
+mod emitter;
 
 fn main() {
     let mut lexer = Lexer::from_file("examples/fibonacci.a").unwrap();
@@ -25,5 +27,7 @@ fn main() {
         return;
     }
     let addresses = addresses.unwrap();
-    println!("{:?}", addresses);
+
+    let emitter = Emitter::new(&nodes, &addresses);
+    println!("{:?}", emitter.emit());
 }

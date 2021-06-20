@@ -70,6 +70,10 @@ impl Opcode {
             Opcode::JE => 5,
         };
     }
+
+    pub fn bytecode(&self) -> u8 {
+        u8::from(*self)
+    }
 }
 
 impl From<u8> for Opcode {
@@ -108,6 +112,7 @@ impl TryFrom<&str> for Opcode {
     }
 }
 
+// fixme is this one really useful?
 impl From<Opcode> for u8 {
     fn from(v: Opcode) -> Self {
         v as u8

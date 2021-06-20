@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use vmlib::opcodes::Opcode;
-
 use crate::parser::{Instruction, Node};
 
 pub struct AddressResolver<'t> {
@@ -58,6 +56,7 @@ mod tests {
     use crate::parser::Instruction;
 
     use super::*;
+    use vmlib::opcodes::Opcode;
 
     #[test]
     fn resolve_success() {
