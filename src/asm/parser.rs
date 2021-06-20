@@ -192,6 +192,18 @@ impl<'t> Parser<'t> {
                 let ret = Ok(Instruction::IA(op, address));
                 ret
             }
+            Op::JNE => {
+                let address = match self.read_address() {
+                    None => return Err(format!("Expected <address> at {}", position).to_string()),
+                    Some(t) => t,
+                };
+                match self.read_eol() {
+                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
+                    true => (),
+                }
+                let ret = Ok(Instruction::IA(op, address));
+                ret
+            }
         };
     }
 
@@ -405,6 +417,20 @@ mod tests {
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
         let expected = Node::Instruction(Instruction::IA(Op::JE, "address".to_string()));
+        let actual = item.unwrap();
+        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+    }
+
+    #[test]
+    fn test_jne() {
+        let mut lexer = Lexer::from_text("JNE @address\n");
+        let r = Parser::from_lexer(&mut lexer).next();
+        assert_eq!(true, r.is_some());
+
+        let item = r.unwrap();
+        assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
+
+        let expected = Node::Instruction(Instruction::IA(Op::JNE, "address".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }

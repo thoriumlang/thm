@@ -14,12 +14,11 @@
     CMP  r0, r1
     JE   @end
 
-    // if n == 1, we have the result in r2, let's move it to r3
+    // if n != 1, we have to compute the result
     CMP  r0, r2
-    JE   @move
-    JMP  @loop
+    JNE  @loop
 
-:move
+    // if n == 1, we have the result in r2, just need to move it
     MOV  r3, r2
     JMP  @end
 

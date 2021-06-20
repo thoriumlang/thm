@@ -43,7 +43,9 @@ pub enum Op {
     /// Jumps to address is zero flag is set
     JE,
 
-    // JNE,
+    /// Jumps to address is zero flag is not set
+    JNE,
+
     // JLT,
     // JGT,
     // JLE,
@@ -68,6 +70,7 @@ impl Op {
             Op::CMP => 3,
             Op::JMP => 5,
             Op::JE => 5,
+            Op::JNE => 5,
         };
     }
 
@@ -88,6 +91,7 @@ impl From<u8> for Op {
             6 => Self::CMP,
             7 => Self::JMP,
             8 => Self::JE,
+            9 => Self::JNE,
             _ => Self::PANIC,
         }
     }
@@ -107,6 +111,7 @@ impl TryFrom<&str> for Op {
             "CMP" => Ok(Self::CMP),
             "JMP" => Ok(Self::JMP),
             "JE" => Ok(Self::JE),
+            "JNE" => Ok(Self::JNE),
             _ => Err(format!("Invalid op: {}", value).to_string()),
         }
     }
@@ -168,5 +173,11 @@ mod tests {
     fn test_je() {
         assert_eq!(Op::JE, Op::from(Op::JE.bytecode()));
         assert_eq!(Op::JE, Op::try_from("JE").unwrap());
+    }
+
+    #[test]
+    fn test_jne() {
+        assert_eq!(Op::JNE, Op::from(Op::JNE.bytecode()));
+        assert_eq!(Op::JNE, Op::try_from("JNE").unwrap());
     }
 }

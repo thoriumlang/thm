@@ -1,4 +1,5 @@
 extern crate vmlib;
+
 use vmlib::op::Op;
 
 pub struct Flags {
@@ -7,9 +8,11 @@ pub struct Flags {
 }
 
 pub struct VM {
-    pub registers: [i32; 32], // FIXME remove pub
+    // FIXME remove pub
+    pub registers: [i32; 32],
     pc: usize,
-    pub program: Vec<u8>, // FIXME remove pub
+    // FIXME remove pub
+    pub program: Vec<u8>,
     flags: Flags,
 }
 
@@ -70,6 +73,13 @@ impl VM {
                 }
                 Op::JE => {
                     if self.flags.zero {
+                        self.pc = self.fetch_4bytes() as usize;
+                    } else {
+                        self.skip_4bytes();
+                    }
+                }
+                Op::JNE => {
+                    if !self.flags.zero {
                         self.pc = self.fetch_4bytes() as usize;
                     } else {
                         self.skip_4bytes();
@@ -324,6 +334,44 @@ mod tests {
             Op::HALT.bytecode()
         ];
         vm.flags.zero = false;
+        vm.run();
+        assert_eq!(vm.registers[0], 1);
+    }
+
+    #[test]
+    fn test_jne_zero() {
+        let mut vm = VM::new();
+
+        vm.program = vec![
+            // JNE #12 (i.e. LOAD 0, #2)
+            Op::JNE.bytecode(), 0x00, 0x00, 0x00, 0x0C,
+            // LOAD 0, #1
+            Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
+            Op::HALT.bytecode(),
+            // LOAD 0, #2
+            Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
+            Op::HALT.bytecode()
+        ];
+        vm.flags.zero = false;
+        vm.run();
+        assert_eq!(vm.registers[0], 2);
+    }
+
+    #[test]
+    fn test_jne_nonzero() {
+        let mut vm = VM::new();
+
+        vm.program = vec![
+            // JNE #12 (i.e. LOAD 0, #2)
+            Op::JNE.bytecode(), 0x00, 0x00, 0x00, 0x0C,
+            // LOAD 0, #1
+            Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
+            Op::HALT.bytecode(),
+            // LOAD 0, #2
+            Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
+            Op::HALT.bytecode()
+        ];
+        vm.flags.zero = true;
         vm.run();
         assert_eq!(vm.registers[0], 1);
     }
