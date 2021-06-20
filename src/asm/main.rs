@@ -1,9 +1,10 @@
 use crate::address_resolver::AddressResolver;
-use crate::lexer::Lexer;
+use crate::lexer::{Lexer, VmConfig};
 use crate::parser::Parser;
 use crate::emitter::Emitter;
 use std::fs::OpenOptions;
 use std::io::Write;
+use vmlib::REG_COUNT;
 
 mod lexer;
 mod parser;
@@ -11,7 +12,10 @@ mod address_resolver;
 mod emitter;
 
 fn main() {
-    let mut lexer = Lexer::from_file("examples/fibonacci.a").unwrap();
+    let vm_config = VmConfig {
+        register_count: REG_COUNT as u8,
+    };
+    let mut lexer = Lexer::from_file("examples/fibonacci.a", vm_config).unwrap();
     let mut parser = Parser::from_lexer(&mut lexer);
 
     let nodes = parser.parse();

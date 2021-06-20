@@ -319,11 +319,17 @@ impl<'t> Iterator for Parser<'t> {
 
 #[cfg(test)]
 mod tests {
+    use crate::lexer::VmConfig;
+
     use super::*;
+
+    const VM_CONFIG: VmConfig = VmConfig {
+        register_count: 32,
+    };
 
     #[test]
     fn test_nop() {
-        let mut lexer = Lexer::from_text("NOP\n");
+        let mut lexer = Lexer::from_text("NOP\n", VM_CONFIG);
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -337,7 +343,7 @@ mod tests {
 
     #[test]
     fn test_halt() {
-        let mut lexer = Lexer::from_text("HALT\n");
+        let mut lexer = Lexer::from_text("HALT\n", VM_CONFIG);
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -351,7 +357,7 @@ mod tests {
 
     #[test]
     fn test_panic() {
-        let mut lexer = Lexer::from_text("PANIC\n");
+        let mut lexer = Lexer::from_text("PANIC\n", VM_CONFIG);
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -365,7 +371,7 @@ mod tests {
 
     #[test]
     fn test_load() {
-        let mut lexer = Lexer::from_text("LOAD r1, x10\n");
+        let mut lexer = Lexer::from_text("LOAD r1, x10\n", VM_CONFIG);
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -379,7 +385,7 @@ mod tests {
 
     #[test]
     fn test_mov() {
-        let mut lexer = Lexer::from_text("MOV r1, r0\n");
+        let mut lexer = Lexer::from_text("MOV r1, r0\n", VM_CONFIG);
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -393,7 +399,7 @@ mod tests {
 
     #[test]
     fn test_add() {
-        let mut lexer = Lexer::from_text("ADD r1, r0\n");
+        let mut lexer = Lexer::from_text("ADD r1, r0\n", VM_CONFIG);
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -407,7 +413,7 @@ mod tests {
 
     #[test]
     fn test_cmp() {
-        let mut lexer = Lexer::from_text("CMP r1, r0\n");
+        let mut lexer = Lexer::from_text("CMP r1, r0\n", VM_CONFIG);
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -421,7 +427,7 @@ mod tests {
 
     #[test]
     fn test_jmp() {
-        let mut lexer = Lexer::from_text("JMP @address\n");
+        let mut lexer = Lexer::from_text("JMP @address\n", VM_CONFIG);
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -435,7 +441,7 @@ mod tests {
 
     #[test]
     fn test_je() {
-        let mut lexer = Lexer::from_text("JE @address\n");
+        let mut lexer = Lexer::from_text("JE @address\n", VM_CONFIG);
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -449,7 +455,7 @@ mod tests {
 
     #[test]
     fn test_jne() {
-        let mut lexer = Lexer::from_text("JNE @address\n");
+        let mut lexer = Lexer::from_text("JNE @address\n", VM_CONFIG);
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -463,7 +469,7 @@ mod tests {
 
     #[test]
     fn test_inc() {
-        let mut lexer = Lexer::from_text("INC r1\n");
+        let mut lexer = Lexer::from_text("INC r1\n", VM_CONFIG);
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -477,7 +483,7 @@ mod tests {
 
     #[test]
     fn test_dec() {
-        let mut lexer = Lexer::from_text("DEC r1\n");
+        let mut lexer = Lexer::from_text("DEC r1\n", VM_CONFIG);
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -491,7 +497,7 @@ mod tests {
 
     #[test]
     fn test_label() {
-        let mut lexer = Lexer::from_text(" :label\n");
+        let mut lexer = Lexer::from_text(" :label\n", VM_CONFIG);
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -505,7 +511,7 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let mut lexer = Lexer::from_text("//test\n  :label\nLOAD r1, 0\n");
+        let mut lexer = Lexer::from_text("//test\n  :label\nLOAD r1, 0\n", VM_CONFIG);
         let r = Parser::from_lexer(&mut lexer).parse();
         assert_eq!(true, r.is_ok());
 

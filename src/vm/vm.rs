@@ -1,6 +1,7 @@
 extern crate vmlib;
 
 use vmlib::op::Op;
+use vmlib::REG_COUNT;
 
 pub struct Flags {
     zero: bool,
@@ -9,7 +10,7 @@ pub struct Flags {
 
 pub struct VM {
     // FIXME remove pub
-    pub registers: [i32; 32],
+    pub registers: [i32; REG_COUNT],
     pc: usize,
     // FIXME remove pub
     pub program: Vec<u8>,
@@ -19,7 +20,7 @@ pub struct VM {
 impl VM {
     pub fn new() -> VM {
         VM {
-            registers: [0; 32],
+            registers: [0; REG_COUNT],
             pc: 0,
             program: vec![],
             flags: Flags {
