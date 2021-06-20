@@ -26,13 +26,13 @@ impl<'t> Emitter<'t> {
                         bytes.append(vec![op.bytecode(), *r].as_mut());
                         let b = value.to_be_bytes();
                         bytes.extend_from_slice(&b);
-                    },
+                    }
                     Instruction::IRR(op, r1, r2) => bytes.append(vec![op.bytecode(), *r1, *r2].as_mut()),
                     Instruction::IA(op, addr) => {
                         bytes.push(op.bytecode());
                         let b = self.decode_address(addr).to_be_bytes();
                         bytes.extend_from_slice(&b);
-                    },
+                    }
                 }
                 _ => continue,
             }
@@ -48,7 +48,7 @@ impl<'t> Emitter<'t> {
 
 #[cfg(test)]
 mod tests {
-    use vmlib::opcodes::Opcode;
+    use vmlib::op::Op;
 
     use crate::address_resolver::AddressResolver;
     use crate::parser::Instruction;
@@ -58,7 +58,7 @@ mod tests {
     #[test]
     fn emit() {
         let nodes = vec![
-            Node::Instruction(Instruction::IA(Opcode::JE, "label2".to_string())),
+            Node::Instruction(Instruction::IA(Op::JE, "label2".to_string())),
             Node::Label("label2".to_string()),
         ];
         let addresses = AddressResolver::new(&nodes).resolve().unwrap();

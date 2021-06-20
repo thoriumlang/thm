@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Opcode {
+pub enum Op {
     /// The no-op code
     NOP,
 
@@ -56,18 +56,18 @@ pub enum Opcode {
     // RET
 }
 
-impl Opcode {
+impl Op {
     pub fn length(&self) -> u8 {
         return match self {
-            Opcode::NOP => 1,
-            Opcode::HALT => 1,
-            Opcode::PANIC => 1,
-            Opcode::LOAD => 6,
-            Opcode::MOV => 3,
-            Opcode::ADD => 3,
-            Opcode::CMP => 3,
-            Opcode::JMP => 5,
-            Opcode::JE => 5,
+            Op::NOP => 1,
+            Op::HALT => 1,
+            Op::PANIC => 1,
+            Op::LOAD => 6,
+            Op::MOV => 3,
+            Op::ADD => 3,
+            Op::CMP => 3,
+            Op::JMP => 5,
+            Op::JE => 5,
         };
     }
 
@@ -76,7 +76,7 @@ impl Opcode {
     }
 }
 
-impl From<u8> for Opcode {
+impl From<u8> for Op {
     fn from(v: u8) -> Self {
         match v {
             0 => Self::NOP,
@@ -93,7 +93,7 @@ impl From<u8> for Opcode {
     }
 }
 
-impl TryFrom<&str> for Opcode {
+impl TryFrom<&str> for Op {
     type Error = String;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
@@ -118,55 +118,55 @@ mod tests {
 
     #[test]
     fn test_nop() {
-        assert_eq!(Opcode::NOP, Opcode::from(Opcode::NOP.bytecode()));
-        assert_eq!(Opcode::NOP, Opcode::try_from("NOP").unwrap());
+        assert_eq!(Op::NOP, Op::from(Op::NOP.bytecode()));
+        assert_eq!(Op::NOP, Op::try_from("NOP").unwrap());
     }
 
     #[test]
     fn test_halt() {
-        assert_eq!(Opcode::HALT, Opcode::from(Opcode::HALT.bytecode()));
-        assert_eq!(Opcode::HALT, Opcode::try_from("HALT").unwrap());
+        assert_eq!(Op::HALT, Op::from(Op::HALT.bytecode()));
+        assert_eq!(Op::HALT, Op::try_from("HALT").unwrap());
     }
 
     #[test]
     fn test_panic() {
-        assert_eq!(Opcode::PANIC, Opcode::from(Opcode::PANIC.bytecode()));
-        assert_eq!(Opcode::PANIC, Opcode::try_from("PANIC").unwrap());
+        assert_eq!(Op::PANIC, Op::from(Op::PANIC.bytecode()));
+        assert_eq!(Op::PANIC, Op::try_from("PANIC").unwrap());
     }
 
     #[test]
     fn test_load() {
-        assert_eq!(Opcode::LOAD, Opcode::from(Opcode::LOAD.bytecode()));
-        assert_eq!(Opcode::LOAD, Opcode::try_from("LOAD").unwrap());
+        assert_eq!(Op::LOAD, Op::from(Op::LOAD.bytecode()));
+        assert_eq!(Op::LOAD, Op::try_from("LOAD").unwrap());
     }
 
     #[test]
     fn test_mov() {
-        assert_eq!(Opcode::MOV, Opcode::from(Opcode::MOV.bytecode()));
-        assert_eq!(Opcode::MOV, Opcode::try_from("MOV").unwrap());
+        assert_eq!(Op::MOV, Op::from(Op::MOV.bytecode()));
+        assert_eq!(Op::MOV, Op::try_from("MOV").unwrap());
     }
 
     #[test]
     fn test_add() {
-        assert_eq!(Opcode::ADD, Opcode::from(Opcode::ADD.bytecode()));
-        assert_eq!(Opcode::ADD, Opcode::try_from("ADD").unwrap());
+        assert_eq!(Op::ADD, Op::from(Op::ADD.bytecode()));
+        assert_eq!(Op::ADD, Op::try_from("ADD").unwrap());
     }
 
     #[test]
     fn test_cmp() {
-        assert_eq!(Opcode::CMP, Opcode::from(Opcode::CMP.bytecode()));
-        assert_eq!(Opcode::CMP, Opcode::try_from("CMP").unwrap());
+        assert_eq!(Op::CMP, Op::from(Op::CMP.bytecode()));
+        assert_eq!(Op::CMP, Op::try_from("CMP").unwrap());
     }
 
     #[test]
     fn test_jmp() {
-        assert_eq!(Opcode::JMP, Opcode::from(Opcode::JMP.bytecode()));
-        assert_eq!(Opcode::JMP, Opcode::try_from("JMP").unwrap());
+        assert_eq!(Op::JMP, Op::from(Op::JMP.bytecode()));
+        assert_eq!(Op::JMP, Op::try_from("JMP").unwrap());
     }
 
     #[test]
     fn test_je() {
-        assert_eq!(Opcode::JE, Opcode::from(Opcode::JE.bytecode()));
-        assert_eq!(Opcode::JE, Opcode::try_from("JE").unwrap());
+        assert_eq!(Op::JE, Op::from(Op::JE.bytecode()));
+        assert_eq!(Op::JE, Op::try_from("JE").unwrap());
     }
 }

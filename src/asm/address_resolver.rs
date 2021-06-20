@@ -26,7 +26,7 @@ impl<'t> AddressResolver<'t> {
                     map.insert(label.to_owned(), position);
                 }
                 Node::Instruction(i) => {
-                    position += i.opcode().length() as u32;
+                    position += i.op().length() as u32;
                 }
             }
         }
@@ -51,13 +51,13 @@ mod tests {
     use crate::parser::Instruction;
 
     use super::*;
-    use vmlib::opcodes::Opcode;
+    use vmlib::op::Op;
 
     #[test]
     fn resolve_success() {
         let nodes = vec![
             Node::Label("label1".to_string()),
-            Node::Instruction(Instruction::IA(Opcode::JE, "label2".to_string())),
+            Node::Instruction(Instruction::IA(Op::JE, "label2".to_string())),
             Node::Label("label2".to_string()),
         ];
         let addresses = AddressResolver::new(&nodes).resolve();
@@ -75,7 +75,7 @@ mod tests {
     fn resolve_duplicate_label() {
         let nodes = vec![
             Node::Label("label1".to_string()),
-            Node::Instruction(Instruction::I(Opcode::NOP)),
+            Node::Instruction(Instruction::I(Op::NOP)),
             Node::Label("label1".to_string()),
         ];
         let addresses = AddressResolver::new(&nodes).resolve();
@@ -89,7 +89,7 @@ mod tests {
     #[test]
     fn resolve_missing_label() {
         let nodes = vec![
-            Node::Instruction(Instruction::IA(Opcode::JE, "missing".to_string())),
+            Node::Instruction(Instruction::IA(Op::JE, "missing".to_string())),
         ];
         let addresses = AddressResolver::new(&nodes).resolve();
 
