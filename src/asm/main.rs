@@ -1,12 +1,29 @@
+use crate::address_resolver::AddressResolver;
 use crate::lexer::Lexer;
 use crate::parser::Parser;
 
 mod lexer;
 mod parser;
+mod address_resolver;
 
 fn main() {
     let mut lexer = Lexer::from_file("examples/fibonacci.a").unwrap();
     let mut parser = Parser::from_lexer(&mut lexer);
 
-    println!("{:?}", parser.parse());
+    let nodes = parser.parse();
+    if nodes.is_err() {
+        println!("Syntax error: {}", nodes.err().unwrap());
+        return;
+    }
+    let nodes = nodes.unwrap();
+
+    let resolver = AddressResolver::new(&nodes);
+    let addresses = resolver.resolve();
+
+    if addresses.is_err() {
+        println!("Semantic error: {}", addresses.err().unwrap());
+        return;
+    }
+    let addresses = addresses.unwrap();
+    println!("{:?}", addresses);
 }

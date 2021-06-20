@@ -3,7 +3,7 @@ use std::iter::Peekable;
 
 use vmlib::opcodes::Opcode;
 
-use crate::lexer::{Lexer, Token, Position};
+use crate::lexer::{Lexer, Position, Token};
 
 #[derive(Debug, PartialEq)]
 pub enum Node {
@@ -28,6 +28,22 @@ pub enum Instruction {
     Cmp(Opcode, u8, u8),
     Jmp(Opcode, String),
     Je(Opcode, String),
+}
+
+impl Instruction {
+    pub fn opcode(&self) -> Opcode {
+        return match self {
+            &Instruction::Nop(opcode) => opcode,
+            &Instruction::Halt(opcode) => opcode,
+            &Instruction::Panic(opcode) => opcode,
+            &Instruction::Load(opcode, _, _) => opcode,
+            &Instruction::Mov(opcode, _, _) => opcode,
+            &Instruction::Add(opcode, _, _) => opcode,
+            &Instruction::Cmp(opcode, _, _) => opcode,
+            &Instruction::Jmp(opcode, _) => opcode,
+            &Instruction::Je(opcode, _) => opcode,
+        };
+    }
 }
 
 pub struct Parser<'t> {
