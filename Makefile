@@ -5,6 +5,10 @@ release: test build_release install_release
 test:
 	cargo test
 
+itest: test
+	cargo run --bin tha
+	cargo run --bin thm
+
 build_dev:
 	cargo build
 
