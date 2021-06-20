@@ -81,7 +81,7 @@ impl VM {
 
     fn fetch_opcode(&mut self) -> u8 {
         if self.pc >= self.program.len() {
-            return u8::from(Opcode::PANIC);
+            return Opcode::PANIC.bytecode();
         }
 
         let opcode = self.program[self.pc];
@@ -132,8 +132,8 @@ mod tests {
         let mut vm = VM::new();
         vm.program = vec![
             // LOAD 0, #16909320
-            u8::from(Opcode::LOAD), 0x00, 0x01, 0x02, 0x04, 0x08,
-            u8::from(Opcode::HALT)
+            Opcode::LOAD.bytecode(), 0x00, 0x01, 0x02, 0x04, 0x08,
+            Opcode::HALT.bytecode()
         ];
         vm.run();
         assert_eq!(vm.registers[0], 16909320);
@@ -146,8 +146,8 @@ mod tests {
         let mut vm = VM::new();
         vm.program = vec![
             // LOAD 0, #0
-            u8::from(Opcode::LOAD), 0x00, 0x00, 0x00, 0x00, 0x00,
-            u8::from(Opcode::HALT)
+            Opcode::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x00,
+            Opcode::HALT.bytecode()
         ];
         vm.run();
         assert_eq!(vm.registers[0], 0);
@@ -161,8 +161,8 @@ mod tests {
         vm.registers[1] = 1;
         vm.program = vec![
             // LOAD 0, #1
-            u8::from(Opcode::MOV), 0x00, 0x01,
-            u8::from(Opcode::HALT)
+            Opcode::MOV.bytecode(), 0x00, 0x01,
+            Opcode::HALT.bytecode()
         ];
         vm.run();
         assert_eq!(vm.registers[0], 1);
@@ -177,8 +177,8 @@ mod tests {
         vm.registers[0] = 1;
         vm.program = vec![
             // LOAD 0, #1
-            u8::from(Opcode::MOV), 0x00, 0x01,
-            u8::from(Opcode::HALT)
+            Opcode::MOV.bytecode(), 0x00, 0x01,
+            Opcode::HALT.bytecode()
         ];
         vm.run();
         assert_eq!(vm.registers[0], 0);
@@ -194,8 +194,8 @@ mod tests {
         vm.registers[0] = 1;
         vm.registers[1] = 2;
         vm.program = vec![
-            u8::from(Opcode::ADD), 0x00, 0x01,
-            u8::from(Opcode::HALT)
+            Opcode::ADD.bytecode(), 0x00, 0x01,
+            Opcode::HALT.bytecode()
         ];
         vm.run();
         assert_eq!(vm.registers[0], 3);
@@ -211,8 +211,8 @@ mod tests {
         vm.registers[0] = 0;
         vm.registers[1] = 0;
         vm.program = vec![
-            u8::from(Opcode::ADD), 0x00, 0x01,
-            u8::from(Opcode::HALT)
+            Opcode::ADD.bytecode(), 0x00, 0x01,
+            Opcode::HALT.bytecode()
         ];
         vm.run();
         assert_eq!(vm.registers[0], 0);
@@ -228,8 +228,8 @@ mod tests {
         vm.registers[0] = 1;
         vm.registers[1] = 1;
         vm.program = vec![
-            u8::from(Opcode::CMP), 0x00, 0x01,
-            u8::from(Opcode::HALT)
+            Opcode::CMP.bytecode(), 0x00, 0x01,
+            Opcode::HALT.bytecode()
         ];
         vm.run();
         assert_eq!(vm.registers[0], 1);
@@ -245,8 +245,8 @@ mod tests {
         vm.registers[0] = 1;
         vm.registers[1] = 2;
         vm.program = vec![
-            u8::from(Opcode::CMP), 0x00, 0x01,
-            u8::from(Opcode::HALT)
+            Opcode::CMP.bytecode(), 0x00, 0x01,
+            Opcode::HALT.bytecode()
         ];
         vm.run();
         assert_eq!(vm.registers[0], 1);
@@ -262,8 +262,8 @@ mod tests {
         vm.registers[0] = 2;
         vm.registers[1] = 1;
         vm.program = vec![
-            u8::from(Opcode::CMP), 0x00, 0x01,
-            u8::from(Opcode::HALT)
+            Opcode::CMP.bytecode(), 0x00, 0x01,
+            Opcode::HALT.bytecode()
         ];
         vm.run();
         assert_eq!(vm.registers[0], 2);
@@ -278,13 +278,13 @@ mod tests {
 
         vm.program = vec![
             // JMP #12 (i.e. LOAD 0, #2)
-            u8::from(Opcode::JMP), 0x00, 0x00, 0x00, 0x0C,
+            Opcode::JMP.bytecode(), 0x00, 0x00, 0x00, 0x0C,
             // LOAD 0, #1
-            u8::from(Opcode::LOAD), 0x00, 0x00, 0x00, 0x00, 0x01,
-            u8::from(Opcode::HALT),
+            Opcode::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
+            Opcode::HALT.bytecode(),
             // LOAD 0, #2
-            u8::from(Opcode::LOAD), 0x00, 0x00, 0x00, 0x00, 0x02,
-            u8::from(Opcode::HALT)
+            Opcode::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
+            Opcode::HALT.bytecode()
         ];
         vm.run();
         assert_eq!(vm.registers[0], 2);
@@ -296,13 +296,13 @@ mod tests {
 
         vm.program = vec![
             // JE #12 (i.e. LOAD 0, #2)
-            u8::from(Opcode::JE), 0x00, 0x00, 0x00, 0x0C,
+            Opcode::JE.bytecode(), 0x00, 0x00, 0x00, 0x0C,
             // LOAD 0, #1
-            u8::from(Opcode::LOAD), 0x00, 0x00, 0x00, 0x00, 0x01,
-            u8::from(Opcode::HALT),
+            Opcode::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
+            Opcode::HALT.bytecode(),
             // LOAD 0, #2
-            u8::from(Opcode::LOAD), 0x00, 0x00, 0x00, 0x00, 0x02,
-            u8::from(Opcode::HALT)
+            Opcode::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
+            Opcode::HALT.bytecode()
         ];
         vm.flags.zero = true;
         vm.run();
@@ -315,13 +315,13 @@ mod tests {
 
         vm.program = vec![
             // JE #12 (i.e. LOAD 0, #2)
-            u8::from(Opcode::JE), 0x00, 0x00, 0x00, 0x0C,
+            Opcode::JE.bytecode(), 0x00, 0x00, 0x00, 0x0C,
             // LOAD 0, #1
-            u8::from(Opcode::LOAD), 0x00, 0x00, 0x00, 0x00, 0x01,
-            u8::from(Opcode::HALT),
+            Opcode::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
+            Opcode::HALT.bytecode(),
             // LOAD 0, #2
-            u8::from(Opcode::LOAD), 0x00, 0x00, 0x00, 0x00, 0x02,
-            u8::from(Opcode::HALT)
+            Opcode::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
+            Opcode::HALT.bytecode()
         ];
         vm.flags.zero = false;
         vm.run();
@@ -334,23 +334,23 @@ mod tests {
 
         // fibonacci(5)
         vm.program = vec![
-            /*0*/  u8::from(Opcode::LOAD), 0x00, 0x00, 0x00, 0x00, 0x05, // r0 = 5
-            /*6*/  u8::from(Opcode::LOAD), 0x01, 0x00, 0x00, 0x00, 0x00, // r1 = 0
-            /*12*/ u8::from(Opcode::LOAD), 0x02, 0x00, 0x00, 0x00, 0x01, // r2 = 1
+            /*0*/  Opcode::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x05, // r0 = 5
+            /*6*/  Opcode::LOAD.bytecode(), 0x01, 0x00, 0x00, 0x00, 0x00, // r1 = 0
+            /*12*/ Opcode::LOAD.bytecode(), 0x02, 0x00, 0x00, 0x00, 0x01, // r2 = 1
 
-            /*18*/ u8::from(Opcode::LOAD), 0x03, 0x00, 0x00, 0x00, 0x00, // r3 = 0
-            /*24*/ u8::from(Opcode::LOAD), 0x04, 0x00, 0x00, 0x00, 0x01, // r4 = 1
+            /*18*/ Opcode::LOAD.bytecode(), 0x03, 0x00, 0x00, 0x00, 0x00, // r3 = 0
+            /*24*/ Opcode::LOAD.bytecode(), 0x04, 0x00, 0x00, 0x00, 0x01, // r4 = 1
 
-            /*30*/ u8::from(Opcode::CMP), 0x00, 0x01,                    // r0 == r1?
-            /*33*/ u8::from(Opcode::JE), 0x00, 0x00, 0x00, 0x37,         // if r0 == r1 -> jump 55
+            /*30*/ Opcode::CMP.bytecode(), 0x00, 0x01,                    // r0 == r1?
+            /*33*/ Opcode::JE.bytecode(), 0x00, 0x00, 0x00, 0x37,         // if r0 == r1 -> jump 55
 
-            /*38*/ u8::from(Opcode::MOV), 0x05, 0x03,                    // r5 = r3
-            /*41*/ u8::from(Opcode::MOV), 0x03, 0x04,                    // r3 = r4
-            /*44*/ u8::from(Opcode::ADD), 0x04, 0x05,                    // r4 += r5
-            /*47*/ u8::from(Opcode::ADD), 0x01, 0x02,                    // r1 += r2
-            /*50*/ u8::from(Opcode::JMP), 0x00, 0x00, 0x00, 0x1E,        // jump 30
+            /*38*/ Opcode::MOV.bytecode(), 0x05, 0x03,                    // r5 = r3
+            /*41*/ Opcode::MOV.bytecode(), 0x03, 0x04,                    // r3 = r4
+            /*44*/ Opcode::ADD.bytecode(), 0x04, 0x05,                    // r4 += r5
+            /*47*/ Opcode::ADD.bytecode(), 0x01, 0x02,                    // r1 += r2
+            /*50*/ Opcode::JMP.bytecode(), 0x00, 0x00, 0x00, 0x1E,        // jump 30
 
-            /*55*/ u8::from(Opcode::HALT)
+            /*55*/ Opcode::HALT.bytecode()
         ];
         vm.run();
 

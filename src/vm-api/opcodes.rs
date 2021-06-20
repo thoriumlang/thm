@@ -72,7 +72,7 @@ impl Opcode {
     }
 
     pub fn bytecode(&self) -> u8 {
-        u8::from(*self)
+        *self as u8
     }
 }
 
@@ -112,68 +112,61 @@ impl TryFrom<&str> for Opcode {
     }
 }
 
-// fixme is this one really useful?
-impl From<Opcode> for u8 {
-    fn from(v: Opcode) -> Self {
-        v as u8
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_nop() {
-        assert_eq!(Opcode::NOP, Opcode::from(u8::from(Opcode::NOP)));
+        assert_eq!(Opcode::NOP, Opcode::from(Opcode::NOP.bytecode()));
         assert_eq!(Opcode::NOP, Opcode::try_from("NOP").unwrap());
     }
 
     #[test]
     fn test_halt() {
-        assert_eq!(Opcode::HALT, Opcode::from(u8::from(Opcode::HALT)));
+        assert_eq!(Opcode::HALT, Opcode::from(Opcode::HALT.bytecode()));
         assert_eq!(Opcode::HALT, Opcode::try_from("HALT").unwrap());
     }
 
     #[test]
     fn test_panic() {
-        assert_eq!(Opcode::PANIC, Opcode::from(u8::from(Opcode::PANIC)));
+        assert_eq!(Opcode::PANIC, Opcode::from(Opcode::PANIC.bytecode()));
         assert_eq!(Opcode::PANIC, Opcode::try_from("PANIC").unwrap());
     }
 
     #[test]
     fn test_load() {
-        assert_eq!(Opcode::LOAD, Opcode::from(u8::from(Opcode::LOAD)));
+        assert_eq!(Opcode::LOAD, Opcode::from(Opcode::LOAD.bytecode()));
         assert_eq!(Opcode::LOAD, Opcode::try_from("LOAD").unwrap());
     }
 
     #[test]
     fn test_mov() {
-        assert_eq!(Opcode::MOV, Opcode::from(u8::from(Opcode::MOV)));
+        assert_eq!(Opcode::MOV, Opcode::from(Opcode::MOV.bytecode()));
         assert_eq!(Opcode::MOV, Opcode::try_from("MOV").unwrap());
     }
 
     #[test]
     fn test_add() {
-        assert_eq!(Opcode::ADD, Opcode::from(u8::from(Opcode::ADD)));
+        assert_eq!(Opcode::ADD, Opcode::from(Opcode::ADD.bytecode()));
         assert_eq!(Opcode::ADD, Opcode::try_from("ADD").unwrap());
     }
 
     #[test]
     fn test_cmp() {
-        assert_eq!(Opcode::CMP, Opcode::from(u8::from(Opcode::CMP)));
+        assert_eq!(Opcode::CMP, Opcode::from(Opcode::CMP.bytecode()));
         assert_eq!(Opcode::CMP, Opcode::try_from("CMP").unwrap());
     }
 
     #[test]
     fn test_jmp() {
-        assert_eq!(Opcode::JMP, Opcode::from(u8::from(Opcode::JMP)));
+        assert_eq!(Opcode::JMP, Opcode::from(Opcode::JMP.bytecode()));
         assert_eq!(Opcode::JMP, Opcode::try_from("JMP").unwrap());
     }
 
     #[test]
     fn test_je() {
-        assert_eq!(Opcode::JE, Opcode::from(u8::from(Opcode::JE)));
+        assert_eq!(Opcode::JE, Opcode::from(Opcode::JE.bytecode()));
         assert_eq!(Opcode::JE, Opcode::try_from("JE").unwrap());
     }
 }
