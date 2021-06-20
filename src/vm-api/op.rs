@@ -51,6 +51,12 @@ pub enum Op {
     // JLE,
     // JGE,
 
+    /// Increments register value
+    INC,
+
+    /// Decrements register value
+    DEC,
+
     // PUSH
     // POP
 
@@ -71,6 +77,8 @@ impl Op {
             Op::JMP => 5,
             Op::JE => 5,
             Op::JNE => 5,
+            Op::INC => 2,
+            Op::DEC => 2,
         };
     }
 
@@ -92,6 +100,8 @@ impl From<u8> for Op {
             7 => Self::JMP,
             8 => Self::JE,
             9 => Self::JNE,
+            10 => Self::INC,
+            11 => Self::DEC,
             _ => Self::PANIC,
         }
     }
@@ -112,6 +122,8 @@ impl TryFrom<&str> for Op {
             "JMP" => Ok(Self::JMP),
             "JE" => Ok(Self::JE),
             "JNE" => Ok(Self::JNE),
+            "INC" => Ok(Self::INC),
+            "DEC" => Ok(Self::DEC),
             _ => Err(format!("Invalid op: {}", value).to_string()),
         }
     }
@@ -179,5 +191,17 @@ mod tests {
     fn test_jne() {
         assert_eq!(Op::JNE, Op::from(Op::JNE.bytecode()));
         assert_eq!(Op::JNE, Op::try_from("JNE").unwrap());
+    }
+
+    #[test]
+    fn test_inc() {
+        assert_eq!(Op::INC, Op::from(Op::INC.bytecode()));
+        assert_eq!(Op::INC, Op::try_from("INC").unwrap());
+    }
+
+    #[test]
+    fn test_dec() {
+        assert_eq!(Op::DEC, Op::from(Op::DEC.bytecode()));
+        assert_eq!(Op::DEC, Op::try_from("DEC").unwrap());
     }
 }

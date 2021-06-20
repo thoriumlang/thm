@@ -20,6 +20,7 @@ pub struct Label {
 pub enum Instruction {
     I(Op),
     IRI(Op, u8, u32),
+    IR(Op, u8),
     IRR(Op, u8, u8),
     IA(Op, String),
 }
@@ -29,6 +30,7 @@ impl Instruction {
         return match self {
             &Instruction::I(op) => op,
             &Instruction::IRI(op, _, _) => op,
+            &Instruction::IR(op, _) => op,
             &Instruction::IRR(op, _, _) => op,
             &Instruction::IA(op, _) => op,
         };
@@ -202,6 +204,30 @@ impl<'t> Parser<'t> {
                     true => (),
                 }
                 let ret = Ok(Instruction::IA(op, address));
+                ret
+            }
+            Op::INC => {
+                let reg = match self.read_register() {
+                    None => return Err(format!("Expected <register> at {}", position).to_string()),
+                    Some(t) => t,
+                };
+                match self.read_eol() {
+                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
+                    true => (),
+                }
+                let ret = Ok(Instruction::IR(op, reg));
+                ret
+            }
+            Op::DEC => {
+                let reg = match self.read_register() {
+                    None => return Err(format!("Expected <register> at {}", position).to_string()),
+                    Some(t) => t,
+                };
+                match self.read_eol() {
+                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
+                    true => (),
+                }
+                let ret = Ok(Instruction::IR(op, reg));
                 ret
             }
         };
@@ -431,6 +457,34 @@ mod tests {
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
         let expected = Node::Instruction(Instruction::IA(Op::JNE, "address".to_string()));
+        let actual = item.unwrap();
+        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+    }
+
+    #[test]
+    fn test_inc() {
+        let mut lexer = Lexer::from_text("INC r1\n");
+        let r = Parser::from_lexer(&mut lexer).next();
+        assert_eq!(true, r.is_some());
+
+        let item = r.unwrap();
+        assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
+
+        let expected = Node::Instruction(Instruction::IR(Op::INC, 1));
+        let actual = item.unwrap();
+        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+    }
+
+    #[test]
+    fn test_dec() {
+        let mut lexer = Lexer::from_text("DEC r1\n");
+        let r = Parser::from_lexer(&mut lexer).next();
+        assert_eq!(true, r.is_some());
+
+        let item = r.unwrap();
+        assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
+
+        let expected = Node::Instruction(Instruction::IR(Op::DEC, 1));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }

@@ -85,6 +85,18 @@ impl VM {
                         self.skip_4bytes();
                     }
                 }
+                Op::INC => {
+                    let r = self.fetch_1byte() as usize;
+                    self.registers[r] += 1;
+                    self.flags.zero = self.registers[r] == 0;
+                    self.flags.negative = self.registers[r] < 0;
+                }
+                Op::DEC => {
+                    let r = self.fetch_1byte() as usize;
+                    self.registers[r] -= 1;
+                    self.flags.zero = self.registers[r] == 0;
+                    self.flags.negative = self.registers[r] < 0;
+                }
             }
         }
     }
@@ -374,6 +386,108 @@ mod tests {
         vm.flags.zero = true;
         vm.run();
         assert_eq!(vm.registers[0], 1);
+    }
+
+    #[test]
+    fn test_inc() {
+        let mut vm = VM::new();
+
+        vm.program = vec![
+            // INC r0
+            Op::INC.bytecode(), 0x00
+        ];
+        vm.registers[0] = 0;
+        vm.flags.zero = true;
+        vm.flags.negative = false;
+        vm.run();
+        assert_eq!(vm.registers[0], 1);
+        assert_eq!(false, vm.flags.zero);
+        assert_eq!(false, vm.flags.negative);
+    }
+
+    #[test]
+    fn test_inc_zero() {
+        let mut vm = VM::new();
+
+        vm.program = vec![
+            // INC r0
+            Op::INC.bytecode(), 0x00
+        ];
+        vm.registers[0] = -1;
+        vm.flags.zero = false;
+        vm.flags.negative = true;
+        vm.run();
+        assert_eq!(vm.registers[0], 0);
+        assert_eq!(true, vm.flags.zero);
+        assert_eq!(false, vm.flags.negative);
+    }
+
+    #[test]
+    fn test_inc_negative() {
+        let mut vm = VM::new();
+
+        vm.program = vec![
+            // INC r0
+            Op::INC.bytecode(), 0x00
+        ];
+        vm.registers[0] = -2;
+        vm.flags.zero = false;
+        vm.flags.negative = true;
+        vm.run();
+        assert_eq!(vm.registers[0], -1);
+        assert_eq!(false, vm.flags.zero);
+        assert_eq!(true, vm.flags.negative);
+    }
+
+    #[test]
+    fn test_dec() {
+        let mut vm = VM::new();
+
+        vm.program = vec![
+            // DEC r0
+            Op::DEC.bytecode(), 0x00
+        ];
+        vm.registers[0] = 2;
+        vm.flags.zero = false;
+        vm.flags.negative = false;
+        vm.run();
+        assert_eq!(vm.registers[0], 1);
+        assert_eq!(false, vm.flags.zero);
+        assert_eq!(false, vm.flags.negative);
+    }
+
+    #[test]
+    fn test_dec_zero() {
+        let mut vm = VM::new();
+
+        vm.program = vec![
+            // DEC r0
+            Op::DEC.bytecode(), 0x00
+        ];
+        vm.registers[0] = 1;
+        vm.flags.zero = false;
+        vm.flags.negative = false;
+        vm.run();
+        assert_eq!(vm.registers[0], 0);
+        assert_eq!(true, vm.flags.zero);
+        assert_eq!(false, vm.flags.negative);
+    }
+
+    #[test]
+    fn test_dec_negative() {
+        let mut vm = VM::new();
+
+        vm.program = vec![
+            // DEC r0
+            Op::DEC.bytecode(), 0x00
+        ];
+        vm.registers[0] = 0;
+        vm.flags.zero = true;
+        vm.flags.negative = false;
+        vm.run();
+        assert_eq!(vm.registers[0], -1);
+        assert_eq!(false, vm.flags.zero);
+        assert_eq!(true, vm.flags.negative);
     }
 
     #[test]

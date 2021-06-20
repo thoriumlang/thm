@@ -14,9 +14,12 @@ fn main() {
     let mut bytes: Vec<u8> = vec![];
     file.read_to_end(&mut bytes).unwrap();
 
+    let n = 5;
+
     let mut vm = VM::new();
+    vm.registers[0] = n;
     vm.program = bytes;
     vm.run();
 
-    println!("fibo({}): {}", vm.registers[0], vm.registers[3])
+    println!("fibo({}): {}", n, vm.registers[3])
 }

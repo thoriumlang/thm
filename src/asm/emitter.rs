@@ -27,6 +27,7 @@ impl<'t> Emitter<'t> {
                         let b = value.to_be_bytes();
                         bytes.extend_from_slice(&b);
                     }
+                    Instruction::IR(op, r) => bytes.append(vec![op.bytecode(), *r].as_mut()),
                     Instruction::IRR(op, r1, r2) => bytes.append(vec![op.bytecode(), *r1, *r2].as_mut()),
                     Instruction::IA(op, addr) => {
                         bytes.push(op.bytecode());
