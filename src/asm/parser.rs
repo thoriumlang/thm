@@ -17,31 +17,20 @@ pub struct Label {
 }
 
 #[derive(Debug, PartialEq)]
-// todo maybe we can have one enum type per arity
 pub enum Instruction {
-    Nop(Opcode),
-    Halt(Opcode),
-    Panic(Opcode),
-    Load(Opcode, u8, u32),
-    Mov(Opcode, u8, u8),
-    Add(Opcode, u8, u8),
-    Cmp(Opcode, u8, u8),
-    Jmp(Opcode, String),
-    Je(Opcode, String),
+    I(Opcode),
+    IRI(Opcode, u8, u32),
+    IRR(Opcode, u8, u8),
+    IA(Opcode, String),
 }
 
 impl Instruction {
     pub fn opcode(&self) -> Opcode {
         return match self {
-            &Instruction::Nop(opcode) => opcode,
-            &Instruction::Halt(opcode) => opcode,
-            &Instruction::Panic(opcode) => opcode,
-            &Instruction::Load(opcode, _, _) => opcode,
-            &Instruction::Mov(opcode, _, _) => opcode,
-            &Instruction::Add(opcode, _, _) => opcode,
-            &Instruction::Cmp(opcode, _, _) => opcode,
-            &Instruction::Jmp(opcode, _) => opcode,
-            &Instruction::Je(opcode, _) => opcode,
+            &Instruction::I(opcode) => opcode,
+            &Instruction::IRI(opcode, _, _) => opcode,
+            &Instruction::IRR(opcode, _, _) => opcode,
+            &Instruction::IA(opcode, _) => opcode,
         };
     }
 }
@@ -75,7 +64,7 @@ impl<'t> Parser<'t> {
     fn parse_instruction(&mut self, op: Opcode, position: Position) -> Result<Instruction> {
         return match op {
             Opcode::NOP => {
-                let ret = Ok(Instruction::Nop(op));
+                let ret = Ok(Instruction::I(op));
                 match self.read_eol() {
                     false => return Err(format!("Expected <eol> at {}", position).to_string()),
                     true => (),
@@ -83,7 +72,7 @@ impl<'t> Parser<'t> {
                 ret
             }
             Opcode::HALT => {
-                let ret = Ok(Instruction::Halt(op));
+                let ret = Ok(Instruction::I(op));
                 match self.read_eol() {
                     false => return Err(format!("Expected <eol> at {}", position).to_string()),
                     true => (),
@@ -95,7 +84,7 @@ impl<'t> Parser<'t> {
                     false => return Err(format!("Expected <eol> at {}", position).to_string()),
                     true => (),
                 }
-                let ret = Ok(Instruction::Panic(op));
+                let ret = Ok(Instruction::I(op));
                 ret
             }
             Opcode::LOAD => {
@@ -116,7 +105,7 @@ impl<'t> Parser<'t> {
                     true => (),
                 }
 
-                let ret = Ok(Instruction::Load(op, reg, value));
+                let ret = Ok(Instruction::IRI(op, reg, value));
                 ret
             }
             Opcode::MOV => {
@@ -136,7 +125,7 @@ impl<'t> Parser<'t> {
                     false => return Err(format!("Expected <eol> at {}", position).to_string()),
                     true => (),
                 }
-                let ret = Ok(Instruction::Mov(op, reg1, reg2));
+                let ret = Ok(Instruction::IRR(op, reg1, reg2));
                 ret
             }
             Opcode::ADD => {
@@ -156,7 +145,7 @@ impl<'t> Parser<'t> {
                     false => return Err(format!("Expected <eol> at {}", position).to_string()),
                     true => (),
                 }
-                let ret = Ok(Instruction::Add(op, reg1, reg2));
+                let ret = Ok(Instruction::IRR(op, reg1, reg2));
                 ret
             }
             Opcode::CMP => {
@@ -176,7 +165,7 @@ impl<'t> Parser<'t> {
                     false => return Err(format!("Expected <eol> at {}", position).to_string()),
                     true => (),
                 }
-                let ret = Ok(Instruction::Cmp(op, reg1, reg2));
+                let ret = Ok(Instruction::IRR(op, reg1, reg2));
                 ret
             }
             Opcode::JMP => {
@@ -188,7 +177,7 @@ impl<'t> Parser<'t> {
                     false => return Err(format!("Expected <eol> at {}", position).to_string()),
                     true => (),
                 }
-                let ret = Ok(Instruction::Jmp(op, address));
+                let ret = Ok(Instruction::IA(op, address));
                 ret
             }
             Opcode::JE => {
@@ -200,7 +189,7 @@ impl<'t> Parser<'t> {
                     false => return Err(format!("Expected <eol> at {}", position).to_string()),
                     true => (),
                 }
-                let ret = Ok(Instruction::Je(op, address));
+                let ret = Ok(Instruction::IA(op, address));
                 ret
             }
         };
@@ -303,7 +292,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::Nop(Opcode::NOP));
+        let expected = Node::Instruction(Instruction::I(Opcode::NOP));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -317,7 +306,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::Halt(Opcode::HALT));
+        let expected = Node::Instruction(Instruction::I(Opcode::HALT));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -331,7 +320,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::Panic(Opcode::PANIC));
+        let expected = Node::Instruction(Instruction::I(Opcode::PANIC));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -345,7 +334,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::Load(Opcode::LOAD, 1, 16));
+        let expected = Node::Instruction(Instruction::IRI(Opcode::LOAD, 1, 16));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -359,7 +348,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::Mov(Opcode::MOV, 1, 0));
+        let expected = Node::Instruction(Instruction::IRR(Opcode::MOV, 1, 0));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -373,7 +362,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::Add(Opcode::ADD, 1, 0));
+        let expected = Node::Instruction(Instruction::IRR(Opcode::ADD, 1, 0));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -387,7 +376,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::Cmp(Opcode::CMP, 1, 0));
+        let expected = Node::Instruction(Instruction::IRR(Opcode::CMP, 1, 0));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -401,7 +390,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::Jmp(Opcode::JMP, "address".to_string()));
+        let expected = Node::Instruction(Instruction::IA(Opcode::JMP, "address".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -415,7 +404,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::Je(Opcode::JE, "address".to_string()));
+        let expected = Node::Instruction(Instruction::IA(Opcode::JE, "address".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -442,7 +431,7 @@ mod tests {
 
         let expected = vec![
             Node::Label("label".to_string()),
-            Node::Instruction(Instruction::Load(Opcode::LOAD, 1, 0))
+            Node::Instruction(Instruction::IRI(Opcode::LOAD, 1, 0))
         ];
         let actual = r.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);

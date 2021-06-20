@@ -33,16 +33,11 @@ impl<'t> AddressResolver<'t> {
 
         for node in self.nodes {
             match node {
-                Node::Instruction(Instruction::Jmp(_, address)) => {
+                Node::Instruction(Instruction::IA(_, address)) => {
                     if !map.contains_key(address) {
                         return Err(format!("Label {} is missing", address).to_string());
                     }
-                }
-                Node::Instruction(Instruction::Je(_, address)) => {
-                    if !map.contains_key(address) {
-                        return Err(format!("Label {} is missing", address).to_string());
-                    }
-                }
+                },
                 _ => continue,
             }
         }
@@ -62,7 +57,7 @@ mod tests {
     fn resolve_success() {
         let nodes = vec![
             Node::Label("label1".to_string()),
-            Node::Instruction(Instruction::Je(Opcode::JE, "label2".to_string())),
+            Node::Instruction(Instruction::IA(Opcode::JE, "label2".to_string())),
             Node::Label("label2".to_string()),
         ];
         let addresses = AddressResolver::new(&nodes).resolve();
@@ -80,7 +75,7 @@ mod tests {
     fn resolve_duplicate_label() {
         let nodes = vec![
             Node::Label("label1".to_string()),
-            Node::Instruction(Instruction::Nop(Opcode::NOP)),
+            Node::Instruction(Instruction::I(Opcode::NOP)),
             Node::Label("label1".to_string()),
         ];
         let addresses = AddressResolver::new(&nodes).resolve();
@@ -94,7 +89,7 @@ mod tests {
     #[test]
     fn resolve_missing_label() {
         let nodes = vec![
-            Node::Instruction(Instruction::Je(Opcode::JE, "missing".to_string())),
+            Node::Instruction(Instruction::IA(Opcode::JE, "missing".to_string())),
         ];
         let addresses = AddressResolver::new(&nodes).resolve();
 

@@ -21,23 +21,14 @@ impl<'t> Emitter<'t> {
         for node in self.nodes {
             match node {
                 Node::Instruction(instruction) => match instruction {
-                    Instruction::Nop(op) => bytes.push(op.bytecode()),
-                    Instruction::Halt(op) => bytes.push(op.bytecode()),
-                    Instruction::Panic(op) => bytes.push(op.bytecode()),
-                    Instruction::Load(op, r, value) => {
+                    Instruction::I(op) => bytes.push(op.bytecode()),
+                    Instruction::IRI(op, r, value) => {
                         bytes.append(vec![op.bytecode(), *r].as_mut());
                         let b = value.to_be_bytes();
                         bytes.extend_from_slice(&b);
                     },
-                    Instruction::Mov(op, r1, r2) => bytes.append(vec![op.bytecode(), *r1, *r2].as_mut()),
-                    Instruction::Add(op, r1, r2) => bytes.append(vec![op.bytecode(), *r1, *r2].as_mut()),
-                    Instruction::Cmp(op, r1, r2) => bytes.append(vec![op.bytecode(), *r1, *r2].as_mut()),
-                    Instruction::Jmp(op, addr) => {
-                        bytes.push(op.bytecode());
-                        let b = self.decode_address(addr).to_be_bytes();
-                        bytes.extend_from_slice(&b);
-                    },
-                    Instruction::Je(op, addr) => {
+                    Instruction::IRR(op, r1, r2) => bytes.append(vec![op.bytecode(), *r1, *r2].as_mut()),
+                    Instruction::IA(op, addr) => {
                         bytes.push(op.bytecode());
                         let b = self.decode_address(addr).to_be_bytes();
                         bytes.extend_from_slice(&b);
@@ -67,7 +58,7 @@ mod tests {
     #[test]
     fn emit() {
         let nodes = vec![
-            Node::Instruction(Instruction::Je(Opcode::JE, "label2".to_string())),
+            Node::Instruction(Instruction::IA(Opcode::JE, "label2".to_string())),
             Node::Label("label2".to_string()),
         ];
         let addresses = AddressResolver::new(&nodes).resolve().unwrap();
