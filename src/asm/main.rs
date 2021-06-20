@@ -2,6 +2,8 @@ use crate::address_resolver::AddressResolver;
 use crate::lexer::Lexer;
 use crate::parser::Parser;
 use crate::emitter::Emitter;
+use std::fs::OpenOptions;
+use std::io::Write;
 
 mod lexer;
 mod parser;
@@ -29,5 +31,13 @@ fn main() {
     let addresses = addresses.unwrap();
 
     let emitter = Emitter::new(&nodes, &addresses);
-    println!("{:?}", emitter.emit());
+    let code = emitter.emit();
+
+    let mut file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .open("target/fibonacci.bin")
+        .unwrap();
+
+    file.write_all(code.as_slice()).unwrap();
 }
