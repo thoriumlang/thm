@@ -57,8 +57,10 @@ pub enum Op {
     /// Decrements register value
     DEC,
 
-    // PUSH
-    // POP
+    /// Pushes register content to the stack
+    PUSH,
+    /// Pops the top of the stack an put it in register
+    POP,
 
     // CALL
     // RET
@@ -79,6 +81,8 @@ impl Op {
             Op::JNE => 5,
             Op::INC => 2,
             Op::DEC => 2,
+            Op::PUSH => 2,
+            Op::POP => 2,
         };
     }
 
@@ -102,6 +106,8 @@ impl From<u8> for Op {
             9 => Self::JNE,
             10 => Self::INC,
             11 => Self::DEC,
+            12 => Self::PUSH,
+            13 => Self::POP,
             _ => Self::PANIC,
         }
     }
@@ -124,6 +130,8 @@ impl TryFrom<&str> for Op {
             "JNE" => Ok(Self::JNE),
             "INC" => Ok(Self::INC),
             "DEC" => Ok(Self::DEC),
+            "PUSH" => Ok(Self::PUSH),
+            "POP" => Ok(Self::POP),
             _ => Err(format!("Invalid op: {}", value).to_string()),
         }
     }
@@ -203,5 +211,17 @@ mod tests {
     fn test_dec() {
         assert_eq!(Op::DEC, Op::from(Op::DEC.bytecode()));
         assert_eq!(Op::DEC, Op::try_from("DEC").unwrap());
+    }
+
+    #[test]
+    fn test_push() {
+        assert_eq!(Op::PUSH, Op::from(Op::PUSH.bytecode()));
+        assert_eq!(Op::PUSH, Op::try_from("PUSH").unwrap());
+    }
+
+    #[test]
+    fn test_pop() {
+        assert_eq!(Op::POP, Op::from(Op::POP.bytecode()));
+        assert_eq!(Op::POP, Op::try_from("POP").unwrap());
     }
 }

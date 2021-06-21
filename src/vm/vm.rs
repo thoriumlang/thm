@@ -1,7 +1,7 @@
 extern crate vmlib;
 
+use vmlib::{MEMORY_SIZE, REG_COUNT, STACK_SIZE};
 use vmlib::op::Op;
-use vmlib::REG_COUNT;
 
 pub struct Flags {
     zero: bool,
@@ -11,10 +11,14 @@ pub struct Flags {
 pub struct VM {
     // FIXME remove pub
     pub registers: [i32; REG_COUNT],
+    /// program pointer (aka ip)
     pc: usize,
     // FIXME remove pub
     pub program: Vec<u8>,
     flags: Flags,
+    /// stack pointer
+    sp: usize,
+    pub memory: [u8; MEMORY_SIZE],
 }
 
 impl VM {
@@ -27,12 +31,13 @@ impl VM {
                 zero: true,
                 negative: false,
             },
+            sp: STACK_SIZE,
+            memory: [0; MEMORY_SIZE],
         }
     }
 
     pub fn run(&mut self) {
         loop {
-            // println!("regs: {:?}", self.registers);
             match Self::decode_opcode(self.fetch_opcode()) {
                 Op::NOP => { continue; }
                 Op::HALT => {
@@ -95,6 +100,28 @@ impl VM {
                 Op::DEC => {
                     let r = self.fetch_1byte() as usize;
                     self.registers[r] -= 1;
+                    self.flags.zero = self.registers[r] == 0;
+                    self.flags.negative = self.registers[r] < 0;
+                }
+                Op::PUSH => {
+                    // we map r = 0x12345678 like to:
+                    // sp = 78, sp-1 = 56, sp-2 = 34 sp-3 = 12
+                    let r = self.fetch_1byte() as usize;
+                    for byte in self.registers[r].to_le_bytes().iter() {
+                        self.sp -= 1;
+                        self.memory[self.sp] = *byte;
+                    }
+                }
+                Op::POP => {
+                    // we map sp = 78, sp-1 = 56, sp-2 = 34 sp-3 = 12 like to:
+                    // r = 0x12345678
+                    let r = self.fetch_1byte() as usize;
+                    let mut bytes: [u8; 4] = [0; 4];
+                    for i in 0..4 {
+                        bytes[i] = self.memory[self.sp];
+                        self.sp += 1;
+                    }
+                    self.registers[r] = i32::from_be_bytes(bytes);
                     self.flags.zero = self.registers[r] == 0;
                     self.flags.negative = self.registers[r] < 0;
                 }
@@ -489,5 +516,67 @@ mod tests {
         assert_eq!(vm.registers[0], -1);
         assert_eq!(false, vm.flags.zero);
         assert_eq!(true, vm.flags.negative);
+    }
+
+    #[test]
+    fn test_push() {
+        let mut vm = VM::new();
+
+        vm.sp = 4;
+        vm.registers[0] = 0x01020304;
+        vm.flags.zero = true;
+        vm.flags.negative = true;
+        vm.program = vec![
+            // PUSH r0
+            Op::PUSH.bytecode(), 0x00
+        ];
+        vm.run();
+        assert_eq!(vm.registers[0], 0x01020304, "{} != 1", vm.registers[0]);
+        assert_eq!(true, vm.flags.zero, "zero flag not set");
+        assert_eq!(true, vm.flags.negative, "negative flag not set");
+        assert_eq!(0, vm.sp, "sp {} != 0", vm.sp);
+
+        assert_eq!(0x01, vm.memory[0], "mem[3]: 1 != {}", vm.memory[3]);
+        assert_eq!(0x02, vm.memory[1], "mem[2]: 2 != {}", vm.memory[2]);
+        assert_eq!(0x03, vm.memory[2], "mem[1]: 3 != {}", vm.memory[1]);
+        assert_eq!(0x04, vm.memory[3], "mem[0]: 4 != {}", vm.memory[1]);
+    }
+
+    #[test]
+    fn test_pop() {
+        let mut vm = VM::new();
+
+        // pretend we pushed something before
+        vm.memory[0] = 0x01;
+        vm.memory[1] = 0x02;
+        vm.memory[2] = 0x03;
+        vm.memory[3] = 0x04;
+        vm.sp = 0;
+        vm.flags.zero = true;
+        vm.flags.negative = true;
+        vm.program = vec![
+            // POP r0
+            Op::POP.bytecode(), 0x00
+        ];
+        vm.run();
+        assert_eq!(vm.registers[0], 0x01020304, "reg {} != {}", vm.registers[0], 0x01020304);
+        assert_eq!(false, vm.flags.zero, "zero flag not set");
+        assert_eq!(false, vm.flags.negative, "negative flag set");
+        assert_eq!(4, vm.sp, "sp {} != 4", vm.sp);
+    }
+
+    #[test]
+    fn test_push_pop() {
+        let mut vm = VM::new();
+
+        let sp = vm.sp;
+        vm.registers[0] = 0x01020304;
+        vm.program = vec![
+            // PUSH r0
+            Op::PUSH.bytecode(), 0x00,
+            Op::POP.bytecode(), 0x01,
+        ];
+        vm.run();
+        assert_eq!(vm.registers[0], vm.registers[1], "{} != {}", vm.registers[0], vm.registers[1]);
     }
 }

@@ -21,5 +21,5 @@ fn main() {
     vm.program = bytes;
     vm.run();
 
-    println!("fibo({}): {}", n, vm.registers[3])
+    println!("fibo({}): {}", vm.registers[0], vm.registers[3])
 }

@@ -230,6 +230,30 @@ impl<'t> Parser<'t> {
                 let ret = Ok(Instruction::IR(op, reg));
                 ret
             }
+            Op::PUSH => {
+                let reg = match self.read_register() {
+                    None => return Err(format!("Expected <register> at {}", position).to_string()),
+                    Some(t) => t,
+                };
+                match self.read_eol() {
+                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
+                    true => (),
+                }
+                let ret = Ok(Instruction::IR(op, reg));
+                ret
+            }
+            Op::POP => {
+                let reg = match self.read_register() {
+                    None => return Err(format!("Expected <register> at {}", position).to_string()),
+                    Some(t) => t,
+                };
+                match self.read_eol() {
+                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
+                    true => (),
+                }
+                let ret = Ok(Instruction::IR(op, reg));
+                ret
+            }
         };
     }
 
@@ -491,6 +515,34 @@ mod tests {
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
         let expected = Node::Instruction(Instruction::IR(Op::DEC, 1));
+        let actual = item.unwrap();
+        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+    }
+
+    #[test]
+    fn test_push() {
+        let mut lexer = Lexer::from_text("PUSH r1\n", VM_CONFIG);
+        let r = Parser::from_lexer(&mut lexer).next();
+        assert_eq!(true, r.is_some());
+
+        let item = r.unwrap();
+        assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
+
+        let expected = Node::Instruction(Instruction::IR(Op::PUSH, 1));
+        let actual = item.unwrap();
+        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+    }
+
+    #[test]
+    fn test_pop() {
+        let mut lexer = Lexer::from_text("POP r1\n", VM_CONFIG);
+        let r = Parser::from_lexer(&mut lexer).next();
+        assert_eq!(true, r.is_some());
+
+        let item = r.unwrap();
+        assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
+
+        let expected = Node::Instruction(Instruction::IR(Op::POP, 1));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }

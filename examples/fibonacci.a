@@ -2,6 +2,7 @@
 // in:  r0 contains the index to iteration count
 // out: r3 contains the result
 
+    PUSH r0    // save r0
     LOAD r3, 0 // fib(0)
     LOAD r4, 1 // fib(1)
 
@@ -28,5 +29,5 @@
     JNE @loop
 
 :end
-    MOV r0, r1 // restore initial target
+    POP r0 // restore initial target
     HALT
