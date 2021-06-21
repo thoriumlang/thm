@@ -1,6 +1,6 @@
 extern crate vmlib;
 
-use vmlib::{MEMORY_SIZE, REG_COUNT, STACK_SIZE};
+use vmlib::{RAM_SIZE, REG_COUNT, STACK_SIZE};
 use vmlib::op::Op;
 
 pub struct Flags {
@@ -18,7 +18,7 @@ pub struct CPU {
     flags: Flags,
     /// stack pointer
     sp: usize,
-    pub memory: [u8; MEMORY_SIZE],
+    pub memory: [u8; RAM_SIZE],
 }
 
 impl CPU {
@@ -32,7 +32,7 @@ impl CPU {
                 negative: false,
             },
             sp: STACK_SIZE,
-            memory: [0; MEMORY_SIZE],
+            memory: [0; RAM_SIZE],
         }
     }
 
