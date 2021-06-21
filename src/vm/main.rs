@@ -3,6 +3,7 @@ use std::fs::OpenOptions;
 use std::io::Read;
 
 mod cpu;
+mod memory_map;
 
 fn main() {
     let mut file = OpenOptions::new()

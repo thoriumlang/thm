@@ -3,6 +3,8 @@ extern crate vmlib;
 use vmlib::{RAM_SIZE, REG_COUNT, STACK_SIZE};
 use vmlib::op::Op;
 
+use crate::memory_map::MemoryMap;
+
 pub struct Flags {
     zero: bool,
     negative: bool,
@@ -13,16 +15,20 @@ pub struct CPU {
     pub registers: [i32; REG_COUNT],
     /// program pointer (aka ip)
     pc: usize,
-    // FIXME remove pub
+    // FIXME move to memory!
     pub program: Vec<u8>,
     flags: Flags,
     /// stack pointer
-    sp: usize,
-    pub memory: [u8; RAM_SIZE],
+    sp: u32,
+    memory: MemoryMap,
 }
 
 impl CPU {
     pub fn new() -> CPU {
+        Self::new_custom_memory(MemoryMap::new(RAM_SIZE as u32))
+    }
+
+    pub fn new_custom_memory(memory: MemoryMap) -> CPU {
         CPU {
             registers: [0; REG_COUNT],
             pc: 0,
@@ -31,8 +37,8 @@ impl CPU {
                 zero: true,
                 negative: false,
             },
-            sp: STACK_SIZE,
-            memory: [0; RAM_SIZE],
+            sp: STACK_SIZE as u32,
+            memory,
         }
     }
 
@@ -109,7 +115,7 @@ impl CPU {
                     let r = self.fetch_1byte() as usize;
                     for byte in self.registers[r].to_le_bytes().iter() {
                         self.sp -= 1;
-                        self.memory[self.sp] = *byte;
+                        self.memory.set(self.sp, *byte);
                     }
                 }
                 Op::POP => {
@@ -118,7 +124,7 @@ impl CPU {
                     let r = self.fetch_1byte() as usize;
                     let mut bytes: [u8; 4] = [0; 4];
                     for i in 0..4 {
-                        bytes[i] = self.memory[self.sp];
+                        bytes[i] = self.memory.get(self.sp).unwrap(); // FIXME panic
                         self.sp += 1;
                     }
                     self.registers[r] = i32::from_be_bytes(bytes);
@@ -536,10 +542,10 @@ mod tests {
         assert_eq!(true, cpu.flags.negative, "negative flag not set");
         assert_eq!(0, cpu.sp, "sp {} != 0", cpu.sp);
 
-        assert_eq!(0x01, cpu.memory[0], "mem[3]: 1 != {}", cpu.memory[3]);
-        assert_eq!(0x02, cpu.memory[1], "mem[2]: 2 != {}", cpu.memory[2]);
-        assert_eq!(0x03, cpu.memory[2], "mem[1]: 3 != {}", cpu.memory[1]);
-        assert_eq!(0x04, cpu.memory[3], "mem[0]: 4 != {}", cpu.memory[1]);
+        assert_eq!(Some(0x01), cpu.memory.get(0), "mem[3]: 1 != {:?}", cpu.memory.get(3));
+        assert_eq!(Some(0x02), cpu.memory.get(1), "mem[2]: 2 != {:?}", cpu.memory.get(2));
+        assert_eq!(Some(0x03), cpu.memory.get(2), "mem[1]: 3 != {:?}", cpu.memory.get(1));
+        assert_eq!(Some(0x04), cpu.memory.get(3), "mem[0]: 4 != {:?}", cpu.memory.get(1));
     }
 
     #[test]
@@ -547,10 +553,10 @@ mod tests {
         let mut cpu = CPU::new();
 
         // pretend we pushed something before
-        cpu.memory[0] = 0x01;
-        cpu.memory[1] = 0x02;
-        cpu.memory[2] = 0x03;
-        cpu.memory[3] = 0x04;
+        cpu.memory.set(0, 0x01);
+        cpu.memory.set(1, 0x02);
+        cpu.memory.set(2, 0x03);
+        cpu.memory.set(3, 0x04);
         cpu.sp = 0;
         cpu.flags.zero = true;
         cpu.flags.negative = true;
