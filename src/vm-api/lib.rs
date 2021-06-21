@@ -1,5 +1,6 @@
 pub mod op;
 
+/// registers count
 pub const REG_COUNT: usize = 32;
 /// stack size, in elements count (each element is 4 bytes)
 pub const STACK_SIZE: usize = 1024;

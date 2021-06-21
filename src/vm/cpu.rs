@@ -8,7 +8,7 @@ pub struct Flags {
     negative: bool,
 }
 
-pub struct VM {
+pub struct CPU {
     // FIXME remove pub
     pub registers: [i32; REG_COUNT],
     /// program pointer (aka ip)
@@ -21,9 +21,9 @@ pub struct VM {
     pub memory: [u8; MEMORY_SIZE],
 }
 
-impl VM {
-    pub fn new() -> VM {
-        VM {
+impl CPU {
+    pub fn new() -> CPU {
+        CPU {
             registers: [0; REG_COUNT],
             pc: 0,
             program: vec![],
@@ -170,163 +170,163 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_create_vm() {
-        let vm = VM::new();
-        assert_eq!(vm.registers[0], 0);
-        assert_eq!(vm.flags.zero, true);
-        assert_eq!(vm.pc, 0);
+    fn test_create_cpu() {
+        let cpu = CPU::new();
+        assert_eq!(cpu.registers[0], 0);
+        assert_eq!(cpu.flags.zero, true);
+        assert_eq!(cpu.pc, 0);
     }
 
     #[test]
     fn test_load() {
-        let mut vm = VM::new();
-        vm.program = vec![
+        let mut cpu = CPU::new();
+        cpu.program = vec![
             // LOAD 0, #16909320
             Op::LOAD.bytecode(), 0x00, 0x01, 0x02, 0x04, 0x08,
             Op::HALT.bytecode()
         ];
-        vm.run();
-        assert_eq!(vm.registers[0], 16909320);
-        assert_eq!(vm.flags.zero, false);
-        assert_eq!(vm.flags.negative, false);
+        cpu.run();
+        assert_eq!(cpu.registers[0], 16909320);
+        assert_eq!(cpu.flags.zero, false);
+        assert_eq!(cpu.flags.negative, false);
     }
 
     #[test]
     fn test_load_zero() {
-        let mut vm = VM::new();
-        vm.program = vec![
+        let mut cpu = CPU::new();
+        cpu.program = vec![
             // LOAD 0, #0
             Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x00,
             Op::HALT.bytecode()
         ];
-        vm.run();
-        assert_eq!(vm.registers[0], 0);
-        assert_eq!(vm.flags.zero, true);
-        assert_eq!(vm.flags.negative, false);
+        cpu.run();
+        assert_eq!(cpu.registers[0], 0);
+        assert_eq!(cpu.flags.zero, true);
+        assert_eq!(cpu.flags.negative, false);
     }
 
     #[test]
     fn test_mov() {
-        let mut vm = VM::new();
-        vm.registers[1] = 1;
-        vm.program = vec![
+        let mut cpu = CPU::new();
+        cpu.registers[1] = 1;
+        cpu.program = vec![
             // LOAD 0, #1
             Op::MOV.bytecode(), 0x00, 0x01,
             Op::HALT.bytecode()
         ];
-        vm.run();
-        assert_eq!(vm.registers[0], 1);
-        assert_eq!(vm.registers[1], 1);
-        assert_eq!(vm.flags.zero, false);
-        assert_eq!(vm.flags.negative, false);
+        cpu.run();
+        assert_eq!(cpu.registers[0], 1);
+        assert_eq!(cpu.registers[1], 1);
+        assert_eq!(cpu.flags.zero, false);
+        assert_eq!(cpu.flags.negative, false);
     }
 
     #[test]
     fn test_mov_zero() {
-        let mut vm = VM::new();
-        vm.registers[0] = 1;
-        vm.program = vec![
+        let mut cpu = CPU::new();
+        cpu.registers[0] = 1;
+        cpu.program = vec![
             // LOAD 0, #1
             Op::MOV.bytecode(), 0x00, 0x01,
             Op::HALT.bytecode()
         ];
-        vm.run();
-        assert_eq!(vm.registers[0], 0);
-        assert_eq!(vm.registers[1], 0);
-        assert_eq!(vm.flags.zero, true);
-        assert_eq!(vm.flags.negative, false);
+        cpu.run();
+        assert_eq!(cpu.registers[0], 0);
+        assert_eq!(cpu.registers[1], 0);
+        assert_eq!(cpu.flags.zero, true);
+        assert_eq!(cpu.flags.negative, false);
     }
 
     #[test]
     fn test_add() {
-        let mut vm = VM::new();
+        let mut cpu = CPU::new();
 
-        vm.registers[0] = 1;
-        vm.registers[1] = 2;
-        vm.program = vec![
+        cpu.registers[0] = 1;
+        cpu.registers[1] = 2;
+        cpu.program = vec![
             Op::ADD.bytecode(), 0x00, 0x01,
             Op::HALT.bytecode()
         ];
-        vm.run();
-        assert_eq!(vm.registers[0], 3);
-        assert_eq!(vm.registers[1], 2);
-        assert_eq!(vm.flags.zero, false);
-        assert_eq!(vm.flags.negative, false);
+        cpu.run();
+        assert_eq!(cpu.registers[0], 3);
+        assert_eq!(cpu.registers[1], 2);
+        assert_eq!(cpu.flags.zero, false);
+        assert_eq!(cpu.flags.negative, false);
     }
 
     #[test]
     fn test_add_zero() {
-        let mut vm = VM::new();
+        let mut cpu = CPU::new();
 
-        vm.registers[0] = 0;
-        vm.registers[1] = 0;
-        vm.program = vec![
+        cpu.registers[0] = 0;
+        cpu.registers[1] = 0;
+        cpu.program = vec![
             Op::ADD.bytecode(), 0x00, 0x01,
             Op::HALT.bytecode()
         ];
-        vm.run();
-        assert_eq!(vm.registers[0], 0);
-        assert_eq!(vm.registers[1], 0);
-        assert_eq!(vm.flags.zero, true);
-        assert_eq!(vm.flags.negative, false);
+        cpu.run();
+        assert_eq!(cpu.registers[0], 0);
+        assert_eq!(cpu.registers[1], 0);
+        assert_eq!(cpu.flags.zero, true);
+        assert_eq!(cpu.flags.negative, false);
     }
 
     #[test]
     fn test_cmp_eq() {
-        let mut vm = VM::new();
+        let mut cpu = CPU::new();
 
-        vm.registers[0] = 1;
-        vm.registers[1] = 1;
-        vm.program = vec![
+        cpu.registers[0] = 1;
+        cpu.registers[1] = 1;
+        cpu.program = vec![
             Op::CMP.bytecode(), 0x00, 0x01,
             Op::HALT.bytecode()
         ];
-        vm.run();
-        assert_eq!(vm.registers[0], 1);
-        assert_eq!(vm.registers[1], 1);
-        assert_eq!(vm.flags.zero, true);
-        assert_eq!(vm.flags.negative, false);
+        cpu.run();
+        assert_eq!(cpu.registers[0], 1);
+        assert_eq!(cpu.registers[1], 1);
+        assert_eq!(cpu.flags.zero, true);
+        assert_eq!(cpu.flags.negative, false);
     }
 
     #[test]
     fn test_cmp_lt() {
-        let mut vm = VM::new();
+        let mut cpu = CPU::new();
 
-        vm.registers[0] = 1;
-        vm.registers[1] = 2;
-        vm.program = vec![
+        cpu.registers[0] = 1;
+        cpu.registers[1] = 2;
+        cpu.program = vec![
             Op::CMP.bytecode(), 0x00, 0x01,
             Op::HALT.bytecode()
         ];
-        vm.run();
-        assert_eq!(vm.registers[0], 1);
-        assert_eq!(vm.registers[1], 2);
-        assert_eq!(vm.flags.zero, false);
-        assert_eq!(vm.flags.negative, true);
+        cpu.run();
+        assert_eq!(cpu.registers[0], 1);
+        assert_eq!(cpu.registers[1], 2);
+        assert_eq!(cpu.flags.zero, false);
+        assert_eq!(cpu.flags.negative, true);
     }
 
     #[test]
     fn test_cmp_gt() {
-        let mut vm = VM::new();
+        let mut cpu = CPU::new();
 
-        vm.registers[0] = 2;
-        vm.registers[1] = 1;
-        vm.program = vec![
+        cpu.registers[0] = 2;
+        cpu.registers[1] = 1;
+        cpu.program = vec![
             Op::CMP.bytecode(), 0x00, 0x01,
             Op::HALT.bytecode()
         ];
-        vm.run();
-        assert_eq!(vm.registers[0], 2);
-        assert_eq!(vm.registers[1], 1);
-        assert_eq!(vm.flags.zero, false);
-        assert_eq!(vm.flags.negative, false);
+        cpu.run();
+        assert_eq!(cpu.registers[0], 2);
+        assert_eq!(cpu.registers[1], 1);
+        assert_eq!(cpu.flags.zero, false);
+        assert_eq!(cpu.flags.negative, false);
     }
 
     #[test]
     fn test_jmp() {
-        let mut vm = VM::new();
+        let mut cpu = CPU::new();
 
-        vm.program = vec![
+        cpu.program = vec![
             // JMP #12 (i.e. LOAD 0, #2)
             Op::JMP.bytecode(), 0x00, 0x00, 0x00, 0x0C,
             // LOAD 0, #1
@@ -336,15 +336,15 @@ mod tests {
             Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
             Op::HALT.bytecode()
         ];
-        vm.run();
-        assert_eq!(vm.registers[0], 2);
+        cpu.run();
+        assert_eq!(cpu.registers[0], 2);
     }
 
     #[test]
     fn test_je_zero() {
-        let mut vm = VM::new();
+        let mut cpu = CPU::new();
 
-        vm.program = vec![
+        cpu.program = vec![
             // JE #12 (i.e. LOAD 0, #2)
             Op::JE.bytecode(), 0x00, 0x00, 0x00, 0x0C,
             // LOAD 0, #1
@@ -354,16 +354,16 @@ mod tests {
             Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
             Op::HALT.bytecode()
         ];
-        vm.flags.zero = true;
-        vm.run();
-        assert_eq!(vm.registers[0], 2);
+        cpu.flags.zero = true;
+        cpu.run();
+        assert_eq!(cpu.registers[0], 2);
     }
 
     #[test]
     fn test_je_nonzero() {
-        let mut vm = VM::new();
+        let mut cpu = CPU::new();
 
-        vm.program = vec![
+        cpu.program = vec![
             // JE #12 (i.e. LOAD 0, #2)
             Op::JE.bytecode(), 0x00, 0x00, 0x00, 0x0C,
             // LOAD 0, #1
@@ -373,16 +373,16 @@ mod tests {
             Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
             Op::HALT.bytecode()
         ];
-        vm.flags.zero = false;
-        vm.run();
-        assert_eq!(vm.registers[0], 1);
+        cpu.flags.zero = false;
+        cpu.run();
+        assert_eq!(cpu.registers[0], 1);
     }
 
     #[test]
     fn test_jne_zero() {
-        let mut vm = VM::new();
+        let mut cpu = CPU::new();
 
-        vm.program = vec![
+        cpu.program = vec![
             // JNE #12 (i.e. LOAD 0, #2)
             Op::JNE.bytecode(), 0x00, 0x00, 0x00, 0x0C,
             // LOAD 0, #1
@@ -392,16 +392,16 @@ mod tests {
             Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
             Op::HALT.bytecode()
         ];
-        vm.flags.zero = false;
-        vm.run();
-        assert_eq!(vm.registers[0], 2);
+        cpu.flags.zero = false;
+        cpu.run();
+        assert_eq!(cpu.registers[0], 2);
     }
 
     #[test]
     fn test_jne_nonzero() {
-        let mut vm = VM::new();
+        let mut cpu = CPU::new();
 
-        vm.program = vec![
+        cpu.program = vec![
             // JNE #12 (i.e. LOAD 0, #2)
             Op::JNE.bytecode(), 0x00, 0x00, 0x00, 0x0C,
             // LOAD 0, #1
@@ -411,172 +411,171 @@ mod tests {
             Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
             Op::HALT.bytecode()
         ];
-        vm.flags.zero = true;
-        vm.run();
-        assert_eq!(vm.registers[0], 1);
+        cpu.flags.zero = true;
+        cpu.run();
+        assert_eq!(cpu.registers[0], 1);
     }
 
     #[test]
     fn test_inc() {
-        let mut vm = VM::new();
+        let mut cpu = CPU::new();
 
-        vm.program = vec![
+        cpu.program = vec![
             // INC r0
             Op::INC.bytecode(), 0x00
         ];
-        vm.registers[0] = 0;
-        vm.flags.zero = true;
-        vm.flags.negative = false;
-        vm.run();
-        assert_eq!(vm.registers[0], 1);
-        assert_eq!(false, vm.flags.zero);
-        assert_eq!(false, vm.flags.negative);
+        cpu.registers[0] = 0;
+        cpu.flags.zero = true;
+        cpu.flags.negative = false;
+        cpu.run();
+        assert_eq!(cpu.registers[0], 1);
+        assert_eq!(false, cpu.flags.zero);
+        assert_eq!(false, cpu.flags.negative);
     }
 
     #[test]
     fn test_inc_zero() {
-        let mut vm = VM::new();
+        let mut cpu = CPU::new();
 
-        vm.program = vec![
+        cpu.program = vec![
             // INC r0
             Op::INC.bytecode(), 0x00
         ];
-        vm.registers[0] = -1;
-        vm.flags.zero = false;
-        vm.flags.negative = true;
-        vm.run();
-        assert_eq!(vm.registers[0], 0);
-        assert_eq!(true, vm.flags.zero);
-        assert_eq!(false, vm.flags.negative);
+        cpu.registers[0] = -1;
+        cpu.flags.zero = false;
+        cpu.flags.negative = true;
+        cpu.run();
+        assert_eq!(cpu.registers[0], 0);
+        assert_eq!(true, cpu.flags.zero);
+        assert_eq!(false, cpu.flags.negative);
     }
 
     #[test]
     fn test_inc_negative() {
-        let mut vm = VM::new();
+        let mut cpu = CPU::new();
 
-        vm.program = vec![
+        cpu.program = vec![
             // INC r0
             Op::INC.bytecode(), 0x00
         ];
-        vm.registers[0] = -2;
-        vm.flags.zero = false;
-        vm.flags.negative = true;
-        vm.run();
-        assert_eq!(vm.registers[0], -1);
-        assert_eq!(false, vm.flags.zero);
-        assert_eq!(true, vm.flags.negative);
+        cpu.registers[0] = -2;
+        cpu.flags.zero = false;
+        cpu.flags.negative = true;
+        cpu.run();
+        assert_eq!(cpu.registers[0], -1);
+        assert_eq!(false, cpu.flags.zero);
+        assert_eq!(true, cpu.flags.negative);
     }
 
     #[test]
     fn test_dec() {
-        let mut vm = VM::new();
+        let mut cpu = CPU::new();
 
-        vm.program = vec![
+        cpu.program = vec![
             // DEC r0
             Op::DEC.bytecode(), 0x00
         ];
-        vm.registers[0] = 2;
-        vm.flags.zero = false;
-        vm.flags.negative = false;
-        vm.run();
-        assert_eq!(vm.registers[0], 1);
-        assert_eq!(false, vm.flags.zero);
-        assert_eq!(false, vm.flags.negative);
+        cpu.registers[0] = 2;
+        cpu.flags.zero = false;
+        cpu.flags.negative = false;
+        cpu.run();
+        assert_eq!(cpu.registers[0], 1);
+        assert_eq!(false, cpu.flags.zero);
+        assert_eq!(false, cpu.flags.negative);
     }
 
     #[test]
     fn test_dec_zero() {
-        let mut vm = VM::new();
+        let mut cpu = CPU::new();
 
-        vm.program = vec![
+        cpu.program = vec![
             // DEC r0
             Op::DEC.bytecode(), 0x00
         ];
-        vm.registers[0] = 1;
-        vm.flags.zero = false;
-        vm.flags.negative = false;
-        vm.run();
-        assert_eq!(vm.registers[0], 0);
-        assert_eq!(true, vm.flags.zero);
-        assert_eq!(false, vm.flags.negative);
+        cpu.registers[0] = 1;
+        cpu.flags.zero = false;
+        cpu.flags.negative = false;
+        cpu.run();
+        assert_eq!(cpu.registers[0], 0);
+        assert_eq!(true, cpu.flags.zero);
+        assert_eq!(false, cpu.flags.negative);
     }
 
     #[test]
     fn test_dec_negative() {
-        let mut vm = VM::new();
+        let mut cpu = CPU::new();
 
-        vm.program = vec![
+        cpu.program = vec![
             // DEC r0
             Op::DEC.bytecode(), 0x00
         ];
-        vm.registers[0] = 0;
-        vm.flags.zero = true;
-        vm.flags.negative = false;
-        vm.run();
-        assert_eq!(vm.registers[0], -1);
-        assert_eq!(false, vm.flags.zero);
-        assert_eq!(true, vm.flags.negative);
+        cpu.registers[0] = 0;
+        cpu.flags.zero = true;
+        cpu.flags.negative = false;
+        cpu.run();
+        assert_eq!(cpu.registers[0], -1);
+        assert_eq!(false, cpu.flags.zero);
+        assert_eq!(true, cpu.flags.negative);
     }
 
     #[test]
     fn test_push() {
-        let mut vm = VM::new();
+        let mut cpu = CPU::new();
 
-        vm.sp = 4;
-        vm.registers[0] = 0x01020304;
-        vm.flags.zero = true;
-        vm.flags.negative = true;
-        vm.program = vec![
+        cpu.sp = 4;
+        cpu.registers[0] = 0x01020304;
+        cpu.flags.zero = true;
+        cpu.flags.negative = true;
+        cpu.program = vec![
             // PUSH r0
             Op::PUSH.bytecode(), 0x00
         ];
-        vm.run();
-        assert_eq!(vm.registers[0], 0x01020304, "{} != 1", vm.registers[0]);
-        assert_eq!(true, vm.flags.zero, "zero flag not set");
-        assert_eq!(true, vm.flags.negative, "negative flag not set");
-        assert_eq!(0, vm.sp, "sp {} != 0", vm.sp);
+        cpu.run();
+        assert_eq!(cpu.registers[0], 0x01020304, "{} != 1", cpu.registers[0]);
+        assert_eq!(true, cpu.flags.zero, "zero flag not set");
+        assert_eq!(true, cpu.flags.negative, "negative flag not set");
+        assert_eq!(0, cpu.sp, "sp {} != 0", cpu.sp);
 
-        assert_eq!(0x01, vm.memory[0], "mem[3]: 1 != {}", vm.memory[3]);
-        assert_eq!(0x02, vm.memory[1], "mem[2]: 2 != {}", vm.memory[2]);
-        assert_eq!(0x03, vm.memory[2], "mem[1]: 3 != {}", vm.memory[1]);
-        assert_eq!(0x04, vm.memory[3], "mem[0]: 4 != {}", vm.memory[1]);
+        assert_eq!(0x01, cpu.memory[0], "mem[3]: 1 != {}", cpu.memory[3]);
+        assert_eq!(0x02, cpu.memory[1], "mem[2]: 2 != {}", cpu.memory[2]);
+        assert_eq!(0x03, cpu.memory[2], "mem[1]: 3 != {}", cpu.memory[1]);
+        assert_eq!(0x04, cpu.memory[3], "mem[0]: 4 != {}", cpu.memory[1]);
     }
 
     #[test]
     fn test_pop() {
-        let mut vm = VM::new();
+        let mut cpu = CPU::new();
 
         // pretend we pushed something before
-        vm.memory[0] = 0x01;
-        vm.memory[1] = 0x02;
-        vm.memory[2] = 0x03;
-        vm.memory[3] = 0x04;
-        vm.sp = 0;
-        vm.flags.zero = true;
-        vm.flags.negative = true;
-        vm.program = vec![
+        cpu.memory[0] = 0x01;
+        cpu.memory[1] = 0x02;
+        cpu.memory[2] = 0x03;
+        cpu.memory[3] = 0x04;
+        cpu.sp = 0;
+        cpu.flags.zero = true;
+        cpu.flags.negative = true;
+        cpu.program = vec![
             // POP r0
             Op::POP.bytecode(), 0x00
         ];
-        vm.run();
-        assert_eq!(vm.registers[0], 0x01020304, "reg {} != {}", vm.registers[0], 0x01020304);
-        assert_eq!(false, vm.flags.zero, "zero flag not set");
-        assert_eq!(false, vm.flags.negative, "negative flag set");
-        assert_eq!(4, vm.sp, "sp {} != 4", vm.sp);
+        cpu.run();
+        assert_eq!(cpu.registers[0], 0x01020304, "reg {} != {}", cpu.registers[0], 0x01020304);
+        assert_eq!(false, cpu.flags.zero, "zero flag not set");
+        assert_eq!(false, cpu.flags.negative, "negative flag set");
+        assert_eq!(4, cpu.sp, "sp {} != 4", cpu.sp);
     }
 
     #[test]
     fn test_push_pop() {
-        let mut vm = VM::new();
+        let mut cpu = CPU::new();
 
-        let sp = vm.sp;
-        vm.registers[0] = 0x01020304;
-        vm.program = vec![
+        cpu.registers[0] = 0x01020304;
+        cpu.program = vec![
             // PUSH r0
             Op::PUSH.bytecode(), 0x00,
             Op::POP.bytecode(), 0x01,
         ];
-        vm.run();
-        assert_eq!(vm.registers[0], vm.registers[1], "{} != {}", vm.registers[0], vm.registers[1]);
+        cpu.run();
+        assert_eq!(cpu.registers[0], cpu.registers[1], "{} != {}", cpu.registers[0], cpu.registers[1]);
     }
 }

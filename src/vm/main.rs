@@ -1,8 +1,8 @@
-use vm::VM;
+use cpu::CPU;
 use std::fs::OpenOptions;
 use std::io::Read;
 
-mod vm;
+mod cpu;
 
 fn main() {
     let mut file = OpenOptions::new()
@@ -16,10 +16,10 @@ fn main() {
 
     let n = 5;
 
-    let mut vm = VM::new();
-    vm.registers[0] = n;
-    vm.program = bytes;
-    vm.run();
+    let mut cpu = CPU::new();
+    cpu.registers[0] = n;
+    cpu.program = bytes;
+    cpu.run();
 
-    println!("fibo({}): {}", vm.registers[0], vm.registers[3])
+    println!("fibo({}): {}", cpu.registers[0], cpu.registers[3])
 }
