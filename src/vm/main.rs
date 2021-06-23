@@ -1,6 +1,7 @@
-use cpu::CPU;
 use std::fs::OpenOptions;
 use std::io::Read;
+
+use cpu::CPU;
 
 mod cpu;
 mod memory_map;

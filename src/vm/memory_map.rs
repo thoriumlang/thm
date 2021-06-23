@@ -1,8 +1,9 @@
 use vmlib::{ROM_SIZE, ROM_START};
 
-/// Holds teh memory maps and allow to store / load values
+/// Holds the memory maps and allow to store / load values
 pub struct MemoryMap {
-    memory_size: usize, // a usize to make it easier to work with Vec internally
+    // a usize to make it easier to work with Vec internally
+    memory_size: usize,
     /// RAM goes from 0x00000000 to min(MAX_ADDRESS, ROM_START)
     ram: Vec<u8>,
     /// ROM goes from ROM_START to MAX_ADDRESS
@@ -62,11 +63,11 @@ impl MemoryMap {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use super::*;
     use vmlib::MAX_ADDRESS;
+
+    use super::*;
 
     #[test]
     fn test_get_unmapped() {
