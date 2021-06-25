@@ -32,13 +32,10 @@ mod tests {
         let mut cpu = CPU::new();
 
         let _ = cpu.memory.set_bytes(0, &[
-            // JA #12 (i.e. LOAD 0, #2)
             Op::JA.bytecode(), 0x00, 0x01,
-            // LOAD 0, #1
-            Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
+            Op::MOVI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
             Op::HALT.bytecode(),
-            // LOAD 0, #2
-            Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
+            Op::MOVI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
             Op::HALT.bytecode()
         ]);
         cpu.registers[0] = 0;

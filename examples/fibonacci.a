@@ -3,8 +3,8 @@
 // out: r3 contains the result
 
     PUSH r0    // save r0
-    LOAD r3, 0 // fib(0)
-    LOAD r4, 1 // fib(1)
+    MOV  r3, 0 // fib(0)
+    MOV  r4, 1 // fib(1)
 
     // if n == 0, we have the result in r3
     CMP  r0, r3

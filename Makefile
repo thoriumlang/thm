@@ -1,3 +1,5 @@
+.PHONY: all release build_dev test rom itest install_dev build_release install_release clean build_ops
+
 all: itest
 
 release: install_release
@@ -33,3 +35,6 @@ install_release: build_release
 
 clean:
 	cargo clean
+
+build_ops:
+	$(CURDIR)/generate_ops.sh $(CURDIR)/src/vm-api/op.csv > $(CURDIR)/src/vm-api/op.rs

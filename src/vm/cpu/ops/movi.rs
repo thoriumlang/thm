@@ -1,21 +1,21 @@
 use crate::cpu::{CPU, ops};
 
 impl CPU {
-    pub(in super::super) fn op_load(&mut self) -> ops::Result {
+    pub(in super::super) fn op_movi(&mut self) -> ops::Result {
         let r = match self.fetch_1byte() {
-            None => return Err("Cannot fetch r"),
+            None => return Err("Cannot fetch r0"),
             Some(byte) => byte,
         } as usize;
-        let immediate = match self.fetch_4bytes() {
-            None => return Err("Cannot fetch 4 bytes"),
-            Some(bytes) => bytes
-        } as i32;
+        let imm4 = match self.fetch_4bytes() {
+            None => return Err("Cannot fetch imm4"),
+            Some(byte) => byte,
+        } as usize;
 
-        self.registers[r] = immediate;
+        self.registers[r] = imm4 as i32;
         self.flags.zero = self.registers[r] == 0;
         self.flags.negative = self.registers[r] < 0;
 
-        // println!("LOAD r{}, {:#010x} // z={}; n={}", r, immediate, self.flags.zero, self.flags.negative);
+        // println!("MOV  r{}, {} // z={}; n={}", r, imm4, self.flags.zero, self.flags.negative);
 
         Ok(())
     }
@@ -28,26 +28,26 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_load() {
+    fn test_movi() {
         let mut cpu = CPU::new();
+        cpu.registers[1] = 1;
         let _ = cpu.memory.set_bytes(0, &[
-            // LOAD 0, #16909320
-            Op::LOAD.bytecode(), 0x00, 0x01, 0x02, 0x04, 0x08,
+            Op::MOVI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
             Op::HALT.bytecode()
         ]);
         cpu.pc = 0;
         cpu.run();
-        assert_eq!(cpu.registers[0], 16909320);
+        assert_eq!(cpu.registers[0], 1);
         assert_eq!(cpu.flags.zero, false);
         assert_eq!(cpu.flags.negative, false);
     }
 
     #[test]
-    fn test_load_zero() {
+    fn test_movi_zero() {
         let mut cpu = CPU::new();
+        cpu.registers[0] = 1;
         let _ = cpu.memory.set_bytes(0, &[
-            // LOAD 0, #0
-            Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x00,
+            Op::MOVI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x00,
             Op::HALT.bytecode()
         ]);
         cpu.pc = 0;

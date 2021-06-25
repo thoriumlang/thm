@@ -42,9 +42,9 @@ fn main() {
     let mut memory_map = MemoryMap::new(RAM_SIZE as u32, rom);
 
     // fixme this is a hack to start executing whatever comes after the stack...
-    let mut init = vec![Op::LOAD.bytecode(), 30];
+    let mut init = vec![Op::MOVI.bytecode(), 30];
     init.append(&mut ((STACK_MAX_ADDRESS + 1) as u32).to_be_bytes().to_vec());
-    init.append(&mut vec![Op::LOAD.bytecode(), 31, 0, 0, 0, 0, Op::JA.bytecode(), 30, 31]);
+    init.append(&mut vec![Op::MOVI.bytecode(), 31, 0, 0, 0, 0, Op::JA.bytecode(), 30, 31]);
     if !memory_map.set_bytes(0, init.as_slice()) { panic!("cannot set") };
     // fixme end of hack
 
@@ -63,10 +63,11 @@ fn main() {
     // memory_map.dump((STACK_MAX_ADDRESS as u32) + 1, ROM_START as u32);
 
     let mut cpu = CPU::new_custom_memory(memory_map);
-    cpu.registers[0] = 15;
+    cpu.registers[0] = 16;
     cpu.run();
 
-    println!("f({}): {}", cpu.registers[0], cpu.registers[3])
+    println!("f({}): {}", cpu.registers[0], cpu.registers[3]);
+    println!("f(16): 987");
 }
 
 fn parse_opts<'a>() -> ArgMatches<'a> {

@@ -1,14 +1,14 @@
 use crate::cpu::{CPU, ops};
 
 impl CPU {
-    pub(in super::super) fn op_jeq(&mut self) -> ops::Result {
+    pub(in super::super) fn op_jreq(&mut self) -> ops::Result {
         if self.flags.zero {
             let target = match self.fetch_4bytes() {
                 None => return Err("Cannot fetch target"),
                 Some(bytes) => bytes,
             } + self.cs;
 
-            // println!("JEQ  {:#010x}", target);
+            // println!("JREQ  {:#010x}", target);
 
             self.pc = target;
         } else {
@@ -25,17 +25,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_jeq_zero() {
+    fn test_jreq_zero() {
         let mut cpu = CPU::new();
 
         let _ = cpu.memory.set_bytes(0, &[
-            // JEQ #12 (i.e. LOAD 0, #2)
-            Op::JEQ.bytecode(), 0x00, 0x00, 0x00, 0x0C,
-            // LOAD 0, #1
-            Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
+            Op::JREQ.bytecode(), 0x00, 0x00, 0x00, 0x0C,
+            Op::MOVI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
             Op::HALT.bytecode(),
-            // LOAD 0, #2
-            Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
+            Op::MOVI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
             Op::HALT.bytecode()
         ]);
         cpu.flags.zero = true;
@@ -46,17 +43,14 @@ mod tests {
     }
 
     #[test]
-    fn test_jeq_nonzero() {
+    fn test_jreq_nonzero() {
         let mut cpu = CPU::new();
 
         let _ = cpu.memory.set_bytes(0, &[
-            // JEQ #12 (i.e. LOAD 0, #2)
-            Op::JEQ.bytecode(), 0x00, 0x00, 0x00, 0x0C,
-            // LOAD 0, #1
-            Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
+            Op::JREQ.bytecode(), 0x00, 0x00, 0x00, 0x0C,
+            Op::MOVI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
             Op::HALT.bytecode(),
-            // LOAD 0, #2
-            Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
+            Op::MOVI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
             Op::HALT.bytecode()
         ]);
         cpu.flags.zero = false;

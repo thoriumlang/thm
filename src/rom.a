@@ -9,4 +9,4 @@
 
 // this is a very dump implementation of the ROM that just jumps to 0
 
-JA r31, r31
+JA r31, r31 // jumps to r31 + r31 = 0x00000000

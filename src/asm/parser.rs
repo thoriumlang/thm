@@ -65,55 +65,34 @@ impl<'t> Parser<'t> {
         }
     }
 
-    fn decode(value: &str) -> Result<Op> {
-        match value {
-            "NOP" => Ok(Op::NOP),
-            "HALT" => Ok(Op::HALT),
-            "PANIC" => Ok(Op::PANIC),
-            "LOAD" => Ok(Op::LOAD),
-            "MOV" => Ok(Op::MOV),
-            "ADD" => Ok(Op::ADD),
-            "CMP" => Ok(Op::CMP),
-            "INC" => Ok(Op::INC),
-            "DEC" => Ok(Op::DEC),
-            "PUSH" => Ok(Op::PUSH),
-            "POP" => Ok(Op::POP),
-            "JA" => Ok(Op::JA),
-            "JEQ" => Ok(Op::JEQ),
-            "JNE" => Ok(Op::JNE),
-            "J" => Ok(Op::J),
-            _ => Err(format!("Invalid op: {}", value).to_string()),
-        }
-    }
-
-    fn parse_instruction(&mut self, op: Op, position: Position) -> Result<Instruction> {
+    fn parse_instruction(&mut self, op: &str, position: Position) -> Result<Instruction> {
         return match op {
-            Op::NOP => {
-                let ret = Ok(Instruction::I(op));
+            "NOP" => {
+                let ret = Ok(Instruction::I(Op::NOP));
                 match self.read_eol() {
                     false => return Err(format!("Expected <eol> at {}", position).to_string()),
                     true => (),
                 }
                 ret
             }
-            Op::HALT => {
-                let ret = Ok(Instruction::I(op));
+            "HALT" => {
+                let ret = Ok(Instruction::I(Op::HALT));
                 match self.read_eol() {
                     false => return Err(format!("Expected <eol> at {}", position).to_string()),
                     true => (),
                 }
                 ret
             }
-            Op::PANIC => {
+            "PANIC" => {
                 match self.read_eol() {
                     false => return Err(format!("Expected <eol> at {}", position).to_string()),
                     true => (),
                 }
-                let ret = Ok(Instruction::I(op));
+                let ret = Ok(Instruction::I(Op::PANIC));
                 ret
             }
-            Op::LOAD => {
-                let reg = match self.read_register() {
+            "MOV" => {
+                let r1 = match self.read_register() {
                     None => return Err(format!("Expected <register> at {}", position).to_string()),
                     Some(t) => t,
                 };
@@ -121,90 +100,13 @@ impl<'t> Parser<'t> {
                     false => return Err(format!("Expected , at {}", position).to_string()),
                     true => (),
                 }
-                let value = match self.read_integer() {
-                    None => return Err(format!("Expected <integer> at {}", position).to_string()),
-                    Some(t) => t
-                };
-                match self.read_eol() {
-                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
-                    true => (),
-                }
-
-                let ret = Ok(Instruction::IRI(op, reg, value));
-                ret
-            }
-            Op::MOV => {
-                let reg1 = match self.read_register() {
-                    None => return Err(format!("Expected <register> at {}", position).to_string()),
-                    Some(t) => t,
-                };
-                match self.read_comma() {
-                    false => return Err(format!("Expected , at {}", position).to_string()),
-                    true => (),
-                }
-                let reg2 = match self.read_register() {
-                    None => return Err(format!("Expected <register> at {}", position).to_string()),
-                    Some(t) => t
-                };
-                match self.read_eol() {
-                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
-                    true => (),
-                }
-                let ret = Ok(Instruction::IRR(op, reg1, reg2));
-                ret
-            }
-            Op::ADD => {
-                let reg1 = match self.read_register() {
-                    None => return Err(format!("Expected <register> at {}", position).to_string()),
-                    Some(t) => t,
-                };
-                match self.read_comma() {
-                    false => return Err(format!("Expected , at {}", position).to_string()),
-                    true => (),
-                }
-                let reg2 = match self.read_register() {
-                    None => return Err(format!("Expected <register> at {}", position).to_string()),
-                    Some(t) => t
-                };
-                match self.read_eol() {
-                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
-                    true => (),
-                }
-                let ret = Ok(Instruction::IRR(op, reg1, reg2));
-                ret
-            }
-            Op::CMP => {
-                let reg1 = match self.read_register() {
-                    None => return Err(format!("Expected <register> at {}", position).to_string()),
-                    Some(t) => t,
-                };
-                match self.read_comma() {
-                    false => return Err(format!("Expected , at {}", position).to_string()),
-                    true => (),
-                }
-                let reg2 = match self.read_register() {
-                    None => return Err(format!("Expected <register> at {}", position).to_string()),
-                    Some(t) => t
-                };
-                match self.read_eol() {
-                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
-                    true => (),
-                }
-                let ret = Ok(Instruction::IRR(op, reg1, reg2));
-                ret
-            }
-            Op::J => {
                 let instruction = match self.read_next() {
                     Some(t) => match t {
-                        Token::Address(_, addr) => Ok(Instruction::IA(op, addr)),
-                        Token::Integer(_, imm) => Ok(Instruction::II(op, imm)),
-                        _ => Err(format!("Expected <imm> or <addr> at {}", position).to_string())
+                        Token::Register(_, r2) => Instruction::IRR(Op::MOV, r1, r2),
+                        Token::Integer(_, imm4) => Instruction::IRI(Op::MOVI, r1, imm4),
+                        _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
                     }
-                    _ => Err(format!("Expected <imm> or <addr> at {}", position).to_string())
-                };
-                let instruction = match instruction {
-                    Ok(i) => i,
-                    Err(s) => return Err(s),
+                    _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
                 };
                 match self.read_eol() {
                     false => return Err(format!("Expected <eol> at {}", position).to_string()),
@@ -212,31 +114,7 @@ impl<'t> Parser<'t> {
                 }
                 Ok(instruction)
             }
-            Op::JEQ => {
-                let address = match self.read_address() {
-                    None => return Err(format!("Expected <addr> at {}", position).to_string()),
-                    Some(t) => t,
-                };
-                match self.read_eol() {
-                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
-                    true => (),
-                }
-                let ret = Ok(Instruction::IA(op, address));
-                ret
-            }
-            Op::JNE => {
-                let address = match self.read_address() {
-                    None => return Err(format!("Expected <addr> at {}", position).to_string()),
-                    Some(t) => t,
-                };
-                match self.read_eol() {
-                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
-                    true => (),
-                }
-                let ret = Ok(Instruction::IA(op, address));
-                ret
-            }
-            Op::JA => {
+            "ADD" => {
                 let reg1 = match self.read_register() {
                     None => return Err(format!("Expected <register> at {}", position).to_string()),
                     Some(t) => t,
@@ -253,10 +131,89 @@ impl<'t> Parser<'t> {
                     false => return Err(format!("Expected <eol> at {}", position).to_string()),
                     true => (),
                 }
-                let ret = Ok(Instruction::IRR(op, reg1, reg2));
+                let ret = Ok(Instruction::IRR(Op::ADD, reg1, reg2));
                 ret
             }
-            Op::INC => {
+            "CMP" => {
+                let reg1 = match self.read_register() {
+                    None => return Err(format!("Expected <register> at {}", position).to_string()),
+                    Some(t) => t,
+                };
+                match self.read_comma() {
+                    false => return Err(format!("Expected , at {}", position).to_string()),
+                    true => (),
+                }
+                let reg2 = match self.read_register() {
+                    None => return Err(format!("Expected <register> at {}", position).to_string()),
+                    Some(t) => t
+                };
+                match self.read_eol() {
+                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
+                    true => (),
+                }
+                let ret = Ok(Instruction::IRR(Op::CMP, reg1, reg2));
+                ret
+            }
+            "J" => {
+                let instruction = match self.read_next() {
+                    Some(t) => match t {
+                        Token::Address(_, addr) => Instruction::IA(Op::JR, addr),
+                        Token::Integer(_, imm4) => Instruction::II(Op::JR, imm4),
+                        _ => return Err(format!("Expected <imm> or <addr> at {}", position).to_string())
+                    }
+                    _ => return Err(format!("Expected <imm> or <addr> at {}", position).to_string())
+                };
+                match self.read_eol() {
+                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
+                    true => (),
+                }
+                Ok(instruction)
+            }
+            "JEQ" => {
+                let address = match self.read_address() {
+                    None => return Err(format!("Expected <addr> at {}", position).to_string()),
+                    Some(t) => t,
+                };
+                match self.read_eol() {
+                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
+                    true => (),
+                }
+                let ret = Ok(Instruction::IA(Op::JREQ, address));
+                ret
+            }
+            "JNE" => {
+                let address = match self.read_address() {
+                    None => return Err(format!("Expected <addr> at {}", position).to_string()),
+                    Some(t) => t,
+                };
+                match self.read_eol() {
+                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
+                    true => (),
+                }
+                let ret = Ok(Instruction::IA(Op::JRNE, address));
+                ret
+            }
+            "JA" => {
+                let reg1 = match self.read_register() {
+                    None => return Err(format!("Expected <register> at {}", position).to_string()),
+                    Some(t) => t,
+                };
+                match self.read_comma() {
+                    false => return Err(format!("Expected , at {}", position).to_string()),
+                    true => (),
+                }
+                let reg2 = match self.read_register() {
+                    None => return Err(format!("Expected <register> at {}", position).to_string()),
+                    Some(t) => t
+                };
+                match self.read_eol() {
+                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
+                    true => (),
+                }
+                let ret = Ok(Instruction::IRR(Op::JA, reg1, reg2));
+                ret
+            }
+            "INC" => {
                 let reg = match self.read_register() {
                     None => return Err(format!("Expected <register> at {}", position).to_string()),
                     Some(t) => t,
@@ -265,10 +222,10 @@ impl<'t> Parser<'t> {
                     false => return Err(format!("Expected <eol> at {}", position).to_string()),
                     true => (),
                 }
-                let ret = Ok(Instruction::IR(op, reg));
+                let ret = Ok(Instruction::IR(Op::INC, reg));
                 ret
             }
-            Op::DEC => {
+            "DEC" => {
                 let reg = match self.read_register() {
                     None => return Err(format!("Expected <register> at {}", position).to_string()),
                     Some(t) => t,
@@ -277,10 +234,10 @@ impl<'t> Parser<'t> {
                     false => return Err(format!("Expected <eol> at {}", position).to_string()),
                     true => (),
                 }
-                let ret = Ok(Instruction::IR(op, reg));
+                let ret = Ok(Instruction::IR(Op::DEC, reg));
                 ret
             }
-            Op::PUSH => {
+            "PUSH" => {
                 let reg = match self.read_register() {
                     None => return Err(format!("Expected <register> at {}", position).to_string()),
                     Some(t) => t,
@@ -289,10 +246,10 @@ impl<'t> Parser<'t> {
                     false => return Err(format!("Expected <eol> at {}", position).to_string()),
                     true => (),
                 }
-                let ret = Ok(Instruction::IR(op, reg));
+                let ret = Ok(Instruction::IR(Op::PUSH, reg));
                 ret
             }
-            Op::POP => {
+            "POP" => {
                 let reg = match self.read_register() {
                     None => return Err(format!("Expected <register> at {}", position).to_string()),
                     Some(t) => t,
@@ -301,9 +258,10 @@ impl<'t> Parser<'t> {
                     false => return Err(format!("Expected <eol> at {}", position).to_string()),
                     true => (),
                 }
-                let ret = Ok(Instruction::IR(op, reg));
+                let ret = Ok(Instruction::IR(Op::POP, reg));
                 ret
             }
+            op => Err(format!("Invalid mnemonic '{}' at {}", op, position).to_string())
         };
     }
 
@@ -379,10 +337,7 @@ impl<'t> Iterator for Parser<'t> {
                                 Token::Address(position, _) => Some(Err(format!("Expected section, label or op at {}", position).to_string())),
                                 Token::Register(position, _) => Some(Err(format!("Expected section, label or op at {}", position).to_string())),
                                 Token::Op(position, op) => {
-                                    match Self::decode(op.as_str()) {
-                                        Ok(op) => Some(self.parse_instruction(op, position).map(|i| Node::Instruction(i))),
-                                        Err(e) => Some(Err(e)),
-                                    }
+                                    Some(self.parse_instruction(op.as_str(), position).map(|i| Node::Instruction(i)))
                                 }
                                 Token::Integer(position, _) => Some(Err(format!("Expected section, label or op at {}", position).to_string())),
                                 Token::Section(_, _) => None,
@@ -451,21 +406,7 @@ mod tests {
     }
 
     #[test]
-    fn test_load() {
-        let mut lexer = Lexer::from_text("LOAD r1, x10\n", VM_CONFIG);
-        let r = Parser::from_lexer(&mut lexer).next();
-        assert_eq!(true, r.is_some());
-
-        let item = r.unwrap();
-        assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
-
-        let expected = Node::Instruction(Instruction::IRI(Op::LOAD, 1, 16));
-        let actual = item.unwrap();
-        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
-    }
-
-    #[test]
-    fn test_mov() {
+    fn test_mov_r_r() {
         let mut lexer = Lexer::from_text("MOV r1, r0\n", VM_CONFIG);
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
@@ -474,6 +415,20 @@ mod tests {
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
         let expected = Node::Instruction(Instruction::IRR(Op::MOV, 1, 0));
+        let actual = item.unwrap();
+        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+    }
+
+    #[test]
+    fn test_mov_r_imm4() {
+        let mut lexer = Lexer::from_text("MOV r1, 42\n", VM_CONFIG);
+        let r = Parser::from_lexer(&mut lexer).next();
+        assert_eq!(true, r.is_some());
+
+        let item = r.unwrap();
+        assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
+
+        let expected = Node::Instruction(Instruction::IRI(Op::MOVI, 1, 42));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -515,7 +470,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IA(Op::J, "address".to_string()));
+        let expected = Node::Instruction(Instruction::IA(Op::JR, "address".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -529,7 +484,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IA(Op::JEQ, "address".to_string()));
+        let expected = Node::Instruction(Instruction::IA(Op::JREQ, "address".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -543,7 +498,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IA(Op::JNE, "address".to_string()));
+        let expected = Node::Instruction(Instruction::IA(Op::JRNE, "address".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -634,13 +589,13 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let mut lexer = Lexer::from_text("//test\n  :label\nLOAD r1, 0\n", VM_CONFIG);
+        let mut lexer = Lexer::from_text("//test\n  :label\nMOV r1, 0\n", VM_CONFIG);
         let r = Parser::from_lexer(&mut lexer).parse();
         assert_eq!(true, r.is_ok());
 
         let expected = vec![
             Node::Label("label".to_string()),
-            Node::Instruction(Instruction::IRI(Op::LOAD, 1, 0))
+            Node::Instruction(Instruction::IRI(Op::MOVI, 1, 0))
         ];
         let actual = r.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
