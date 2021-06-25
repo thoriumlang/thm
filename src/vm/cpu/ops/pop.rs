@@ -1,18 +1,31 @@
-use crate::cpu::CPU;
+use crate::cpu::{CPU, ops};
 
 impl CPU {
-    pub(in super::super) fn op_pop(&mut self) {
+    pub(in super::super) fn op_pop(&mut self) -> ops::Result {
         // we map sp = 78, sp-1 = 56, sp-2 = 34 sp-3 = 12 like to:
         // r = 0x12345678
-        let r = self.fetch_1byte() as usize;
-        let mut bytes: [u8; 4] = [0; 4];
+        let r = match self.fetch_1byte() {
+            None => return Err("Cannot fetch r"),
+            Some(byte) => byte
+        } as usize;
+
+        let mut bytes: u32 = 0;
         for i in 0..4 {
-            bytes[i] = self.memory.get(self.sp).unwrap(); // FIXME panic
-            self.sp += 1;
+            bytes = bytes << 8;
+            match self.memory.get(self.sp + i) {
+                None => return Err("Cannot fetch 4 bytes"),
+                Some(byte) => bytes |= byte as u32,
+            }
+            // println!("tmp {}: {:#010x}", i, bytes);
         }
-        self.registers[r] = i32::from_be_bytes(bytes);
+        self.sp += 4;
+        self.registers[r] = bytes as i32;
         self.flags.zero = self.registers[r] == 0;
         self.flags.negative = self.registers[r] < 0;
+
+        // println!("POP  r{} // z={}; n={}", r, self.flags.zero, self.flags.negative);
+
+        Ok(())
     }
 }
 
@@ -27,18 +40,19 @@ mod tests {
         let mut cpu = CPU::new();
 
         // pretend we pushed something before
-        cpu.memory.set(0, 0x01);
-        cpu.memory.set(1, 0x02);
-        cpu.memory.set(2, 0x03);
-        cpu.memory.set(3, 0x04);
+        let _ = cpu.memory.set(0, 0x01);
+        let _ = cpu.memory.set(1, 0x02);
+        let _ = cpu.memory.set(2, 0x03);
+        let _ = cpu.memory.set(3, 0x04);
         cpu.sp = 0;
         cpu.flags.zero = true;
         cpu.flags.negative = true;
-        cpu.program = vec![
+        let _ = cpu.memory.set_bytes(4, &[
             // POP r0
             Op::POP.bytecode(), 0x00,
             Op::HALT.bytecode()
-        ];
+        ]);
+        cpu.pc = 4;
         cpu.run();
         assert_eq!(cpu.registers[0], 0x01020304, "reg {} != {}", cpu.registers[0], 0x01020304);
         assert_eq!(false, cpu.flags.zero, "zero flag not set");

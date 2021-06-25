@@ -1,11 +1,21 @@
-use crate::cpu::CPU;
+use crate::cpu::{CPU, ops};
 
 impl CPU {
-    pub(in super::super) fn op_cmp(&mut self) {
-        let r0 = self.fetch_1byte() as usize;
-        let r1 = self.fetch_1byte() as usize;
+    pub(in super::super) fn op_cmp(&mut self) -> ops::Result {
+        let r0 = match self.fetch_1byte() {
+            None => return Err("Cannot fetch r0"),
+            Some(byte) => byte,
+        } as usize;
+        let r1 = match self.fetch_1byte() {
+            None => return Err("Cannot fetch r1"),
+            Some(byte) => byte,
+        } as usize;
         self.flags.zero = self.registers[r0] == self.registers[r1];
         self.flags.negative = self.registers[r0] < self.registers[r1];
+
+        // println!("CMP  r{}, r{} // z={}; n={}", r0, r1, self.flags.zero, self.flags.negative);
+
+        Ok(())
     }
 }
 
@@ -19,12 +29,13 @@ mod tests {
     fn test_cmp_eq() {
         let mut cpu = CPU::new();
 
-        cpu.registers[0] = 1;
-        cpu.registers[1] = 1;
-        cpu.program = vec![
+        let _ = cpu.memory.set_bytes(0, &[
             Op::CMP.bytecode(), 0x00, 0x01,
             Op::HALT.bytecode()
-        ];
+        ]);
+        cpu.registers[0] = 1;
+        cpu.registers[1] = 1;
+        cpu.pc = 0;
         cpu.run();
         assert_eq!(cpu.registers[0], 1);
         assert_eq!(cpu.registers[1], 1);
@@ -36,12 +47,13 @@ mod tests {
     fn test_cmp_lt() {
         let mut cpu = CPU::new();
 
-        cpu.registers[0] = 1;
-        cpu.registers[1] = 2;
-        cpu.program = vec![
+        let _ = cpu.memory.set_bytes(0, &[
             Op::CMP.bytecode(), 0x00, 0x01,
             Op::HALT.bytecode()
-        ];
+        ]);
+        cpu.registers[0] = 1;
+        cpu.registers[1] = 2;
+        cpu.pc = 0;
         cpu.run();
         assert_eq!(cpu.registers[0], 1);
         assert_eq!(cpu.registers[1], 2);
@@ -53,12 +65,13 @@ mod tests {
     fn test_cmp_gt() {
         let mut cpu = CPU::new();
 
-        cpu.registers[0] = 2;
-        cpu.registers[1] = 1;
-        cpu.program = vec![
+        let _ = cpu.memory.set_bytes(0, &[
             Op::CMP.bytecode(), 0x00, 0x01,
             Op::HALT.bytecode()
-        ];
+        ]);
+        cpu.registers[0] = 2;
+        cpu.registers[1] = 1;
+        cpu.pc = 0;
         cpu.run();
         assert_eq!(cpu.registers[0], 2);
         assert_eq!(cpu.registers[1], 1);

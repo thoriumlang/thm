@@ -1,69 +1,23 @@
 use std::convert::TryFrom;
 
+/// See https://github.com/thoriumlang/thm/wiki/Instructions
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Op {
-    /// The no-op code
     NOP,
-
-    /// Halts the machine
     HALT,
-
-    /// Illegal instruction, halts the machine with an error
     PANIC,
-
-    /// Load immediate integer value to register
-    /// LOAD r, i32
-    LOAD, // we may load integers from a direct address or from an address contained in a reg.
-
-    /// Copies second's register value to first register
-    /// Updates zero and negative flags according to the result
-    /// MOV r0, r1
+    LOAD,
     MOV,
-
-    /// Adds register values and stores result in r0
-    /// Updates zero and negative flags according to the result
-    /// ADD r0, r1
     ADD,
-
-    // SUB,
-    // DIV,
-    // MUL,
-
-    /// Compares register values and updates zero and negative flags accordingly.
-    ///  - r0=r1 -> zero = true;  negative = false
-    ///  - r0>r1 -> zero = false; negative = false
-    ///  - r0<r1 -> zero = false; negative = true
-    /// CMP r0, r1
     CMP,
-
-    /// Jumps to address
-    /// JMP address
-    JMP, // we may jump to an address stored in a register
-
-    /// Jumps to address is zero flag is set
-    JE,
-
-    /// Jumps to address is zero flag is not set
-    JNE,
-
-    // JLT,
-    // JGT,
-    // JLE,
-    // JGE,
-
-    /// Increments register value
     INC,
-
-    /// Decrements register value
     DEC,
-
-    /// Pushes register content to the stack
     PUSH,
-    /// Pops the top of the stack an put it in register
     POP,
-
-    // CALL
-    // RET
+    JA,
+    JEQ,
+    JNE,
+    J,
 }
 
 impl Op {
@@ -76,13 +30,14 @@ impl Op {
             Op::MOV => 3,
             Op::ADD => 3,
             Op::CMP => 3,
-            Op::JMP => 5,
-            Op::JE => 5,
-            Op::JNE => 5,
             Op::INC => 2,
             Op::DEC => 2,
             Op::PUSH => 2,
             Op::POP => 2,
+            Op::JA => 5,
+            Op::JEQ => 5,
+            Op::JNE => 5,
+            Op::J => 5,
         };
     }
 
@@ -101,13 +56,14 @@ impl From<u8> for Op {
             4 => Self::MOV,
             5 => Self::ADD,
             6 => Self::CMP,
-            7 => Self::JMP,
-            8 => Self::JE,
-            9 => Self::JNE,
-            10 => Self::INC,
-            11 => Self::DEC,
-            12 => Self::PUSH,
-            13 => Self::POP,
+            7 => Self::INC,
+            8 => Self::DEC,
+            9 => Self::PUSH,
+            10 => Self::POP,
+            11 => Self::JA,
+            12 => Self::JEQ,
+            13 => Self::JNE,
+            14 => Self::J,
             _ => Self::PANIC,
         }
     }
@@ -125,13 +81,14 @@ impl TryFrom<&str> for Op {
             "MOV" => Ok(Self::MOV),
             "ADD" => Ok(Self::ADD),
             "CMP" => Ok(Self::CMP),
-            "JMP" => Ok(Self::JMP),
-            "JE" => Ok(Self::JE),
-            "JNE" => Ok(Self::JNE),
             "INC" => Ok(Self::INC),
             "DEC" => Ok(Self::DEC),
             "PUSH" => Ok(Self::PUSH),
             "POP" => Ok(Self::POP),
+            "JA" => Ok(Self::JA),
+            "JEQ" => Ok(Self::JEQ),
+            "JNE" => Ok(Self::JNE),
+            "J" => Ok(Self::J),
             _ => Err(format!("Invalid op: {}", value).to_string()),
         }
     }
@@ -184,24 +141,6 @@ mod tests {
     }
 
     #[test]
-    fn test_jmp() {
-        assert_eq!(Op::JMP, Op::from(Op::JMP.bytecode()));
-        assert_eq!(Op::JMP, Op::try_from("JMP").unwrap());
-    }
-
-    #[test]
-    fn test_je() {
-        assert_eq!(Op::JE, Op::from(Op::JE.bytecode()));
-        assert_eq!(Op::JE, Op::try_from("JE").unwrap());
-    }
-
-    #[test]
-    fn test_jne() {
-        assert_eq!(Op::JNE, Op::from(Op::JNE.bytecode()));
-        assert_eq!(Op::JNE, Op::try_from("JNE").unwrap());
-    }
-
-    #[test]
     fn test_inc() {
         assert_eq!(Op::INC, Op::from(Op::INC.bytecode()));
         assert_eq!(Op::INC, Op::try_from("INC").unwrap());
@@ -223,5 +162,29 @@ mod tests {
     fn test_pop() {
         assert_eq!(Op::POP, Op::from(Op::POP.bytecode()));
         assert_eq!(Op::POP, Op::try_from("POP").unwrap());
+    }
+
+    #[test]
+    fn test_ja() {
+        assert_eq!(Op::JA, Op::from(Op::JA.bytecode()));
+        assert_eq!(Op::JA, Op::try_from("JA").unwrap());
+    }
+
+    #[test]
+    fn test_jeq() {
+        assert_eq!(Op::JEQ, Op::from(Op::JEQ.bytecode()));
+        assert_eq!(Op::JEQ, Op::try_from("JEQ").unwrap());
+    }
+
+    #[test]
+    fn test_jne() {
+        assert_eq!(Op::JNE, Op::from(Op::JNE.bytecode()));
+        assert_eq!(Op::JNE, Op::try_from("JNE").unwrap());
+    }
+
+    #[test]
+    fn test_j() {
+        assert_eq!(Op::J, Op::from(Op::J.bytecode()));
+        assert_eq!(Op::J, Op::try_from("J").unwrap());
     }
 }

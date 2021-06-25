@@ -22,6 +22,11 @@ impl<'t> Emitter<'t> {
             match node {
                 Node::Instruction(instruction) => match instruction {
                     Instruction::I(op) => bytes.push(op.bytecode()),
+                    Instruction::II(op, imm4) => {
+                        bytes.push(op.bytecode());
+                        let b = imm4.to_be_bytes();
+                        bytes.extend_from_slice(&b);
+                    },
                     Instruction::IRI(op, r, value) => {
                         bytes.append(vec![op.bytecode(), *r].as_mut());
                         let b = value.to_be_bytes();
@@ -59,7 +64,7 @@ mod tests {
     #[test]
     fn emit() {
         let nodes = vec![
-            Node::Instruction(Instruction::IA(Op::JE, "label2".to_string())),
+            Node::Instruction(Instruction::IA(Op::JEQ, "label2".to_string())),
             Node::Label("label2".to_string()),
         ];
         let addresses = AddressResolver::new(&nodes).resolve().unwrap();

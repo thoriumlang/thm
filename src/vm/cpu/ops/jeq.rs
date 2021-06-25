@@ -1,12 +1,20 @@
-use crate::cpu::CPU;
+use crate::cpu::{CPU, ops};
 
 impl CPU {
-    pub(in super::super) fn op_je(&mut self) {
+    pub(in super::super) fn op_jeq(&mut self) -> ops::Result {
         if self.flags.zero {
-            self.pc = self.fetch_4bytes() as usize;
+            let target = match self.fetch_4bytes() {
+                None => return Err("Cannot fetch target"),
+                Some(bytes) => bytes,
+            } + self.cs;
+
+            // println!("JEQ  {:#010x}", target);
+
+            self.pc = target;
         } else {
             self.skip_4bytes();
         }
+        Ok(())
     }
 }
 
@@ -17,39 +25,43 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_je_zero() {
+    fn test_jeq_zero() {
         let mut cpu = CPU::new();
 
-        cpu.program = vec![
-            // JE #12 (i.e. LOAD 0, #2)
-            Op::JE.bytecode(), 0x00, 0x00, 0x00, 0x0C,
+        let _ = cpu.memory.set_bytes(0, &[
+            // JEQ #12 (i.e. LOAD 0, #2)
+            Op::JEQ.bytecode(), 0x00, 0x00, 0x00, 0x0C,
             // LOAD 0, #1
             Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
             Op::HALT.bytecode(),
             // LOAD 0, #2
             Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
             Op::HALT.bytecode()
-        ];
+        ]);
         cpu.flags.zero = true;
+        cpu.cs = 0;
+        cpu.pc = 0;
         cpu.run();
         assert_eq!(cpu.registers[0], 2);
     }
 
     #[test]
-    fn test_je_nonzero() {
+    fn test_jeq_nonzero() {
         let mut cpu = CPU::new();
 
-        cpu.program = vec![
-            // JE #12 (i.e. LOAD 0, #2)
-            Op::JE.bytecode(), 0x00, 0x00, 0x00, 0x0C,
+        let _ = cpu.memory.set_bytes(0, &[
+            // JEQ #12 (i.e. LOAD 0, #2)
+            Op::JEQ.bytecode(), 0x00, 0x00, 0x00, 0x0C,
             // LOAD 0, #1
             Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
             Op::HALT.bytecode(),
             // LOAD 0, #2
             Op::LOAD.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
             Op::HALT.bytecode()
-        ];
+        ]);
         cpu.flags.zero = false;
+        cpu.cs = 0;
+        cpu.pc = 0;
         cpu.run();
         assert_eq!(cpu.registers[0], 1);
     }

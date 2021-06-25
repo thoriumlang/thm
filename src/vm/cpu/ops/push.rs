@@ -1,14 +1,25 @@
-use crate::cpu::CPU;
+use crate::cpu::{CPU, ops};
 
 impl CPU {
-    pub(in super::super) fn op_push(&mut self) {
+    pub(in super::super) fn op_push(&mut self) -> ops::Result {
         // we map r = 0x12345678 like to:
         // sp = 78, sp-1 = 56, sp-2 = 34 sp-3 = 12
-        let r = self.fetch_1byte() as usize;
+
+        let r = match self.fetch_1byte() {
+            None => return Err("Cannot fetch r"),
+            Some(byte) => byte
+        } as usize;
+
+        // println!("PUSH r{}", r);
+
         for byte in self.registers[r].to_le_bytes().iter() {
             self.sp -= 1;
-            self.memory.set(self.sp, *byte);
+            if !self.memory.set(self.sp, *byte) {
+                return Err("Cannot set");
+            }
         }
+
+        Ok(())
     }
 }
 
@@ -26,11 +37,12 @@ mod tests {
         cpu.registers[0] = 0x01020304;
         cpu.flags.zero = true;
         cpu.flags.negative = true;
-        cpu.program = vec![
+        let _ = cpu.memory.set_bytes(5, &[
             // PUSH r0
             Op::PUSH.bytecode(), 0x00,
             Op::HALT.bytecode()
-        ];
+        ]);
+        cpu.pc = 5;
         cpu.run();
         assert_eq!(cpu.registers[0], 0x01020304, "{} != 1", cpu.registers[0]);
         assert_eq!(true, cpu.flags.zero, "zero flag not set");

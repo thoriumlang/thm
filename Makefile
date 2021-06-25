@@ -1,16 +1,19 @@
-all: test build_dev install_dev
+all: itest
 
-release: test build_release install_release
+release: install_release
+
+build_dev:
+	cargo build
 
 test:
 	cargo test
 
-itest: test
-	cargo run --bin tha
-	cargo run --bin thm
+rom: test build_dev
+	target/debug/tha src/rom.a target/rom.bin
 
-build_dev:
-	cargo build
+itest: rom
+	cargo run --bin tha examples/fibonacci.a target/fibonacci.bin
+	cargo run --bin thm target/rom.bin target/fibonacci.bin
 
 install_dev: build_dev
 	sudo mv target/debug/thm /usr/local/bin/thm
@@ -18,7 +21,7 @@ install_dev: build_dev
 	sudo mv target/debug/tha /usr/local/bin/tha
 	sudo chmod ugo+x /usr/local/bin/tha
 
-build_release:
+build_release: itest
 	cargo build --release
 	strip target/release/thm
 

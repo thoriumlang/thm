@@ -1,7 +1,8 @@
-use crate::cpu::CPU;
+use crate::cpu::{CPU, ops};
 
 impl CPU {
-    pub fn op_panic(&self) {
-        panic!("Panic at {}", self.pc);
+    pub(in super::super) fn op_panic(&mut self, message: &str) -> ops::Result {
+        let _ = self.op_halt();
+        panic!("Panic at {:#010x}: {}", self.pc, message);
     }
 }

@@ -19,6 +19,7 @@ pub struct Label {
 #[derive(Debug, PartialEq)]
 pub enum Instruction {
     I(Op),
+    II(Op, u32),
     IRI(Op, u8, u32),
     IR(Op, u8),
     IRR(Op, u8, u8),
@@ -29,6 +30,7 @@ impl Instruction {
     pub fn op(&self) -> Op {
         return match self {
             &Instruction::I(op) => op,
+            &Instruction::II(op, _) => op,
             &Instruction::IRI(op, _, _) => op,
             &Instruction::IR(op, _) => op,
             &Instruction::IRR(op, _, _) => op,
@@ -170,21 +172,28 @@ impl<'t> Parser<'t> {
                 let ret = Ok(Instruction::IRR(op, reg1, reg2));
                 ret
             }
-            Op::JMP => {
-                let address = match self.read_address() {
-                    None => return Err(format!("Expected <address> at {}", position).to_string()),
-                    Some(t) => t,
+            Op::J => {
+                let instruction = match self.read_next() {
+                    Some(t) => match t {
+                        Token::Address(_, addr) => Ok(Instruction::IA(op, addr)),
+                        Token::Integer(_, imm) => Ok(Instruction::II(op, imm)),
+                        _ => Err(format!("Expected <imm> or <addr> at {}", position).to_string())
+                    }
+                    _ => Err(format!("Expected <imm> or <addr> at {}", position).to_string())
+                };
+                let instruction = match instruction {
+                    Ok(i) => i,
+                    Err(s) => return Err(s),
                 };
                 match self.read_eol() {
                     false => return Err(format!("Expected <eol> at {}", position).to_string()),
                     true => (),
                 }
-                let ret = Ok(Instruction::IA(op, address));
-                ret
+                Ok(instruction)
             }
-            Op::JE => {
+            Op::JEQ => {
                 let address = match self.read_address() {
-                    None => return Err(format!("Expected <address> at {}", position).to_string()),
+                    None => return Err(format!("Expected <addr> at {}", position).to_string()),
                     Some(t) => t,
                 };
                 match self.read_eol() {
@@ -196,7 +205,7 @@ impl<'t> Parser<'t> {
             }
             Op::JNE => {
                 let address = match self.read_address() {
-                    None => return Err(format!("Expected <address> at {}", position).to_string()),
+                    None => return Err(format!("Expected <addr> at {}", position).to_string()),
                     Some(t) => t,
                 };
                 match self.read_eol() {
@@ -204,6 +213,26 @@ impl<'t> Parser<'t> {
                     true => (),
                 }
                 let ret = Ok(Instruction::IA(op, address));
+                ret
+            }
+            Op::JA => {
+                let reg1 = match self.read_register() {
+                    None => return Err(format!("Expected <register> at {}", position).to_string()),
+                    Some(t) => t,
+                };
+                match self.read_comma() {
+                    false => return Err(format!("Expected , at {}", position).to_string()),
+                    true => (),
+                }
+                let reg2 = match self.read_register() {
+                    None => return Err(format!("Expected <register> at {}", position).to_string()),
+                    Some(t) => t
+                };
+                match self.read_eol() {
+                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
+                    true => (),
+                }
+                let ret = Ok(Instruction::IRR(op, reg1, reg2));
                 ret
             }
             Op::INC => {
@@ -265,10 +294,17 @@ impl<'t> Parser<'t> {
     }
 
     fn read_eol(&mut self) -> bool {
-        return match self.lexer.next() {
-            Some(Ok(Token::Eol(_))) => true,
-            _ => false,
-        };
+        match self.read_next() {
+            Some(Token::Eol(_)) => true,
+            _ => false
+        }
+    }
+
+    fn read_next(&mut self) -> Option<Token> {
+        match self.lexer.next() {
+            Some(Ok(t)) => Some(t),
+            _ => None
+        }
     }
 
     fn read_register(&mut self) -> Option<u8> {
@@ -450,29 +486,29 @@ mod tests {
     }
 
     #[test]
-    fn test_jmp() {
-        let mut lexer = Lexer::from_text("JMP @address\n", VM_CONFIG);
+    fn test_j() {
+        let mut lexer = Lexer::from_text("J @address\n", VM_CONFIG);
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IA(Op::JMP, "address".to_string()));
+        let expected = Node::Instruction(Instruction::IA(Op::J, "address".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
 
     #[test]
-    fn test_je() {
-        let mut lexer = Lexer::from_text("JE @address\n", VM_CONFIG);
+    fn test_jeq() {
+        let mut lexer = Lexer::from_text("JEQ @address\n", VM_CONFIG);
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IA(Op::JE, "address".to_string()));
+        let expected = Node::Instruction(Instruction::IA(Op::JEQ, "address".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -487,6 +523,20 @@ mod tests {
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
         let expected = Node::Instruction(Instruction::IA(Op::JNE, "address".to_string()));
+        let actual = item.unwrap();
+        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+    }
+
+    #[test]
+    fn test_ja() {
+        let mut lexer = Lexer::from_text("JA r0, r1\n", VM_CONFIG);
+        let r = Parser::from_lexer(&mut lexer).next();
+        assert_eq!(true, r.is_some());
+
+        let item = r.unwrap();
+        assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
+
+        let expected = Node::Instruction(Instruction::IRR(Op::JA, 0, 1));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }

@@ -9,13 +9,24 @@ type CpuWord = u32;
 /// Maximum address
 pub const MAX_ADDRESS: usize = CpuWord::MAX as usize;
 
-/// stack size, in elements count (each element is 4 bytes)
+/// stack length, in elements count
 // fixme use CpuWord?
-pub const STACK_SIZE: usize = 1024;
+pub const STACK_LEN: usize = 1024;
 
-/// RAM size, in bytes
+/// Stack size, in bytes
+pub const STACK_SIZE: usize = STACK_LEN * 4;
+
+/// Min valid stack address
 // fixme use CpuWord?
-pub const RAM_SIZE: usize = STACK_SIZE * 4;
+pub const STACK_MIN_ADDRESS: usize = 0;
+
+/// Max valid stack address
+// fixme use CpuWord?
+pub const STACK_MAX_ADDRESS: usize = STACK_SIZE - 1;
+
+/// Minimum RAM size, in bytes
+// fixme use CpuWord?
+pub const MIN_RAM_SIZE: usize = STACK_SIZE;
 
 /// ROM size, in bytes
 // fixme use CpuWord?
@@ -33,7 +44,7 @@ mod tests {
 
     #[test]
     fn test_memory_large_enough() {
-        assert_eq!(true, RAM_SIZE >= STACK_SIZE * 4);
+        assert_eq!(true, MIN_RAM_SIZE >= STACK_LEN * 4);
     }
 
     #[test]

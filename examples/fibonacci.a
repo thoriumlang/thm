@@ -8,7 +8,7 @@
 
     // if n == 0, we have the result in r3
     CMP  r0, r3
-    JE   @end
+    JEQ   @end
 
     // if n != 1, we have to compute the result
     CMP  r0, r4
@@ -16,7 +16,7 @@
 
     // if n == 1, we have the result in r2, just need to move it
     MOV  r3, r4
-    JMP  @end
+    J     @end
 
 :loop
     // compute next index
