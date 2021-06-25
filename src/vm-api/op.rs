@@ -1,5 +1,3 @@
-use std::convert::TryFrom;
-
 /// See https://github.com/thoriumlang/thm/wiki/Instructions
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Op {
@@ -69,31 +67,6 @@ impl From<u8> for Op {
     }
 }
 
-impl TryFrom<&str> for Op {
-    type Error = String;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match value {
-            "NOP" => Ok(Self::NOP),
-            "HALT" => Ok(Self::HALT),
-            "PANIC" => Ok(Self::PANIC),
-            "LOAD" => Ok(Self::LOAD),
-            "MOV" => Ok(Self::MOV),
-            "ADD" => Ok(Self::ADD),
-            "CMP" => Ok(Self::CMP),
-            "INC" => Ok(Self::INC),
-            "DEC" => Ok(Self::DEC),
-            "PUSH" => Ok(Self::PUSH),
-            "POP" => Ok(Self::POP),
-            "JA" => Ok(Self::JA),
-            "JEQ" => Ok(Self::JEQ),
-            "JNE" => Ok(Self::JNE),
-            "J" => Ok(Self::J),
-            _ => Err(format!("Invalid op: {}", value).to_string()),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -101,90 +74,75 @@ mod tests {
     #[test]
     fn test_nop() {
         assert_eq!(Op::NOP, Op::from(Op::NOP.bytecode()));
-        assert_eq!(Op::NOP, Op::try_from("NOP").unwrap());
     }
 
     #[test]
     fn test_halt() {
         assert_eq!(Op::HALT, Op::from(Op::HALT.bytecode()));
-        assert_eq!(Op::HALT, Op::try_from("HALT").unwrap());
     }
 
     #[test]
     fn test_panic() {
         assert_eq!(Op::PANIC, Op::from(Op::PANIC.bytecode()));
-        assert_eq!(Op::PANIC, Op::try_from("PANIC").unwrap());
     }
 
     #[test]
     fn test_load() {
         assert_eq!(Op::LOAD, Op::from(Op::LOAD.bytecode()));
-        assert_eq!(Op::LOAD, Op::try_from("LOAD").unwrap());
     }
 
     #[test]
     fn test_mov() {
         assert_eq!(Op::MOV, Op::from(Op::MOV.bytecode()));
-        assert_eq!(Op::MOV, Op::try_from("MOV").unwrap());
     }
 
     #[test]
     fn test_add() {
         assert_eq!(Op::ADD, Op::from(Op::ADD.bytecode()));
-        assert_eq!(Op::ADD, Op::try_from("ADD").unwrap());
     }
 
     #[test]
     fn test_cmp() {
         assert_eq!(Op::CMP, Op::from(Op::CMP.bytecode()));
-        assert_eq!(Op::CMP, Op::try_from("CMP").unwrap());
     }
 
     #[test]
     fn test_inc() {
         assert_eq!(Op::INC, Op::from(Op::INC.bytecode()));
-        assert_eq!(Op::INC, Op::try_from("INC").unwrap());
     }
 
     #[test]
     fn test_dec() {
         assert_eq!(Op::DEC, Op::from(Op::DEC.bytecode()));
-        assert_eq!(Op::DEC, Op::try_from("DEC").unwrap());
     }
 
     #[test]
     fn test_push() {
         assert_eq!(Op::PUSH, Op::from(Op::PUSH.bytecode()));
-        assert_eq!(Op::PUSH, Op::try_from("PUSH").unwrap());
     }
 
     #[test]
     fn test_pop() {
         assert_eq!(Op::POP, Op::from(Op::POP.bytecode()));
-        assert_eq!(Op::POP, Op::try_from("POP").unwrap());
     }
 
     #[test]
     fn test_ja() {
         assert_eq!(Op::JA, Op::from(Op::JA.bytecode()));
-        assert_eq!(Op::JA, Op::try_from("JA").unwrap());
     }
 
     #[test]
     fn test_jeq() {
         assert_eq!(Op::JEQ, Op::from(Op::JEQ.bytecode()));
-        assert_eq!(Op::JEQ, Op::try_from("JEQ").unwrap());
     }
 
     #[test]
     fn test_jne() {
         assert_eq!(Op::JNE, Op::from(Op::JNE.bytecode()));
-        assert_eq!(Op::JNE, Op::try_from("JNE").unwrap());
     }
 
     #[test]
     fn test_j() {
         assert_eq!(Op::J, Op::from(Op::J.bytecode()));
-        assert_eq!(Op::J, Op::try_from("J").unwrap());
     }
 }

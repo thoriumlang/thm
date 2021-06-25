@@ -65,6 +65,27 @@ impl<'t> Parser<'t> {
         }
     }
 
+    fn decode(value: &str) -> Result<Op> {
+        match value {
+            "NOP" => Ok(Op::NOP),
+            "HALT" => Ok(Op::HALT),
+            "PANIC" => Ok(Op::PANIC),
+            "LOAD" => Ok(Op::LOAD),
+            "MOV" => Ok(Op::MOV),
+            "ADD" => Ok(Op::ADD),
+            "CMP" => Ok(Op::CMP),
+            "INC" => Ok(Op::INC),
+            "DEC" => Ok(Op::DEC),
+            "PUSH" => Ok(Op::PUSH),
+            "POP" => Ok(Op::POP),
+            "JA" => Ok(Op::JA),
+            "JEQ" => Ok(Op::JEQ),
+            "JNE" => Ok(Op::JNE),
+            "J" => Ok(Op::J),
+            _ => Err(format!("Invalid op: {}", value).to_string()),
+        }
+    }
+
     fn parse_instruction(&mut self, op: Op, position: Position) -> Result<Instruction> {
         return match op {
             Op::NOP => {
@@ -358,7 +379,7 @@ impl<'t> Iterator for Parser<'t> {
                                 Token::Address(position, _) => Some(Err(format!("Expected section, label or op at {}", position).to_string())),
                                 Token::Register(position, _) => Some(Err(format!("Expected section, label or op at {}", position).to_string())),
                                 Token::Op(position, op) => {
-                                    match Op::try_from(op.as_str()) {
+                                    match Self::decode(op.as_str()) {
                                         Ok(op) => Some(self.parse_instruction(op, position).map(|i| Node::Instruction(i))),
                                         Err(e) => Some(Err(e)),
                                     }
