@@ -144,7 +144,6 @@ impl CPU {
                 None => return None,
                 Some(byte) => result |= byte as u32,
             }
-            // println!("tmp {}: {:#010x}", i, result);
         }
         self.pc += 4;
         return Some(result);
@@ -171,7 +170,6 @@ mod tests {
 
         cpu.registers[0] = 0x01020304;
         let _ = cpu.memory.set_bytes(0, &[
-            // PUSH r0
             Op::PUSH.bytecode(), 0x00,
             Op::POP.bytecode(), 0x01,
             Op::HALT.bytecode()

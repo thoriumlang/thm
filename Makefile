@@ -1,40 +1,37 @@
-.PHONY: all release build_dev test rom itest install_dev build_release install_release clean build_ops
-
-all: itest
+all: it
 
 release: install_release
 
-build_dev:
-	cargo build
+tha:
+	cargo build --bin tha
+thm:
+	cargo build --bin thm
 
-test:
-	cargo test
-
-rom: test build_dev
+rom: target/rom.bin
+target/rom.bin: target/debug/tha src/rom.a
 	target/debug/tha src/rom.a target/rom.bin
 
-itest: rom
-	cargo run --bin tha examples/fibonacci.a target/fibonacci.bin
-	cargo run --bin thm target/rom.bin target/fibonacci.bin
+fibonacci: target/fibonacci.bin
+target/fibonacci.bin: target/debug/tha examples/fibonacci.a
+	target/debug/tha examples/fibonacci.a target/fibonacci.bin
 
-install_dev: build_dev
+it: tha thm target/rom.bin target/fibonacci.bin
+	target/debug/thm --mmap target/rom.bin target/fibonacci.bin
+
+install_dev:
+	cargo build
 	sudo mv target/debug/thm /usr/local/bin/thm
 	sudo chmod ugo+x /usr/local/bin/thm
 	sudo mv target/debug/tha /usr/local/bin/tha
 	sudo chmod ugo+x /usr/local/bin/tha
 
-build_release: itest
+install_release:
 	cargo build --release
 	strip target/release/thm
-
-install_release: build_release
 	sudo mv target/release/thm /usr/local/bin/thm
 	sudo chmod ugo+x /usr/local/bin/thm
 	sudo mv target/release/tha /usr/local/bin/tha
 	sudo chmod ugo+x /usr/local/bin/tha
 
-clean:
-	cargo clean
-
-build_ops:
-	$(CURDIR)/generate_ops.sh $(CURDIR)/src/vm-api/op.csv > $(CURDIR)/src/vm-api/op.rs
+op:
+	./generate_ops.sh src/vm-api/op.csv > src/vm-api/op.rs

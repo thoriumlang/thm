@@ -29,7 +29,6 @@ mod tests {
         let mut cpu = CPU::new();
 
         let _ = cpu.memory.set_bytes(0, &[
-            // INC r0
             Op::INC.bytecode(), 0x00,
             Op::HALT.bytecode()
         ]);
@@ -48,7 +47,6 @@ mod tests {
         let mut cpu = CPU::new();
 
         let _ = cpu.memory.set_bytes(0, &[
-            // INC r0
             Op::INC.bytecode(), 0x00,
             Op::HALT.bytecode()
         ]);
@@ -67,7 +65,6 @@ mod tests {
         let mut cpu = CPU::new();
 
         let _ = cpu.memory.set_bytes(0, &[
-            // INC r0
             Op::INC.bytecode(), 0x00,
             Op::HALT.bytecode()
         ]);

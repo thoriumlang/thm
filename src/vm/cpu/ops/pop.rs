@@ -16,7 +16,6 @@ impl CPU {
                 None => return Err("Cannot fetch 4 bytes"),
                 Some(byte) => bytes |= byte as u32,
             }
-            // println!("tmp {}: {:#010x}", i, bytes);
         }
         self.sp += 4;
         self.registers[r] = bytes as i32;
@@ -50,7 +49,6 @@ mod tests {
         cpu.flags.zero = true;
         cpu.flags.negative = true;
         let _ = cpu.memory.set_bytes(4, &[
-            // POP r0
             Op::POP.bytecode(), 0x00,
             Op::HALT.bytecode()
         ]);

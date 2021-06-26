@@ -1,4 +1,3 @@
-use std::convert::TryFrom;
 use std::iter::Peekable;
 
 use vmlib::op::Op;

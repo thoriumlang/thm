@@ -52,7 +52,6 @@ impl MemoryMap {
 
         match self.location(address) {
             Location::RAM => {
-                // println!("Write {:02x} to {:#010x}", value, address);
                 self.ram[address as usize] = value;
                 true
             }
@@ -73,7 +72,6 @@ impl MemoryMap {
     /// Gets the value stored at memory location
     pub fn get(&self, address: u32) -> Option<u8> {
         let address = address as usize;
-        // println!("Read {:#010x} ({:?})", address, self.location(address));
 
         match self.location(address) {
             Location::RAM => Some(self.ram[address]),
