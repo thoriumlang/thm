@@ -38,10 +38,21 @@ impl MemoryMap {
     pub fn new(memory_size: u32, rom: Vec<u8>) -> MemoryMap {
         let memory_size = memory_size as usize;
 
+        let mut ram = vec![0; memory_size];
+        if memory_size >= 4 { // todo find a cleaner way... like absolute min ram size?
+            Self::write_memory_size(memory_size as u32, &mut ram);
+        }
+
         MemoryMap {
             memory_size,
-            ram: vec![0; memory_size],
+            ram,
             rom,
+        }
+    }
+
+    fn write_memory_size(memory_size: u32, memory: &mut Vec<u8>) {
+        for (i, b) in memory_size.to_be_bytes().iter().enumerate() {
+            memory[i] = *b;
         }
     }
 
