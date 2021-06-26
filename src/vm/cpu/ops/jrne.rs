@@ -2,18 +2,19 @@ use crate::cpu::{CPU, ops};
 
 impl CPU {
     pub(in super::super) fn op_jrne(&mut self) -> ops::Result {
+        let target = match self.fetch_4bytes() {
+            None => return Err("Cannot fetch target"),
+            Some(bytes) => bytes,
+        } + self.cs;
+
         if !self.flags.zero {
-            let target = match self.fetch_4bytes() {
-                None => return Err("Cannot fetch target"),
-                Some(bytes) => bytes,
-            } + self.cs;
-
-            // println!("JRNE  {:#010x}", target);
-
             self.pc = target;
-        } else {
-            self.skip_4bytes();
         }
+
+        if self.opts.print_op {
+            println!("JRNE {:#010x}", target);
+        }
+
         Ok(())
     }
 }

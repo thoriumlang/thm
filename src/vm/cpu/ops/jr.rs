@@ -7,7 +7,9 @@ impl CPU {
             Some(bytes) => bytes
         } + self.cs;
 
-        // println!("JR    {:#010x}", target);
+        if self.opts.print_op {
+            println!("JR    {:#010x}", target);
+        }
 
         self.pc = target;
         Ok(())

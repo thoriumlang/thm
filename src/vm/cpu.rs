@@ -5,9 +5,13 @@ use vmlib::op::Op;
 
 use crate::memory_map::MemoryMap;
 
-use self::vmlib::{STACK_MAX_ADDRESS, ROM_START};
+use self::vmlib::{ROM_START, STACK_MAX_ADDRESS};
 
 mod ops;
+
+pub struct Opts {
+    pub print_op: bool,
+}
 
 pub struct Flags {
     zero: bool,
@@ -28,6 +32,7 @@ pub struct CPU {
     flags: Flags,
     memory: MemoryMap,
     running: bool,
+    opts: Opts,
 }
 
 impl CPU {
@@ -49,10 +54,16 @@ impl CPU {
             },
             memory,
             running: false,
+            opts: Opts { print_op: false },
         }
     }
 
-    pub fn step(&mut self) {
+    pub fn set_opts(&mut self, opts: Opts) {
+        self.opts = opts;
+    }
+
+    pub fn step(&mut self) -> bool {
+        self.running = true;
         match self.fetch_opcode() {
             None => { let _ = self.op_panic("Cannot fetch op"); }
             Some(bytecode) => match match Self::decode_opcode(bytecode) {
@@ -76,12 +87,12 @@ impl CPU {
                 Err(err) => self.op_panic(err).unwrap(),
             }
         }
+        self.running
     }
 
     pub fn run(&mut self) {
-        self.running = true;
-        while self.running {
-            self.step();
+        while self.step() {
+            // nothing
         }
     }
 
@@ -98,17 +109,24 @@ impl CPU {
                 println!()
             }
         }
+        println!("          z={}         n={}", Self::bool_to_u8(self.flags.zero), Self::bool_to_u8(self.flags.negative));
         println!("          pc          sp           cs          ");
         println!("          {:08x}    {:08x}     {:08x}", self.pc, self.sp, self.cs)
     }
 
+    #[inline]
+    fn bool_to_u8(b: bool) -> u8 {
+        match b {
+            true => 1,
+            false => 0,
+        }
+    }
+
     fn fetch_opcode(&mut self) -> Option<u8> {
-        //println!("pc:{:#010x} = {:#04x}", self.pc, self.memory.get(self.pc).unwrap_or(0));
         self.fetch_1byte()
     }
 
     fn decode_opcode(opcode: u8) -> Op {
-        // println!("decoding {:#04x} -> {:?}", opcode, Op::from(opcode));
         Op::from(opcode)
     }
 
@@ -130,10 +148,6 @@ impl CPU {
         }
         self.pc += 4;
         return Some(result);
-    }
-
-    fn skip_4bytes(&mut self) {
-        self.pc += 4;
     }
 }
 

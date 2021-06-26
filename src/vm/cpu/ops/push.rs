@@ -10,7 +10,9 @@ impl CPU {
             Some(byte) => byte
         } as usize;
 
-        // println!("PUSH r{}", r);
+        if self.opts.print_op {
+            println!("PUSH r{}", r);
+        }
 
         for byte in self.registers[r].to_le_bytes().iter() {
             self.sp -= 1;

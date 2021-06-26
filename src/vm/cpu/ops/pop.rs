@@ -23,7 +23,9 @@ impl CPU {
         self.flags.zero = self.registers[r] == 0;
         self.flags.negative = self.registers[r] < 0;
 
-        // println!("POP  r{} // z={}; n={}", r, self.flags.zero, self.flags.negative);
+        if self.opts.print_op {
+            println!("POP  r{}", r);
+        }
 
         Ok(())
     }

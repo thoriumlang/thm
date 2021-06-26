@@ -13,7 +13,9 @@ impl CPU {
 
         let target = self.registers[r0] as u32 + self.registers[r1] as u32;
 
-        // println!("JA   r{}, r{} // {:#010x}", r0, r1, target);
+        if self.opts.print_op {
+            println!("JA   r{}, r{} ({:#010x})", r0, r1, target);
+        }
 
         self.pc = target;
 

@@ -15,7 +15,9 @@ impl CPU {
         self.flags.zero = self.registers[r0] == 0;
         self.flags.negative = self.registers[r0] < 0;
 
-        // println!("MOV  r{}, r{} // z={}; n={}", r0, r1, self.flags.zero, self.flags.negative);
+        if self.opts.print_op {
+            println!("MOV  r{}, r{}", r0, r1);
+        }
 
         Ok(())
     }

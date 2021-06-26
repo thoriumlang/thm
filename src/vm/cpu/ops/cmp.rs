@@ -13,7 +13,9 @@ impl CPU {
         self.flags.zero = self.registers[r0] == self.registers[r1];
         self.flags.negative = self.registers[r0] < self.registers[r1];
 
-        // println!("CMP  r{}, r{} // z={}; n={}", r0, r1, self.flags.zero, self.flags.negative);
+        if self.opts.print_op {
+            println!("CMP  r{}, r{}", r0, r1);
+        }
 
         Ok(())
     }

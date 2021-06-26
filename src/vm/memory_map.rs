@@ -115,6 +115,7 @@ impl MemoryMap {
     }
 
     pub fn dump(&self, start: u32, end: u32) {
+        println!("Dump of {:#010x} - {:#010x}", start, end);
         for (i, b) in self.ram.iter().enumerate().skip(start as usize).take((end - start) as usize) {
             if i % 16 == 0 {
                 print!("{:08x}  ", i as u32)
