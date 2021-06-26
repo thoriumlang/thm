@@ -5,7 +5,7 @@ FILE="$1"
 echo "/// See https://github.com/thoriumlang/thm/wiki/Instructions"
 echo "#[derive(Debug, PartialEq, Clone, Copy)]"
 echo "pub enum Op {"
-for op in `grep -v '[#]' $FILE`; do
+for op in `cat $FILE`; do
   BYTECODE=`echo "$op" | cut -d',' -f1`
   MNEMONIC=`echo "$op" | cut -d',' -f2`
   echo "    $MNEMONIC = $BYTECODE, // 0x`printf '%02x\n' $BYTECODE`"
@@ -15,7 +15,7 @@ echo ""
 echo "impl Op {"
 echo "    pub fn length(&self) -> u8 {"
 echo "        match self {"
-for op in `grep -v '[#]' $FILE`; do
+for op in `cat $FILE`; do
 MNEMONIC=`echo "$op" | cut -d',' -f2`
 LENGTH=`echo "$op" | cut -d',' -f3`
 echo "            Op::$MNEMONIC => $LENGTH,"
@@ -31,7 +31,7 @@ echo ""
 echo "impl From<u8> for Op {"
 echo "    fn from(v: u8) -> Self {"
 echo "        match v {"
-for op in `grep -v '[#]' $FILE`; do
+for op in `cat $FILE`; do
   BYTECODE=`echo "$op" | cut -d',' -f1`
   MNEMONIC=`echo "$op" | cut -d',' -f2`
 echo "            $BYTECODE => Self::$MNEMONIC,"
@@ -44,7 +44,7 @@ echo ""
 echo "#[cfg(test)]"
 echo "mod tests {"
 echo "    use super::*;"
-for op in `grep -v '[#]' $FILE`; do
+for op in `cat $FILE`; do
 MNEMONIC=`echo "$op" | cut -d',' -f2`
 MNEMONIC_LOWER=`echo "$MNEMONIC" | tr '[:upper:]' '[:lower:]'`
 echo ""
