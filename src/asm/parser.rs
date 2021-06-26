@@ -66,6 +66,7 @@ impl<'t> Parser<'t> {
     }
 
     fn parse_instruction(&mut self, op: &str, position: Position) -> Result<Instruction> {
+        // todo this function deserves a refactoring ...
         return match op {
             "NOP" => {
                 let ret = Ok(Instruction::I(Op::NOP));

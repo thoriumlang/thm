@@ -4,7 +4,7 @@ use std::io::Read;
 use clap::{App, Arg, ArgMatches, crate_authors, crate_version};
 
 use cpu::CPU;
-use vmlib::{MIN_RAM_SIZE, STACK_LEN, STACK_MAX_ADDRESS, STACK_SIZE};
+use vmlib::{MAX_ADDRESS, MIN_RAM_SIZE, ROM_START, STACK_LEN, STACK_MAX_ADDRESS, STACK_SIZE};
 use vmlib::op::Op;
 
 use crate::memory_map::MemoryMap;
@@ -42,9 +42,10 @@ fn main() {
     let mut memory_map = MemoryMap::new(RAM_SIZE as u32, rom);
 
     // fixme this is a hack to start executing whatever comes after the stack...
+    //  this should go to the rom
     let mut init = vec![Op::MOVI.bytecode(), 30];
     init.append(&mut ((STACK_MAX_ADDRESS + 1) as u32).to_be_bytes().to_vec());
-    init.append(&mut vec![Op::MOVI.bytecode(), 31, 0, 0, 0, 0, Op::JA.bytecode(), 30, 31]);
+    init.append(&mut vec![Op::MOVI.bytecode(), 31, 0, 0, 0, 0, Op::JA.bytecode(), 30, 31, 255]);
     if !memory_map.set_bytes(0, init.as_slice()) { panic!("cannot set") };
     // fixme end of hack
 
@@ -53,14 +54,18 @@ fn main() {
         if !memory_map.set((STACK_MAX_ADDRESS + 1 + i) as u32, *b) { panic!("cannot set") }
     });
 
+    // todo add param to display executed instructions + pc
+
+    // todo add param to display memory from here ...
     println!("RAM size: {} Bytes", RAM_SIZE);
     println!("Stack:    {} Bytes ({} 32-bits words)", STACK_SIZE, STACK_LEN);
     println!("          {:#010x} - {:#010x}", 0, STACK_MAX_ADDRESS);
     println!("Free:     {} Bytes", RAM_SIZE - STACK_SIZE);
     println!("          {:#010x} - {:#010x}", STACK_MAX_ADDRESS + 1, RAM_SIZE - 1);
     memory_map.zones().iter().for_each(|z| println!("{}", z));
-    // memory_map.dump(0, 32);
-    // memory_map.dump((STACK_MAX_ADDRESS as u32) + 1, ROM_START as u32);
+    memory_map.dump(0, 16);
+    memory_map.dump((STACK_MAX_ADDRESS as u32) + 1, ROM_START as u32);
+    // todo ... to here
 
     let mut cpu = CPU::new_custom_memory(memory_map);
     cpu.registers[0] = 16;
