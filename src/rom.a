@@ -2,11 +2,12 @@
 // when the vm starts, we have:
 //  - 0x00000000      set to the total RAM size
 //  - 0x00000001 - ?  set to a NUL-terminated string representing the filename to load and execute
-//  - r0              set to the default stack size, in 4bytes words
-//  - r1..r31         set to 0
+//  - sp              set to the highest stack address
 //  - pc              set to ROM start
+//  - cs              set to sp + 1
+//  - r0..r31         set to 0
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// this is a very dump implementation of the ROM that just jumps to 0
+// this is a very dump implementation of the ROM that just jumps to address 0 relative to CS
 
-JA r31, r31 // jumps to r31 + r31 = 0x00000000
+J 0

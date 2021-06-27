@@ -6,7 +6,6 @@ use clap::{App, Arg, ArgMatches, crate_authors, crate_version};
 
 use cpu::CPU;
 use vmlib::{MIN_RAM_SIZE, ROM_START, STACK_LEN, STACK_MAX_ADDRESS, STACK_SIZE};
-use vmlib::op::Op;
 
 use crate::memory_map::MemoryMap;
 
@@ -15,25 +14,9 @@ mod memory_map;
 
 fn main() {
     let opts = parse_opts();
-    let rom_file = opts.value_of("rom").unwrap();
-    let program_file = opts.value_of("image").unwrap();
 
-    let mut rom = vec![];
-    OpenOptions::new()
-        .create(false)
-        .read(true)
-        .open(rom_file)
-        .unwrap()
-        .read_to_end(&mut rom).unwrap();
-
-    let mut program: Vec<u8> = vec![];
-    OpenOptions::new()
-        .create(false)
-        .read(true)
-        .open(program_file)
-        .unwrap()
-        .read_to_end(&mut program).unwrap();
-
+    let rom = load_bin(opts.value_of("rom").unwrap());
+    let program: Vec<u8> = load_bin(opts.value_of("image").unwrap());
     let ram_size = opts.value_of("ram")
         .map(|s| usize::from_str(s).unwrap_or(MIN_RAM_SIZE + 128))
         .unwrap_or(MIN_RAM_SIZE + 128);
@@ -43,19 +26,9 @@ fn main() {
     }
 
     let mut memory_map = MemoryMap::new(ram_size as u32, rom);
-
-    // fixme this is a hack to start executing whatever comes after the stack...
-    //  this should go to the rom
-    let mut init = vec![Op::MOVI.bytecode(), 30];
-    init.append(&mut ((STACK_MAX_ADDRESS + 1) as u32).to_be_bytes().to_vec());
-    init.append(&mut vec![Op::MOVI.bytecode(), 31, 0, 0, 0, 0, Op::JA.bytecode(), 30, 31, 255]);
-    if !memory_map.set_bytes(0, init.as_slice()) { panic!("cannot set {} bytes from 0", init.len()) };
-    // fixme end of hack
-
-    // copy program
-    program.iter().enumerate().for_each(|(i, b)| {
-        if !memory_map.set((STACK_MAX_ADDRESS + 1 + i) as u32, *b) { panic!("cannot set {}", STACK_MAX_ADDRESS + 1 + i) }
-    });
+    if !memory_map.set_bytes((STACK_MAX_ADDRESS + 1) as u32, program.as_slice()) {
+        panic!("Cannot copy program to ram");
+    }
 
     if opts.is_present("mmap") {
         println!("RAM size: {} Bytes", ram_size);
@@ -69,6 +42,9 @@ fn main() {
     }
 
     let mut cpu = CPU::new_custom_memory(memory_map);
+    cpu.sp = STACK_MAX_ADDRESS as u32;
+    cpu.cs = (STACK_MAX_ADDRESS + 1) as u32;
+
     cpu.registers[0] = 16;
 
     if opts.is_present("step") {
@@ -85,12 +61,23 @@ fn main() {
             std::io::stdin().read_line(&mut buffer).unwrap();
             buffer.truncate(0);
         }
-    }else {
+    } else {
         cpu.run();
     }
 
     println!("f({}): {}", cpu.registers[0], cpu.registers[3]);
     println!("f(16): 987");
+}
+
+fn load_bin(path: &str) -> Vec<u8> {
+    let mut bin = vec![];
+    OpenOptions::new()
+        .create(false)
+        .read(true)
+        .open(path)
+        .unwrap()
+        .read_to_end(&mut bin).unwrap();
+    bin
 }
 
 fn parse_opts<'a>() -> ArgMatches<'a> {
