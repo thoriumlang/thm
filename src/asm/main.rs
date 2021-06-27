@@ -1,15 +1,20 @@
-use crate::address_resolver::AddressResolver;
-use crate::lexer::{Lexer, VmConfig};
-use crate::parser::Parser;
-use crate::emitter::Emitter;
 use std::fs::OpenOptions;
 use std::io::Write;
+
+use clap::{App, Arg, ArgMatches, crate_authors, crate_version};
+
 use vmlib::REG_COUNT;
-use clap::{crate_authors, crate_version, ArgMatches, App, Arg};
+
+use crate::address_resolver::AddressResolver;
+use crate::checker::{Checker, VmConfig};
+use crate::emitter::Emitter;
+use crate::lexer::Lexer;
+use crate::parser::Parser;
 
 mod lexer;
 mod parser;
 mod address_resolver;
+mod checker;
 mod emitter;
 
 fn main() {
@@ -19,10 +24,7 @@ fn main() {
 
     println!("input: {}\noutput: {}", input, output);
 
-    let vm_config = VmConfig {
-        register_count: REG_COUNT as u8,
-    };
-    let mut lexer = Lexer::from_file(input, vm_config).unwrap();
+    let mut lexer = Lexer::from_file(input).unwrap();
     let mut parser = Parser::from_lexer(&mut lexer);
 
     let nodes = parser.parse();
@@ -40,6 +42,12 @@ fn main() {
         return;
     }
     let addresses = addresses.unwrap();
+
+    let vm_config = VmConfig {
+        register_count: REG_COUNT as u8,
+    };
+    let checker = Checker::new(vm_config);
+    checker.check(&nodes); // todo do something with it
 
     let emitter = Emitter::new(&nodes, &addresses);
     let code = emitter.emit();

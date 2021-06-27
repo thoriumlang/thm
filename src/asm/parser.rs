@@ -288,10 +288,7 @@ impl<'t> Parser<'t> {
 
     fn read_register(&mut self) -> Option<u8> {
         return match self.lexer.next() {
-            Some(Ok(t)) => match t {
-                Token::Register(_, r) => Some(r),
-                _ => None
-            },
+            Some(Ok(Token::Register(_, r))) => Some(r),
             _ => None,
         };
     }
@@ -355,17 +352,13 @@ impl<'t> Iterator for Parser<'t> {
 
 #[cfg(test)]
 mod tests {
-    use crate::lexer::VmConfig;
-
     use super::*;
 
-    const VM_CONFIG: VmConfig = VmConfig {
-        register_count: 32,
-    };
+
 
     #[test]
     fn test_nop() {
-        let mut lexer = Lexer::from_text("NOP\n", VM_CONFIG);
+        let mut lexer = Lexer::from_text("NOP\n");
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -379,7 +372,7 @@ mod tests {
 
     #[test]
     fn test_halt() {
-        let mut lexer = Lexer::from_text("HALT\n", VM_CONFIG);
+        let mut lexer = Lexer::from_text("HALT\n");
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -393,7 +386,7 @@ mod tests {
 
     #[test]
     fn test_panic() {
-        let mut lexer = Lexer::from_text("PANIC\n", VM_CONFIG);
+        let mut lexer = Lexer::from_text("PANIC\n");
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -407,7 +400,7 @@ mod tests {
 
     #[test]
     fn test_mov_r_r() {
-        let mut lexer = Lexer::from_text("MOV r1, r0\n", VM_CONFIG);
+        let mut lexer = Lexer::from_text("MOV r1, r0\n");
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -421,7 +414,7 @@ mod tests {
 
     #[test]
     fn test_mov_r_imm4() {
-        let mut lexer = Lexer::from_text("MOV r1, 42\n", VM_CONFIG);
+        let mut lexer = Lexer::from_text("MOV r1, 42\n");
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -435,7 +428,7 @@ mod tests {
 
     #[test]
     fn test_add() {
-        let mut lexer = Lexer::from_text("ADD r1, r0\n", VM_CONFIG);
+        let mut lexer = Lexer::from_text("ADD r1, r0\n");
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -449,7 +442,7 @@ mod tests {
 
     #[test]
     fn test_cmp() {
-        let mut lexer = Lexer::from_text("CMP r1, r0\n", VM_CONFIG);
+        let mut lexer = Lexer::from_text("CMP r1, r0\n");
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -463,7 +456,7 @@ mod tests {
 
     #[test]
     fn test_j() {
-        let mut lexer = Lexer::from_text("J @address\n", VM_CONFIG);
+        let mut lexer = Lexer::from_text("J @address\n");
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -477,7 +470,7 @@ mod tests {
 
     #[test]
     fn test_jeq() {
-        let mut lexer = Lexer::from_text("JEQ @address\n", VM_CONFIG);
+        let mut lexer = Lexer::from_text("JEQ @address\n");
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -491,7 +484,7 @@ mod tests {
 
     #[test]
     fn test_jne() {
-        let mut lexer = Lexer::from_text("JNE @address\n", VM_CONFIG);
+        let mut lexer = Lexer::from_text("JNE @address\n");
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -505,7 +498,7 @@ mod tests {
 
     #[test]
     fn test_ja() {
-        let mut lexer = Lexer::from_text("JA r0, r1\n", VM_CONFIG);
+        let mut lexer = Lexer::from_text("JA r0, r1\n");
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -519,7 +512,7 @@ mod tests {
 
     #[test]
     fn test_inc() {
-        let mut lexer = Lexer::from_text("INC r1\n", VM_CONFIG);
+        let mut lexer = Lexer::from_text("INC r1\n");
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -533,7 +526,7 @@ mod tests {
 
     #[test]
     fn test_dec() {
-        let mut lexer = Lexer::from_text("DEC r1\n", VM_CONFIG);
+        let mut lexer = Lexer::from_text("DEC r1\n");
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -547,7 +540,7 @@ mod tests {
 
     #[test]
     fn test_push() {
-        let mut lexer = Lexer::from_text("PUSH r1\n", VM_CONFIG);
+        let mut lexer = Lexer::from_text("PUSH r1\n");
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -561,7 +554,7 @@ mod tests {
 
     #[test]
     fn test_pop() {
-        let mut lexer = Lexer::from_text("POP r1\n", VM_CONFIG);
+        let mut lexer = Lexer::from_text("POP r1\n");
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -575,7 +568,7 @@ mod tests {
 
     #[test]
     fn test_label() {
-        let mut lexer = Lexer::from_text(" :label\n", VM_CONFIG);
+        let mut lexer = Lexer::from_text(" :label\n");
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
 
@@ -589,7 +582,7 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let mut lexer = Lexer::from_text("//test\n  :label\nMOV r1, 0\n", VM_CONFIG);
+        let mut lexer = Lexer::from_text("//test\n  :label\nMOV r1, 0\n");
         let r = Parser::from_lexer(&mut lexer).parse();
         assert_eq!(true, r.is_ok());
 

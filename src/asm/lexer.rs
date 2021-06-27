@@ -10,10 +10,6 @@ pub struct Position {
     column: u16,
 }
 
-pub struct VmConfig {
-    pub register_count: u8, // todo move checks related to registers to parser
-}
-
 impl Position {
     fn new(line: u16, column: u16) -> Position {
         Position { line, column }
@@ -41,23 +37,21 @@ pub enum Token {
 pub struct Lexer {
     raw_data: Peekable<IntoIter<char>>,
     position: Position,
-    vm_config: VmConfig,
 }
 
 impl Lexer {
-    pub fn from_text(text: &str, vm_config: VmConfig) -> Self {
+    pub fn from_text(text: &str) -> Self {
         Lexer {
             raw_data: text.chars().collect::<Vec<_>>().into_iter().peekable(),
             position: Position {
                 line: 1,
                 column: 1,
             },
-            vm_config,
         }
     }
 
-    pub fn from_file(file_path: &str, vm_config: VmConfig) -> io::Result<Self> {
-        Ok(Self::from_text(&fs::read_to_string(file_path)?, vm_config))
+    pub fn from_file(file_path: &str) -> io::Result<Self> {
+        Ok(Self::from_text(&fs::read_to_string(file_path)?))
     }
 
     fn next_char(&mut self) -> Option<char> {
@@ -119,12 +113,8 @@ impl Lexer {
                         return Err(format!("Expected 0-9 at {}", self.position).to_string());
                     }
                     return match reg.parse::<u8>() {
-                        Ok(u8) => if u8 > self.vm_config.register_count - 1 {
-                            Err(format!("Expected 0..{} at {}", (self.vm_config.register_count - 1), self.position).to_string())
-                        } else {
-                            Ok(u8)
-                        },
-                        Err(_) => Err(format!("Expected r0..r{} at {}", (self.vm_config.register_count - 1), self.position).to_string())
+                        Ok(u8) => Ok(u8),
+                        Err(_) => Err(format!("Expected r0..r{} at {}", u8::MAX, self.position).to_string())
                     };
                 }
             }
@@ -244,7 +234,7 @@ impl Iterator for Lexer {
         loop {
             let start_line = self.position.line;
             let start_column = self.position.column;
-            match self.next_char() {
+            match self.next_char() { // todo next_char could return char kind as well as raw char
                 Some('/') => {
                     match self.next_char() {
                         Some('/') => {
@@ -281,13 +271,9 @@ impl Iterator for Lexer {
 mod tests {
     use super::*;
 
-    const VM_CONFIG: VmConfig = VmConfig{
-        register_count: 32,
-    };
-
     #[test]
     fn test_unexpected_char() {
-        let r = Lexer::from_text("_", VM_CONFIG).next();
+        let r = Lexer::from_text("_").next();
         assert_eq!(true, r.is_some());
         let err = r.unwrap();
         assert_eq!(true, err.is_err());
@@ -296,7 +282,7 @@ mod tests {
 
     #[test]
     fn test_eol() {
-        let r = Lexer::from_text(" \n ", VM_CONFIG).next();
+        let r = Lexer::from_text(" \n ").next();
         assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
 
         let item = r.unwrap();
@@ -309,7 +295,7 @@ mod tests {
 
     #[test]
     fn test_eol_after_comment() {
-        let r = Lexer::from_text(" // comment \n ", VM_CONFIG).next();
+        let r = Lexer::from_text(" // comment \n ").next();
         assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
 
         let item = r.unwrap();
@@ -322,7 +308,7 @@ mod tests {
 
     #[test]
     fn test_comment() {
-        let r = Lexer::from_text(" // comment ", VM_CONFIG).next();
+        let r = Lexer::from_text(" // comment ").next();
         assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
 
         let item = r.unwrap();
@@ -335,7 +321,7 @@ mod tests {
 
     #[test]
     fn test_comment_invalid() {
-        let r = Lexer::from_text(" / ", VM_CONFIG).next();
+        let r = Lexer::from_text(" / ").next();
         assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
 
         let item = r.unwrap();
@@ -348,7 +334,7 @@ mod tests {
 
     #[test]
     fn test_comma() {
-        let r = Lexer::from_text(" , ", VM_CONFIG).next();
+        let r = Lexer::from_text(" , ").next();
         assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
 
         let item = r.unwrap();
@@ -361,7 +347,7 @@ mod tests {
 
     #[test]
     fn test_section() {
-        let r = Lexer::from_text(" .section ", VM_CONFIG).next();
+        let r = Lexer::from_text(" .section ").next();
         assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
 
         let item = r.unwrap();
@@ -374,7 +360,7 @@ mod tests {
 
     #[test]
     fn test_label() {
-        let r = Lexer::from_text(" :label ", VM_CONFIG).next();
+        let r = Lexer::from_text(" :label ").next();
         assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
 
         let item = r.unwrap();
@@ -387,7 +373,7 @@ mod tests {
 
     #[test]
     fn test_address() {
-        let r = Lexer::from_text(" @label ", VM_CONFIG).next();
+        let r = Lexer::from_text(" @label ").next();
         assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
 
         let item = r.unwrap();
@@ -400,7 +386,7 @@ mod tests {
 
     #[test]
     fn test_register() {
-        let r = Lexer::from_text(" r12 ", VM_CONFIG).next();
+        let r = Lexer::from_text(" r12 ").next();
         assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
 
         let item = r.unwrap();
@@ -412,21 +398,8 @@ mod tests {
     }
 
     #[test]
-    fn test_register_invalid() {
-        let r = Lexer::from_text(" r123 ", VM_CONFIG).next();
-        assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
-
-        let item = r.unwrap();
-        assert_eq!(true, item.is_err(), "Expected Err(...), got {:?}", item);
-
-        let expected = "Expected 0..31 at 1:6".to_string();
-        let actual = item.err().unwrap();
-        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
-    }
-
-    #[test]
     fn test_op() {
-        let r = Lexer::from_text(" LOAD ", VM_CONFIG).next();
+        let r = Lexer::from_text(" LOAD ").next();
         assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
 
         let item = r.unwrap();
@@ -439,7 +412,7 @@ mod tests {
 
     #[test]
     fn test_hex_int() {
-        let r = Lexer::from_text(" xF_F ", VM_CONFIG).next();
+        let r = Lexer::from_text(" xF_F ").next();
         assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
 
         let item = r.unwrap();
@@ -452,7 +425,7 @@ mod tests {
 
     #[test]
     fn test_bin_int() {
-        let r = Lexer::from_text(" b10_1 ", VM_CONFIG).next();
+        let r = Lexer::from_text(" b10_1 ").next();
         assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
 
         let item = r.unwrap();
@@ -465,7 +438,7 @@ mod tests {
 
     #[test]
     fn test_dec_int() {
-        let r = Lexer::from_text(" 1_024 ", VM_CONFIG).next();
+        let r = Lexer::from_text(" 1_024 ").next();
         assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
 
         let item = r.unwrap();
@@ -478,7 +451,7 @@ mod tests {
 
     #[test]
     fn test_several_tokens() {
-        let mut lexer = Lexer::from_text(".section LOAD r1, @label :label2 xFF b0100 1204 //comment \n", VM_CONFIG);
+        let mut lexer = Lexer::from_text(".section LOAD r1, @label :label2 xFF b0100 1204 //comment \n");
         let tokens = vec![
             Token::Section(Position::new(1, 1), "section".to_string()),
             Token::Op(Position::new(1, 10), "LOAD".to_string()),
