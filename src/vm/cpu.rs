@@ -1,11 +1,9 @@
 extern crate vmlib;
 
-use vmlib::{MIN_RAM_SIZE, REG_COUNT};
+use vmlib::{MIN_RAM_SIZE, REG_COUNT, ROM_START};
 use vmlib::op::Op;
 
 use crate::memory_map::MemoryMap;
-
-use self::vmlib::{ROM_START, STACK_MAX_ADDRESS};
 
 mod ops;
 

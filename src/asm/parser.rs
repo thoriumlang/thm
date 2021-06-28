@@ -19,9 +19,9 @@ pub struct Label {
 pub enum Instruction {
     I(Op),
     II(Op, u32),
-    IRI(Op, u8, u32),
-    IR(Op, u8),
-    IRR(Op, u8, u8),
+    IRI(Op, String, u32),
+    IR(Op, String),
+    IRR(Op, String, String),
     IA(Op, String),
 }
 
@@ -102,7 +102,7 @@ impl<'t> Parser<'t> {
                 }
                 let instruction = match self.read_next() {
                     Some(t) => match t {
-                        Token::Register(_, r2) => Instruction::IRR(Op::MOV, r1, r2),
+                        Token::Identifier(_, r2) => Instruction::IRR(Op::MOV, r1, r2),
                         Token::Integer(_, imm4) => Instruction::IRI(Op::MOVI, r1, imm4),
                         _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
                     }
@@ -286,9 +286,9 @@ impl<'t> Parser<'t> {
         }
     }
 
-    fn read_register(&mut self) -> Option<u8> {
+    fn read_register(&mut self) -> Option<String> {
         return match self.lexer.next() {
-            Some(Ok(Token::Register(_, r))) => Some(r),
+            Some(Ok(Token::Identifier(_, r))) => Some(r),
             _ => None,
         };
     }
@@ -332,7 +332,7 @@ impl<'t> Iterator for Parser<'t> {
                                     }
                                 }
                                 Token::Address(position, _) => Some(Err(format!("Expected section, label or op at {}", position).to_string())),
-                                Token::Register(position, _) => Some(Err(format!("Expected section, label or op at {}", position).to_string())),
+                                Token::Identifier(position, _) => Some(Err(format!("Expected section, label or op at {}", position).to_string())),
                                 Token::Op(position, op) => {
                                     Some(self.parse_instruction(op.as_str(), position).map(|i| Node::Instruction(i)))
                                 }
@@ -353,8 +353,6 @@ impl<'t> Iterator for Parser<'t> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-
 
     #[test]
     fn test_nop() {
@@ -407,7 +405,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IRR(Op::MOV, 1, 0));
+        let expected = Node::Instruction(Instruction::IRR(Op::MOV, "r1".to_string(), "r0".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -421,7 +419,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IRI(Op::MOVI, 1, 42));
+        let expected = Node::Instruction(Instruction::IRI(Op::MOVI, "r1".to_string(), 42));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -435,7 +433,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IRR(Op::ADD, 1, 0));
+        let expected = Node::Instruction(Instruction::IRR(Op::ADD, "r1".to_string(), "r0".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -449,7 +447,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IRR(Op::CMP, 1, 0));
+        let expected = Node::Instruction(Instruction::IRR(Op::CMP, "r1".to_string(), "r0".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -505,7 +503,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IRR(Op::JA, 0, 1));
+        let expected = Node::Instruction(Instruction::IRR(Op::JA, "r0".to_string(), "r1".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -519,7 +517,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IR(Op::INC, 1));
+        let expected = Node::Instruction(Instruction::IR(Op::INC, "r1".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -533,7 +531,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IR(Op::DEC, 1));
+        let expected = Node::Instruction(Instruction::IR(Op::DEC, "r1".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -547,7 +545,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IR(Op::PUSH, 1));
+        let expected = Node::Instruction(Instruction::IR(Op::PUSH, "r1".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -561,7 +559,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IR(Op::POP, 1));
+        let expected = Node::Instruction(Instruction::IR(Op::POP, "r1".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -584,11 +582,11 @@ mod tests {
     fn test_parse() {
         let mut lexer = Lexer::from_text("//test\n  :label\nMOV r1, 0\n");
         let r = Parser::from_lexer(&mut lexer).parse();
-        assert_eq!(true, r.is_ok());
+        assert_eq!(true, r.is_ok(), "Expected Ok(...), got {:?}", r);
 
         let expected = vec![
             Node::Label("label".to_string()),
-            Node::Instruction(Instruction::IRI(Op::MOVI, 1, 0))
+            Node::Instruction(Instruction::IRI(Op::MOVI, "r1".to_string(), 0))
         ];
         let actual = r.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);

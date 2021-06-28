@@ -2,6 +2,7 @@ use core::fmt;
 use std::{fs, io};
 use std::fmt::Formatter;
 use std::iter::Peekable;
+use std::str::FromStr;
 use std::vec::IntoIter;
 
 #[derive(Debug, PartialEq)]
@@ -26,11 +27,11 @@ impl fmt::Display for Position {
 pub enum Token {
     Label(Position, String),
     Address(Position, String),
-    Register(Position, u8),
     Op(Position, String),
     Integer(Position, u32),
     Section(Position, String),
     Comma(Position),
+    Identifier(Position, String),
     Eol(Position),
 }
 
@@ -97,26 +98,24 @@ impl Lexer {
         }
     }
 
-    fn is_register(c: char) -> bool { c == 'r' }
+    fn is_identifier(c: char) -> bool {
+        c.is_ascii_lowercase()
+    }
 
-    fn register(&mut self) -> Result<u8> {
-        let mut reg: String = "".to_string();
+    fn identifier(&mut self, c: char) -> Result<String> {
+        let mut identifier: String = c.to_string();
 
         loop {
             match self.raw_data.peek() {
-                Some(c) if c.is_ascii_digit() => {
-                    reg.push(*c);
+                Some(c) if c.is_ascii_alphanumeric() || *c == '_' => {
+                    identifier.push(*c);
                     self.next_char();
                 }
-                _ => {
-                    if reg.is_empty() {
-                        return Err(format!("Expected 0-9 at {}", self.position).to_string());
-                    }
-                    return match reg.parse::<u8>() {
-                        Ok(u8) => Ok(u8),
-                        Err(_) => Err(format!("Expected r0..r{} at {}", u8::MAX, self.position).to_string())
-                    };
+                Some(c) if !identifier.is_empty() && (c.is_ascii_digit() || *c == '_') => {
+                    identifier.push(*c);
+                    self.next_char();
                 }
+                _ => return Ok(identifier)
             }
         }
     }
@@ -141,39 +140,54 @@ impl Lexer {
         }
     }
 
-    fn is_hex_int(c: char) -> bool { c == 'x' }
+    fn is_number(c: char) -> bool {
+        c.is_ascii_digit()
+    }
 
-    fn hex_int(&mut self) -> Result<u32> {
+    fn number(&mut self, c: char) -> Result<u32> {
+        if c == '0' {
+            match self.raw_data.peek() {
+                Some(n) => match n {
+                    'x' => self.parse_hex(),
+                    'b' => self.parse_bin(),
+                    _ => self.parse_dec(c),
+                },
+                None => self.parse_dec(c),
+            }
+        } else {
+            self.parse_dec(c)
+        }
+    }
+
+    fn parse_hex(&mut self) -> Result<u32> {
+        self.next_char(); // consume the 'x'
         let mut int: String = "".to_string();
-
         loop {
             match self.raw_data.peek() {
                 Some('_') => {
                     self.next_char();
                     continue;
                 }
-                Some(c) if c.is_ascii_hexdigit() => {
-                    int.push(*c);
+                Some(n) if n.is_ascii_hexdigit() => {
+                    int.push(*n);
                     self.next_char();
                 }
-                _ => {
+                Some(_) | None => {
                     if int.is_empty() {
-                        return Err(format!("Expected xA-Z([A-Z0-9])* at {}", self.position).to_string());
+                        return Err(format!("Expected 0x[0-9a-z]+ at {}", self.position).to_string());
                     }
                     return match u32::from_str_radix(int.as_str(), 16) {
-                        Ok(int) => Ok(int),
-                        Err(_) => return Err(format!("Not a valid hex number at {}", self.position).to_string()),
+                        Ok(i) => Ok(i),
+                        Err(_) => Err(format!("Not a valid binary number at {}", self.position).to_string()),
                     };
                 }
             }
         }
     }
 
-    fn is_bin_int(c: char) -> bool { c == 'b' }
-
-    fn bin_int(&mut self) -> Result<u32> {
+    fn parse_bin(&mut self) -> Result<u32> {
+        self.next_char(); // consume the 'b'
         let mut int: String = "".to_string();
-
         loop {
             match self.raw_data.peek() {
                 Some('_') => {
@@ -181,29 +195,27 @@ impl Lexer {
                     continue;
                 }
                 Some('0') => {
-                    int.push('0');
                     self.next_char();
+                    int.push('0');
                 }
                 Some('1') => {
-                    int.push('1');
                     self.next_char();
+                    int.push('1');
                 }
-                _ => {
+                Some(_) | None => {
                     if int.is_empty() {
-                        return Err(format!("Expected b[0,1]+ at {}", self.position).to_string());
+                        return Err(format!("Expected 0b[0,1]+ at {}", self.position).to_string());
                     }
                     return match u32::from_str_radix(int.as_str(), 2) {
-                        Ok(int) => Ok(int),
-                        Err(_) => return Err(format!("Not a valid bin number at {}", self.position).to_string()),
+                        Ok(i) => Ok(i),
+                        Err(_) => Err(format!("Not a valid binary number at {}", self.position).to_string()),
                     };
                 }
             }
         }
     }
 
-    fn is_dec_int(c: char) -> bool { c.is_ascii_digit() }
-
-    fn dec_int(&mut self, c: char) -> Result<u32> {
+    fn parse_dec(&mut self, c: char) -> Result<u32> {
         let mut int: String = c.to_string();
 
         loop {
@@ -212,13 +224,15 @@ impl Lexer {
                     self.next_char();
                     continue;
                 }
-                Some(c) if c.is_ascii_digit() => {
-                    int.push(*c);
+                Some(n) if n.is_numeric() => {
+                    int.push(*n);
                     self.next_char();
                 }
-                _ => return match int.parse::<u32>() {
-                    Ok(u32) => Ok(u32),
-                    Err(_) => Err(format!("Expected r0..r31 at {}", self.position).to_string()),
+                Some(_) | None => {
+                    return match u32::from_str(int.as_str()) {
+                        Ok(i) => Ok(i),
+                        Err(_) => Err(format!("Not a valid number at {}", self.position).to_string()),
+                    };
                 }
             }
         }
@@ -254,11 +268,9 @@ impl Iterator for Lexer {
                 Some(c) if Self::is_section(c) => return Some(self.label().map(|s| Token::Section(Position::new(start_line, start_column), s))),
                 Some(c) if Self::is_label(c) => return Some(self.label().map(|s| Token::Label(Position::new(start_line, start_column), s))),
                 Some(c) if Self::is_address(c) => return Some(self.label().map(|s| Token::Address(Position::new(start_line, start_column), s))),
-                Some(c) if Self::is_register(c) => return Some(self.register().map(|s| Token::Register(Position::new(start_line, start_column), s))),
+                Some(c) if Self::is_identifier(c) => return Some(self.identifier(c).map(|s| Token::Identifier(Position::new(start_line, start_column), s))),
                 Some(c) if Self::is_op(c) => return Some(self.op(c).map(|s| Token::Op(Position::new(start_line, start_column), s))),
-                Some(c) if Self::is_hex_int(c) => return Some(self.hex_int().map(|s| Token::Integer(Position::new(start_line, start_column), s))),
-                Some(c) if Self::is_bin_int(c) => return Some(self.bin_int().map(|s| Token::Integer(Position::new(start_line, start_column), s))),
-                Some(c) if Self::is_dec_int(c) => return Some(self.dec_int(c).map(|s| Token::Integer(Position::new(start_line, start_column), s))),
+                Some(c) if Self::is_number(c) => return Some(self.number(c).map(|n| Token::Integer(Position::new(start_line, start_column), n))),
                 Some(c) => return Some(Err(format!("Unexpected `{}`", c))),
                 None => return None,
             }
@@ -385,14 +397,14 @@ mod tests {
     }
 
     #[test]
-    fn test_register() {
-        let r = Lexer::from_text(" r12 ").next();
+    fn test_identifier() {
+        let r = Lexer::from_text(" identifier ").next();
         assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
 
         let item = r.unwrap();
-        assert_eq!(true, item.is_ok(), "Expected Ok(Token::Register), got {:?}", item);
+        assert_eq!(true, item.is_ok(), "Expected Ok(Token::Identifier), got {:?}", item);
 
-        let expected = Token::Register(Position::new(1, 2), 12);
+        let expected = Token::Identifier(Position::new(1, 2), "identifier".to_string());
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -412,7 +424,7 @@ mod tests {
 
     #[test]
     fn test_hex_int() {
-        let r = Lexer::from_text(" xF_F ").next();
+        let r = Lexer::from_text(" 0xF_F ").next();
         assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
 
         let item = r.unwrap();
@@ -425,7 +437,7 @@ mod tests {
 
     #[test]
     fn test_bin_int() {
-        let r = Lexer::from_text(" b10_1 ").next();
+        let r = Lexer::from_text(" 0b10_1 ").next();
         assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
 
         let item = r.unwrap();
@@ -450,19 +462,32 @@ mod tests {
     }
 
     #[test]
+    fn test_dec_0() {
+        let r = Lexer::from_text(" 0 ").next();
+        assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
+
+        let item = r.unwrap();
+        assert_eq!(true, item.is_ok(), "Expected Ok(Token::Integer), got {:?}", item);
+
+        let expected = Token::Integer(Position::new(1, 2), 0);
+        let actual = item.unwrap();
+        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+    }
+
+    #[test]
     fn test_several_tokens() {
-        let mut lexer = Lexer::from_text(".section LOAD r1, @label :label2 xFF b0100 1204 //comment \n");
+        let mut lexer = Lexer::from_text(".section LOAD r1, @label :label2 0xFF 0b0100 1204 //comment \n");
         let tokens = vec![
             Token::Section(Position::new(1, 1), "section".to_string()),
             Token::Op(Position::new(1, 10), "LOAD".to_string()),
-            Token::Register(Position::new(1, 15), 1),
+            Token::Identifier(Position::new(1, 15), "r1".to_string()),
             Token::Comma(Position::new(1, 17)),
             Token::Address(Position::new(1, 19), "label".to_string()),
             Token::Label(Position::new(1, 26), "label2".to_string()),
             Token::Integer(Position::new(1, 34), 255),
-            Token::Integer(Position::new(1, 38), 4),
-            Token::Integer(Position::new(1, 44), 1204),
-            Token::Eol(Position::new(1, 49)),
+            Token::Integer(Position::new(1, 39), 4),
+            Token::Integer(Position::new(1, 46), 1204),
+            Token::Eol(Position::new(1, 51)),
         ];
 
         let mut i = 0;
