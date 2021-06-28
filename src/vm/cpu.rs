@@ -44,10 +44,8 @@ impl CPU {
         CPU {
             registers: [0; REG_COUNT],
             pc: ROM_START as u32,
-            // fixme this should be set by rom
-            sp: STACK_MAX_ADDRESS as u32,
-            // fixme this should be set by rom
-            cs: (STACK_MAX_ADDRESS + 1) as u32,
+            sp: 0,
+            cs: 0,
             flags: Flags {
                 zero: true,
                 negative: false,
@@ -175,6 +173,7 @@ mod tests {
             Op::HALT.bytecode()
         ]);
         cpu.pc = 0;
+        cpu.sp = (MIN_RAM_SIZE - 1) as u32;
         cpu.run();
         assert_eq!(cpu.registers[0], cpu.registers[1], "{} != {}", cpu.registers[0], cpu.registers[1]);
     }
