@@ -65,204 +65,231 @@ impl<'t> Parser<'t> {
     }
 
     fn parse_instruction(&mut self, op: &str, position: Position) -> Result<Instruction> {
-        // todo this function deserves a refactoring ...
         return match op {
-            "NOP" => {
-                let ret = Ok(Instruction::I(Op::NOP));
-                match self.read_eol() {
-                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
-                    true => (),
-                }
-                ret
-            }
-            "HALT" => {
-                let ret = Ok(Instruction::I(Op::HALT));
-                match self.read_eol() {
-                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
-                    true => (),
-                }
-                ret
-            }
-            "PANIC" => {
-                match self.read_eol() {
-                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
-                    true => (),
-                }
-                let ret = Ok(Instruction::I(Op::PANIC));
-                ret
-            }
-            "MOV" => {
-                let r1 = match self.read_register() {
-                    None => return Err(format!("Expected <register> at {}", position).to_string()),
-                    Some(t) => t,
-                };
-                match self.read_comma() {
-                    false => return Err(format!("Expected , at {}", position).to_string()),
-                    true => (),
-                }
-                let instruction = match self.read_next() {
-                    Some(t) => match t {
-                        Token::Identifier(_, r2) => Instruction::IRR(Op::MOV, r1, r2),
-                        Token::Integer(_, imm4) => Instruction::IRI(Op::MOVI, r1, imm4),
-                        _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
-                    }
-                    _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
-                };
-                match self.read_eol() {
-                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
-                    true => (),
-                }
-                Ok(instruction)
-            }
-            "ADD" => {
-                let reg1 = match self.read_register() {
-                    None => return Err(format!("Expected <register> at {}", position).to_string()),
-                    Some(t) => t,
-                };
-                match self.read_comma() {
-                    false => return Err(format!("Expected , at {}", position).to_string()),
-                    true => (),
-                }
-                let reg2 = match self.read_register() {
-                    None => return Err(format!("Expected <register> at {}", position).to_string()),
-                    Some(t) => t
-                };
-                match self.read_eol() {
-                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
-                    true => (),
-                }
-                let ret = Ok(Instruction::IRR(Op::ADD, reg1, reg2));
-                ret
-            }
-            "CMP" => {
-                let reg1 = match self.read_register() {
-                    None => return Err(format!("Expected <register> at {}", position).to_string()),
-                    Some(t) => t,
-                };
-                match self.read_comma() {
-                    false => return Err(format!("Expected , at {}", position).to_string()),
-                    true => (),
-                }
-                let reg2 = match self.read_register() {
-                    None => return Err(format!("Expected <register> at {}", position).to_string()),
-                    Some(t) => t
-                };
-                match self.read_eol() {
-                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
-                    true => (),
-                }
-                let ret = Ok(Instruction::IRR(Op::CMP, reg1, reg2));
-                ret
-            }
-            "J" => {
-                let instruction = match self.read_next() {
-                    Some(t) => match t {
-                        Token::Address(_, addr) => Instruction::IA(Op::JR, addr),
-                        Token::Integer(_, imm4) => Instruction::II(Op::JR, imm4),
-                        _ => return Err(format!("Expected <imm> or <addr> at {}", position).to_string())
-                    }
-                    _ => return Err(format!("Expected <imm> or <addr> at {}", position).to_string())
-                };
-                match self.read_eol() {
-                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
-                    true => (),
-                }
-                Ok(instruction)
-            }
-            "JEQ" => {
-                let address = match self.read_address() {
-                    None => return Err(format!("Expected <addr> at {}", position).to_string()),
-                    Some(t) => t,
-                };
-                match self.read_eol() {
-                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
-                    true => (),
-                }
-                let ret = Ok(Instruction::IA(Op::JREQ, address));
-                ret
-            }
-            "JNE" => {
-                let address = match self.read_address() {
-                    None => return Err(format!("Expected <addr> at {}", position).to_string()),
-                    Some(t) => t,
-                };
-                match self.read_eol() {
-                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
-                    true => (),
-                }
-                let ret = Ok(Instruction::IA(Op::JRNE, address));
-                ret
-            }
-            "JA" => {
-                let reg1 = match self.read_register() {
-                    None => return Err(format!("Expected <register> at {}", position).to_string()),
-                    Some(t) => t,
-                };
-                match self.read_comma() {
-                    false => return Err(format!("Expected , at {}", position).to_string()),
-                    true => (),
-                }
-                let reg2 = match self.read_register() {
-                    None => return Err(format!("Expected <register> at {}", position).to_string()),
-                    Some(t) => t
-                };
-                match self.read_eol() {
-                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
-                    true => (),
-                }
-                let ret = Ok(Instruction::IRR(Op::JA, reg1, reg2));
-                ret
-            }
-            "INC" => {
-                let reg = match self.read_register() {
-                    None => return Err(format!("Expected <register> at {}", position).to_string()),
-                    Some(t) => t,
-                };
-                match self.read_eol() {
-                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
-                    true => (),
-                }
-                let ret = Ok(Instruction::IR(Op::INC, reg));
-                ret
-            }
-            "DEC" => {
-                let reg = match self.read_register() {
-                    None => return Err(format!("Expected <register> at {}", position).to_string()),
-                    Some(t) => t,
-                };
-                match self.read_eol() {
-                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
-                    true => (),
-                }
-                let ret = Ok(Instruction::IR(Op::DEC, reg));
-                ret
-            }
-            "PUSH" => {
-                let reg = match self.read_register() {
-                    None => return Err(format!("Expected <register> at {}", position).to_string()),
-                    Some(t) => t,
-                };
-                match self.read_eol() {
-                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
-                    true => (),
-                }
-                let ret = Ok(Instruction::IR(Op::PUSH, reg));
-                ret
-            }
-            "POP" => {
-                let reg = match self.read_register() {
-                    None => return Err(format!("Expected <register> at {}", position).to_string()),
-                    Some(t) => t,
-                };
-                match self.read_eol() {
-                    false => return Err(format!("Expected <eol> at {}", position).to_string()),
-                    true => (),
-                }
-                let ret = Ok(Instruction::IR(Op::POP, reg));
-                ret
-            }
+            "NOP" => self.parse_nop(&position),
+            "HALT" => self.parse_halt(&position),
+            "PANIC" => self.parse_panic(&position),
+            "MOV" => self.parse_mov(&position),
+            "ADD" => self.parse_add(&position),
+            "CMP" => self.parse_cmp(&position),
+            "J" => self.parse_j(&position),
+            "JEQ" => self.parse_jeq(&position),
+            "JNE" => self.parse_jne(&position),
+            "JA" => self.parse_ja(&position),
+            "INC" => self.parse_inc(&position),
+            "DEC" => self.parse_dec(&position),
+            "PUSH" => self.parse_push(&position),
+            "POP" => self.parse_pop(&position),
             op => Err(format!("Invalid mnemonic '{}' at {}", op, position).to_string())
         };
+    }
+
+    fn parse_nop(&mut self, position: &Position)-> Result<Instruction> {
+        let ret = Ok(Instruction::I(Op::NOP));
+        match self.read_eol() {
+            false => return Err(format!("Expected <eol> at {}", position).to_string()),
+            true => (),
+        }
+        ret
+    }
+
+    fn parse_halt(&mut self, position: &Position) -> Result<Instruction> {
+        let ret = Ok(Instruction::I(Op::HALT));
+        match self.read_eol() {
+            false => return Err(format!("Expected <eol> at {}", position).to_string()),
+            true => (),
+        }
+        ret
+    }
+
+    fn parse_panic(&mut self, position: &Position) -> Result<Instruction> {
+        match self.read_eol() {
+            false => return Err(format!("Expected <eol> at {}", position).to_string()),
+            true => (),
+        }
+        let ret = Ok(Instruction::I(Op::PANIC));
+        ret
+    }
+
+    fn parse_mov(&mut self, position: &Position) -> Result<Instruction> {
+        let r1 = match self.read_register() {
+            None => return Err(format!("Expected <register> at {}", position).to_string()),
+            Some(t) => t,
+        };
+        match self.read_comma() {
+            false => return Err(format!("Expected , at {}", position).to_string()),
+            true => (),
+        }
+        let instruction = match self.read_next() {
+            Some(t) => match t {
+                Token::Identifier(_, r2) => Instruction::IRR(Op::MOV, r1, r2),
+                Token::Integer(_, imm4) => Instruction::IRI(Op::MOVI, r1, imm4),
+                _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
+            }
+            _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
+        };
+        match self.read_eol() {
+            false => return Err(format!("Expected <eol> at {}", position).to_string()),
+            true => (),
+        }
+        Ok(instruction)
+    }
+
+    fn parse_add(&mut self, position: &Position) -> Result<Instruction> {
+        let reg1 = match self.read_register() {
+            None => return Err(format!("Expected <register> at {}", position).to_string()),
+            Some(t) => t,
+        };
+        match self.read_comma() {
+            false => return Err(format!("Expected , at {}", position).to_string()),
+            true => (),
+        }
+        let reg2 = match self.read_register() {
+            None => return Err(format!("Expected <register> at {}", position).to_string()),
+            Some(t) => t
+        };
+        match self.read_eol() {
+            false => return Err(format!("Expected <eol> at {}", position).to_string()),
+            true => (),
+        }
+        let ret = Ok(Instruction::IRR(Op::ADD, reg1, reg2));
+        ret
+    }
+
+    fn parse_cmp(&mut self, position: &Position) -> Result<Instruction> {
+        let reg1 = match self.read_register() {
+            None => return Err(format!("Expected <register> at {}", position).to_string()),
+            Some(t) => t,
+        };
+        match self.read_comma() {
+            false => return Err(format!("Expected , at {}", position).to_string()),
+            true => (),
+        }
+        let reg2 = match self.read_register() {
+            None => return Err(format!("Expected <register> at {}", position).to_string()),
+            Some(t) => t
+        };
+        match self.read_eol() {
+            false => return Err(format!("Expected <eol> at {}", position).to_string()),
+            true => (),
+        }
+        let ret = Ok(Instruction::IRR(Op::CMP, reg1, reg2));
+        ret
+    }
+
+    fn parse_j(&mut self, position: &Position) -> Result<Instruction> {
+        let instruction = match self.read_next() {
+            Some(t) => match t {
+                Token::Address(_, addr) => Instruction::IA(Op::JR, addr),
+                Token::Integer(_, imm4) => Instruction::II(Op::JR, imm4),
+                _ => return Err(format!("Expected <imm> or <addr> at {}", position).to_string())
+            }
+            _ => return Err(format!("Expected <imm> or <addr> at {}", position).to_string())
+        };
+        match self.read_eol() {
+            false => return Err(format!("Expected <eol> at {}", position).to_string()),
+            true => (),
+        }
+        Ok(instruction)
+    }
+
+    fn parse_jeq(&mut self, position: &Position) -> Result<Instruction> {
+        let address = match self.read_address() {
+            None => return Err(format!("Expected <addr> at {}", position).to_string()),
+            Some(t) => t,
+        };
+        match self.read_eol() {
+            false => return Err(format!("Expected <eol> at {}", position).to_string()),
+            true => (),
+        }
+        let ret = Ok(Instruction::IA(Op::JREQ, address));
+        ret
+    }
+
+    fn parse_jne(&mut self, position: &Position) -> Result<Instruction> {
+        let address = match self.read_address() {
+            None => return Err(format!("Expected <addr> at {}", position).to_string()),
+            Some(t) => t,
+        };
+        match self.read_eol() {
+            false => return Err(format!("Expected <eol> at {}", position).to_string()),
+            true => (),
+        }
+        let ret = Ok(Instruction::IA(Op::JRNE, address));
+        ret
+    }
+
+    fn parse_ja(&mut self, position: &Position) -> Result<Instruction> {
+        let reg1 = match self.read_register() {
+            None => return Err(format!("Expected <register> at {}", position).to_string()),
+            Some(t) => t,
+        };
+        match self.read_comma() {
+            false => return Err(format!("Expected , at {}", position).to_string()),
+            true => (),
+        }
+        let reg2 = match self.read_register() {
+            None => return Err(format!("Expected <register> at {}", position).to_string()),
+            Some(t) => t
+        };
+        match self.read_eol() {
+            false => return Err(format!("Expected <eol> at {}", position).to_string()),
+            true => (),
+        }
+        let ret = Ok(Instruction::IRR(Op::JA, reg1, reg2));
+        ret
+    }
+
+    fn parse_inc(&mut self, position: &Position) -> Result<Instruction> {
+        let reg = match self.read_register() {
+            None => return Err(format!("Expected <register> at {}", position).to_string()),
+            Some(t) => t,
+        };
+        match self.read_eol() {
+            false => return Err(format!("Expected <eol> at {}", position).to_string()),
+            true => (),
+        }
+        let ret = Ok(Instruction::IR(Op::INC, reg));
+        ret
+    }
+
+    fn parse_dec(&mut self, position: &Position) -> Result<Instruction> {
+        let reg = match self.read_register() {
+            None => return Err(format!("Expected <register> at {}", position).to_string()),
+            Some(t) => t,
+        };
+        match self.read_eol() {
+            false => return Err(format!("Expected <eol> at {}", position).to_string()),
+            true => (),
+        }
+        let ret = Ok(Instruction::IR(Op::DEC, reg));
+        ret
+    }
+
+    fn parse_push(&mut self, position: &Position) -> Result<Instruction> {
+        let reg = match self.read_register() {
+            None => return Err(format!("Expected <register> at {}", position).to_string()),
+            Some(t) => t,
+        };
+        match self.read_eol() {
+            false => return Err(format!("Expected <eol> at {}", position).to_string()),
+            true => (),
+        }
+        let ret = Ok(Instruction::IR(Op::PUSH, reg));
+        ret
+    }
+
+    fn parse_pop(&mut self, position: &Position) -> Result<Instruction> {
+        let reg = match self.read_register() {
+            None => return Err(format!("Expected <register> at {}", position).to_string()),
+            Some(t) => t,
+        };
+        match self.read_eol() {
+            false => return Err(format!("Expected <eol> at {}", position).to_string()),
+            true => (),
+        }
+        let ret = Ok(Instruction::IR(Op::POP, reg));
+        ret
     }
 
     fn read_comma(&mut self) -> bool {
