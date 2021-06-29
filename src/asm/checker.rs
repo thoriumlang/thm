@@ -26,7 +26,7 @@ impl Checker {
         }
     }
 
-    pub fn check(&self, nodes: &Vec<Node>) -> Result<(), Vec<String>> {
+    pub fn check(&self, nodes: &Vec<Node>) -> Option<Vec<String>> {
         let errors: Vec<String> = nodes.iter()
             .flat_map(|node| match node {
                 Node::Instruction(Instruction::IR(_, r)) => self.check_register_is_valid(vec![r]),
@@ -36,9 +36,9 @@ impl Checker {
             }).collect();
 
         if errors.is_empty() {
-            Ok(())
+            None
         } else {
-            Err(errors)
+            Some(errors)
         }
     }
 
@@ -69,8 +69,8 @@ mod tests {
         let checker = Checker::new(VM_CONFIG);
         let result = checker.check(&nodes);
 
-        assert_eq!(true, result.is_err());
-        assert_eq!(1, result.err().unwrap().len());
+        assert_eq!(true, result.is_some());
+        assert_eq!(1, result.unwrap().len());
     }
 
     #[test]
@@ -80,8 +80,8 @@ mod tests {
         let checker = Checker::new(VM_CONFIG);
         let result = checker.check(&nodes);
 
-        assert_eq!(true, result.is_err());
-        assert_eq!(2, result.err().unwrap().len());
+        assert_eq!(true, result.is_some());
+        assert_eq!(2, result.unwrap().len());
     }
 
     #[test]
@@ -91,7 +91,7 @@ mod tests {
         let checker = Checker::new(VM_CONFIG);
         let result = checker.check(&nodes);
 
-        assert_eq!(true, result.is_err());
-        assert_eq!(1, result.err().unwrap().len());
+        assert_eq!(true, result.is_some());
+        assert_eq!(1, result.unwrap().len());
     }
 }

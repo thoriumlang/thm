@@ -47,7 +47,13 @@ fn main() {
         register_count: REG_COUNT as u8,
     };
     let checker = Checker::new(vm_config);
-    checker.check(&nodes); // todo do something with it
+    match checker.check(&nodes) {
+        None => (),
+        Some(errors) => {
+            errors.iter().for_each(|error| println!("Semantic error: {}", error));
+            return;
+        }
+    }
 
     let emitter = Emitter::new(&nodes, &addresses);
     let code = emitter.emit();
