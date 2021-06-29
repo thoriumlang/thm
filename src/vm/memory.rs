@@ -2,10 +2,10 @@ use std::fmt::{Display, Formatter};
 
 use vmlib::{ROM_SIZE, ROM_START};
 
-use crate::memory_map::Location::ROM;
+use crate::memory::Location::ROM;
 
 /// Holds the memory maps and allow to store / load values
-pub struct MemoryMap {
+pub struct Memory {
     // a usize to make it easier to work with Vec internally
     memory_size: usize,
     /// RAM goes from 0x00000000 to min(MAX_ADDRESS, ROM_START)
@@ -34,8 +34,8 @@ impl Display for Zone {
     }
 }
 
-impl MemoryMap {
-    pub fn new(memory_size: u32, rom: Vec<u8>) -> MemoryMap {
+impl Memory {
+    pub fn new(memory_size: u32, rom: Vec<u8>) -> Memory {
         let memory_size = memory_size as usize;
 
         let mut ram = vec![0; memory_size];
@@ -43,7 +43,7 @@ impl MemoryMap {
             Self::write_memory_size(memory_size as u32, &mut ram);
         }
 
-        MemoryMap {
+        Memory {
             memory_size,
             ram,
             rom,
@@ -149,40 +149,40 @@ mod tests {
 
     #[test]
     fn test_get_unmapped() {
-        let mem = MemoryMap::new(0, vec![0; ROM_SIZE]);
+        let mem = Memory::new(0, vec![0; ROM_SIZE]);
         assert_eq!(None, mem.get(0));
     }
 
     #[test]
     fn test_set_unmapped() {
-        let mut mem = MemoryMap::new(0, vec![0; ROM_SIZE]);
+        let mut mem = Memory::new(0, vec![0; ROM_SIZE]);
         assert_eq!(false, mem.set(0, 1));
     }
 
     #[test]
     fn test_get_ram() {
-        let mem = MemoryMap::new(2, vec![0; ROM_SIZE]);
+        let mem = Memory::new(2, vec![0; ROM_SIZE]);
         assert_eq!(Some(0), mem.get(0));
         assert_eq!(Some(0), mem.get(1));
     }
 
     #[test]
     fn test_set_ram() {
-        let mut mem = MemoryMap::new(2, vec![0; ROM_SIZE]);
+        let mut mem = Memory::new(2, vec![0; ROM_SIZE]);
         assert_eq!(true, mem.set(0, 1));
         assert_eq!(true, mem.set(1, 1));
     }
 
     #[test]
     fn test_get_rom() {
-        let mem = MemoryMap::new(0, vec![1; ROM_SIZE]);
+        let mem = Memory::new(0, vec![1; ROM_SIZE]);
         assert_eq!(Some(1), mem.get(ROM_START as u32), "rom[start] != 1");
         assert_eq!(Some(1), mem.get(MAX_ADDRESS as u32), "rom[end] != 1");
     }
 
     #[test]
     fn test_get_rom_default_0() {
-        let mem = MemoryMap::new(0, vec![1; 2]);
+        let mem = Memory::new(0, vec![1; 2]);
         assert_eq!(Some(1), mem.get(ROM_START as u32), "rom[start] != 1");
         assert_eq!(Some(1), mem.get((ROM_START + 1) as u32), "rom[start+1] != 1");
         assert_eq!(Some(0), mem.get((ROM_START + 2) as u32), "rom[start+2] != 1");
@@ -191,14 +191,14 @@ mod tests {
 
     #[test]
     fn test_set_rom() {
-        let mut mem = MemoryMap::new(0, vec![0; ROM_SIZE]);
+        let mut mem = Memory::new(0, vec![0; ROM_SIZE]);
         assert_eq!(false, mem.set(ROM_START as u32, 1));
         assert_eq!(false, mem.set((ROM_START + ROM_SIZE) as u32, 1));
     }
 
     #[test]
     fn test_rom_hides_ram() {
-        let mut mem = MemoryMap::new(MAX_ADDRESS as u32, vec![0; ROM_SIZE]);
+        let mut mem = Memory::new(MAX_ADDRESS as u32, vec![0; ROM_SIZE]);
         assert_eq!(false, mem.set(ROM_START as u32, 1));
     }
 }

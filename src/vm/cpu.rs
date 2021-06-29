@@ -3,7 +3,7 @@ extern crate vmlib;
 use vmlib::{MIN_RAM_SIZE, REG_COUNT, ROM_START};
 use vmlib::op::Op;
 
-use crate::memory_map::MemoryMap;
+use crate::memory::Memory;
 
 mod ops;
 
@@ -28,17 +28,17 @@ pub struct CPU {
     /// start of code segment
     pub cs: u32,
     flags: Flags,
-    memory: MemoryMap,
+    memory: Memory,
     running: bool,
     opts: Opts,
 }
 
 impl CPU {
     pub fn new() -> CPU {
-        Self::new_custom_memory(MemoryMap::new(MIN_RAM_SIZE as u32, vec![]))
+        Self::new_custom_memory(Memory::new(MIN_RAM_SIZE as u32, vec![]))
     }
 
-    pub fn new_custom_memory(memory: MemoryMap) -> CPU {
+    pub fn new_custom_memory(memory: Memory) -> CPU {
         CPU {
             registers: [0; REG_COUNT],
             pc: ROM_START as u32,

@@ -7,10 +7,10 @@ use clap::{App, Arg, ArgMatches, crate_authors, crate_version};
 use cpu::CPU;
 use vmlib::{MIN_RAM_SIZE, ROM_START, STACK_LEN, STACK_MAX_ADDRESS, STACK_SIZE};
 
-use crate::memory_map::MemoryMap;
+use crate::memory::Memory;
 
 mod cpu;
-mod memory_map;
+mod memory;
 
 fn main() {
     let opts = parse_opts();
@@ -25,8 +25,8 @@ fn main() {
         panic!("Not enough RAM: {} < {}", ram_size, MIN_RAM_SIZE + program.len());
     }
 
-    let mut memory_map = MemoryMap::new(ram_size as u32, rom);
-    if !memory_map.set_bytes((STACK_MAX_ADDRESS + 1) as u32, program.as_slice()) {
+    let mut memory = Memory::new(ram_size as u32, rom);
+    if !memory.set_bytes((STACK_MAX_ADDRESS + 1) as u32, program.as_slice()) {
         panic!("Cannot copy program to ram");
     }
 
@@ -36,12 +36,12 @@ fn main() {
         println!("          {:#010x} - {:#010x}", 0, STACK_MAX_ADDRESS);
         println!("Free:     {} Bytes", ram_size - STACK_SIZE);
         println!("          {:#010x} - {:#010x}", STACK_MAX_ADDRESS + 1, ram_size - 1);
-        memory_map.zones().iter().for_each(|z| println!("{}", z));
-        memory_map.dump(0, 16);
-        memory_map.dump((STACK_MAX_ADDRESS as u32) + 1, ROM_START as u32);
+        memory.zones().iter().for_each(|z| println!("{}", z));
+        memory.dump(0, 16);
+        memory.dump((STACK_MAX_ADDRESS as u32) + 1, ROM_START as u32);
     }
 
-    let mut cpu = CPU::new_custom_memory(memory_map);
+    let mut cpu = CPU::new_custom_memory(memory);
     cpu.sp = STACK_MAX_ADDRESS as u32;
     cpu.cs = (STACK_MAX_ADDRESS + 1) as u32;
 
