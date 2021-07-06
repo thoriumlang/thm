@@ -35,7 +35,8 @@ mod tests {
         ]);
         cpu.cs = 0;
         cpu.pc = 0;
-        cpu.run();
+        cpu.start();
+        while cpu.step() {}
         assert_eq!(cpu.registers[0], 2);
     }
 }

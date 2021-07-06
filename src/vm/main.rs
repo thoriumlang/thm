@@ -1,6 +1,7 @@
 use std::fs::OpenOptions;
 use std::io::{Read, Write};
 use std::str::FromStr;
+use std::sync::{Arc, RwLock};
 
 use clap::{App, Arg, ArgMatches, crate_authors, crate_version};
 
@@ -8,9 +9,11 @@ use cpu::CPU;
 use vmlib::{MIN_RAM_SIZE, ROM_START, STACK_LEN, STACK_MAX_ADDRESS, STACK_SIZE};
 
 use crate::memory::Memory;
+use crate::rest_api::RestApi;
 
 mod cpu;
 mod memory;
+mod rest_api;
 
 fn main() {
     let opts = parse_opts();
@@ -53,18 +56,35 @@ fn main() {
         });
         cpu.dump();
         println!();
-        while cpu.step() {
-            let mut buffer = String::new();
-            cpu.dump();
+    }
+
+    let cpu = Arc::new(RwLock::new(cpu));
+
+    RestApi::new(cpu.clone());
+
+    loop {
+        {
+            let mut cpu = cpu.write().unwrap();
+            if !cpu.step() {
+                break;
+            }
+        }
+
+        if opts.is_present("step") {
+            {
+                let cpu = cpu.read().unwrap();
+                cpu.dump();
+            }
+
             print!("> ");
             std::io::stdout().flush().unwrap();
+            let mut buffer = String::new();
             std::io::stdin().read_line(&mut buffer).unwrap();
             buffer.truncate(0);
         }
-    } else {
-        cpu.run();
     }
 
+    let cpu = cpu.read().unwrap();
     println!("f({}): {}", cpu.registers[0], cpu.registers[3]);
     println!("f(16): 987");
 }

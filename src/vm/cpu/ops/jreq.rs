@@ -39,7 +39,8 @@ mod tests {
         cpu.flags.zero = true;
         cpu.cs = 0;
         cpu.pc = 0;
-        cpu.run();
+        cpu.start();
+        while cpu.step() {}
         assert_eq!(cpu.registers[0], 2);
     }
 
@@ -57,7 +58,8 @@ mod tests {
         cpu.flags.zero = false;
         cpu.cs = 0;
         cpu.pc = 0;
-        cpu.run();
+        cpu.start();
+        while cpu.step() {}
         assert_eq!(cpu.registers[0], 1);
     }
 }

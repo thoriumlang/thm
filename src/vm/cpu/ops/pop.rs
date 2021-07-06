@@ -50,10 +50,10 @@ mod tests {
         cpu.flags.negative = true;
         let _ = cpu.memory.set_bytes(4, &[
             Op::POP.bytecode(), 0x00,
-            Op::HALT.bytecode()
         ]);
         cpu.pc = 4;
-        cpu.run();
+        cpu.start();
+        cpu.step();
         assert_eq!(cpu.registers[0], 0x01020304, "reg {} != {}", cpu.registers[0], 0x01020304);
         assert_eq!(false, cpu.flags.zero, "zero flag not set");
         assert_eq!(false, cpu.flags.negative, "negative flag set");

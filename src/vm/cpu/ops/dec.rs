@@ -30,13 +30,13 @@ mod tests {
 
         let _ = cpu.memory.set_bytes(0, &[
             Op::DEC.bytecode(), 0x00,
-            Op::HALT.bytecode()
         ]);
         cpu.registers[0] = 2;
         cpu.flags.zero = false;
         cpu.flags.negative = false;
         cpu.pc = 0;
-        cpu.run();
+        cpu.start();
+        cpu.step();
         assert_eq!(cpu.registers[0], 1);
         assert_eq!(false, cpu.flags.zero);
         assert_eq!(false, cpu.flags.negative);
@@ -48,13 +48,13 @@ mod tests {
 
         let _ = cpu.memory.set_bytes(0, &[
             Op::DEC.bytecode(), 0x00,
-            Op::HALT.bytecode()
         ]);
         cpu.registers[0] = 1;
         cpu.flags.zero = false;
         cpu.flags.negative = false;
         cpu.pc = 0;
-        cpu.run();
+        cpu.start();
+        cpu.step();
         assert_eq!(cpu.registers[0], 0);
         assert_eq!(true, cpu.flags.zero);
         assert_eq!(false, cpu.flags.negative);
@@ -66,13 +66,13 @@ mod tests {
 
         let _ = cpu.memory.set_bytes(0, &[
             Op::DEC.bytecode(), 0x00,
-            Op::HALT.bytecode()
         ]);
         cpu.registers[0] = 0;
         cpu.flags.zero = true;
         cpu.flags.negative = false;
         cpu.pc = 0;
-        cpu.run();
+        cpu.start();
+        cpu.step();
         assert_eq!(cpu.registers[0], -1);
         assert_eq!(false, cpu.flags.zero);
         assert_eq!(true, cpu.flags.negative);

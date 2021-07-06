@@ -86,12 +86,6 @@ impl CPU {
         self.running
     }
 
-    pub fn run(&mut self) {
-        while self.step() {
-            // nothing
-        }
-    }
-
     pub fn dump(&self) {
         for r in 0..32 {
             if r % 4 == 0 {
@@ -144,6 +138,21 @@ impl CPU {
         self.pc += 4;
         return Some(result);
     }
+
+    pub fn read_register(&self, r: u8) -> i32 {
+        self.registers[r as usize]
+    }
+
+    pub fn read_memory(&self, from: u32, size: u32) -> Option<Vec<u8>> {
+        let mut vec: Vec<u8> = Vec::with_capacity(size as usize);
+        for i in from..(from + size) {
+            match self.memory.get(i) {
+                None => return None,
+                Some(v) => vec.push(v)
+            }
+        }
+        Some(vec)
+    }
 }
 
 
@@ -172,7 +181,8 @@ mod tests {
         ]);
         cpu.pc = 0;
         cpu.sp = (MIN_RAM_SIZE - 1) as u32;
-        cpu.run();
+        cpu.start();
+        while cpu.step() {}
         assert_eq!(cpu.registers[0], cpu.registers[1], "{} != {}", cpu.registers[0], cpu.registers[1]);
     }
 }

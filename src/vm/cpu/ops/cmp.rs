@@ -33,12 +33,12 @@ mod tests {
 
         let _ = cpu.memory.set_bytes(0, &[
             Op::CMP.bytecode(), 0x00, 0x01,
-            Op::HALT.bytecode()
         ]);
         cpu.registers[0] = 1;
         cpu.registers[1] = 1;
         cpu.pc = 0;
-        cpu.run();
+        cpu.start();
+        cpu.step();
         assert_eq!(cpu.registers[0], 1);
         assert_eq!(cpu.registers[1], 1);
         assert_eq!(cpu.flags.zero, true);
@@ -51,12 +51,12 @@ mod tests {
 
         let _ = cpu.memory.set_bytes(0, &[
             Op::CMP.bytecode(), 0x00, 0x01,
-            Op::HALT.bytecode()
         ]);
         cpu.registers[0] = 1;
         cpu.registers[1] = 2;
         cpu.pc = 0;
-        cpu.run();
+        cpu.start();
+        cpu.step();
         assert_eq!(cpu.registers[0], 1);
         assert_eq!(cpu.registers[1], 2);
         assert_eq!(cpu.flags.zero, false);
@@ -69,12 +69,12 @@ mod tests {
 
         let _ = cpu.memory.set_bytes(0, &[
             Op::CMP.bytecode(), 0x00, 0x01,
-            Op::HALT.bytecode()
         ]);
         cpu.registers[0] = 2;
         cpu.registers[1] = 1;
         cpu.pc = 0;
-        cpu.run();
+        cpu.start();
+        cpu.step();
         assert_eq!(cpu.registers[0], 2);
         assert_eq!(cpu.registers[1], 1);
         assert_eq!(cpu.flags.zero, false);

@@ -35,10 +35,10 @@ mod tests {
         cpu.registers[1] = 1;
         let _ = cpu.memory.set_bytes(0, &[
             Op::MOVI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
-            Op::HALT.bytecode()
         ]);
         cpu.pc = 0;
-        cpu.run();
+        cpu.start();
+        cpu.step();
         assert_eq!(cpu.registers[0], 1);
         assert_eq!(cpu.flags.zero, false);
         assert_eq!(cpu.flags.negative, false);
@@ -50,10 +50,10 @@ mod tests {
         cpu.registers[0] = 1;
         let _ = cpu.memory.set_bytes(0, &[
             Op::MOVI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x00,
-            Op::HALT.bytecode()
         ]);
         cpu.pc = 0;
-        cpu.run();
+        cpu.start();
+        cpu.step();
         assert_eq!(cpu.registers[0], 0);
         assert_eq!(cpu.flags.zero, true);
         assert_eq!(cpu.flags.negative, false);
