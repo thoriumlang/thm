@@ -167,6 +167,11 @@ impl CPU {
         }
         Some(vec)
     }
+
+    #[inline]
+    pub fn get_steps_count(&self) -> u64 {
+        self.meta.steps
+    }
 }
 
 

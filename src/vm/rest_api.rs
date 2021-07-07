@@ -38,11 +38,16 @@ struct StepRequest {
 struct Registers {
     pc: u32,
 }
+#[derive(Deserialize, Serialize)]
+struct Meta {
+    steps_count: u64
+}
 
 #[derive(Deserialize, Serialize)]
 struct StepResponse {
     running: bool,
     registers: Registers,
+    meta: Meta,
 }
 
 impl RestApi {
@@ -127,6 +132,9 @@ impl RestApi {
                     running,
                     registers: Registers {
                         pc
+                    },
+                    meta: Meta {
+                        steps_count: cpu.get_steps_count(),
                     },
                 }), warp::http::StatusCode::OK,
             ))
