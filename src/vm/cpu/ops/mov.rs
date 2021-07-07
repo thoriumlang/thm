@@ -16,7 +16,7 @@ impl CPU {
         self.flags.negative = self.registers[r0] < 0;
 
         if self.opts.print_op {
-            println!("MOV  r{}, r{}", r0, r1);
+            println!("{:03}\tMOV  r{}, r{}", self.meta.steps, r0, r1);
         }
 
         Ok(())

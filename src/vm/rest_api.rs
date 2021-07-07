@@ -114,7 +114,7 @@ impl RestApi {
             let mut cpu = cpu.write().unwrap();
             let mut running = true;
 
-            for i in 0..query.count.unwrap_or(1) {
+            for _ in 0..query.count.unwrap_or(1) {
                 running = cpu.step();
                 if !running {
                     break;

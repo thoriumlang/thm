@@ -23,7 +23,7 @@ impl CPU {
         self.flags.negative = self.registers[r] < 0;
 
         if self.opts.print_op {
-            println!("POP  r{}", r);
+            println!("{:03}\tPOP  r{}", self.meta.steps, r);
         }
 
         Ok(())

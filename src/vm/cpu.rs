@@ -16,6 +16,9 @@ pub struct Flags {
     negative: bool,
 }
 
+struct Meta {
+    steps: u64,
+}
 pub struct CPU {
     // FIXME remove pub
     pub registers: [i32; REG_COUNT],
@@ -31,6 +34,7 @@ pub struct CPU {
     memory: Memory,
     running: bool,
     opts: Opts,
+    meta: Meta,
 }
 
 impl CPU {
@@ -51,6 +55,9 @@ impl CPU {
             memory,
             running: false,
             opts: Opts { print_op: false },
+            meta: Meta {
+                steps: 0,
+            }
         }
     }
 
@@ -89,6 +96,7 @@ impl CPU {
                 Err(err) => self.op_panic(err).unwrap(),
             }
         }
+        self.meta.steps += 1;
         self.running
     }
 

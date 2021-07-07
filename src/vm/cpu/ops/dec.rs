@@ -11,7 +11,7 @@ impl CPU {
         self.flags.negative = self.registers[r] < 0;
 
         if self.opts.print_op {
-            println!("DEC  r{}", r);
+            println!("{:03}\tDEC  r{}", self.meta.steps, r);
         }
 
         Ok(())

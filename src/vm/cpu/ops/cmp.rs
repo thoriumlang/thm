@@ -14,7 +14,7 @@ impl CPU {
         self.flags.negative = self.registers[r0] < self.registers[r1];
 
         if self.opts.print_op {
-            println!("CMP  r{}, r{}", r0, r1);
+            println!("{:03}\tCMP  r{}, r{}", self.meta.steps, r0, r1);
         }
 
         Ok(())

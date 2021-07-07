@@ -11,7 +11,7 @@ impl CPU {
         } as usize;
 
         if self.opts.print_op {
-            println!("PUSH r{}", r);
+            println!("{:03}\tPUSH r{}", self.meta.steps, r);
         }
 
         for byte in self.registers[r].to_le_bytes().iter() {

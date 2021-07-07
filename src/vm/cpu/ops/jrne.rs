@@ -12,7 +12,7 @@ impl CPU {
         }
 
         if self.opts.print_op {
-            println!("JRNE {:#010x}", target);
+            println!("{:03}\tJRNE {:#010x}", self.meta.steps, target);
         }
 
         Ok(())
