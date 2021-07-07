@@ -1,24 +1,30 @@
 use crate::cpu::{CPU, ops};
 
 impl CPU {
-    pub(in super::super) fn op_push(&mut self) -> ops::Result {
+    pub(in super::super) fn op_stor(&mut self) -> ops::Result {
         // we map r = 0x12345678 like to:
-        // sp = 78, sp-1 = 56, sp-2 = 34 sp-3 = 12
+        // addr = 12, addr+1 = 34, addr+2 = 56, addr+3 = 78
 
-        let r = match self.fetch_1byte() {
-            None => return Err("Cannot fetch r"),
+        let r0 = match self.fetch_1byte() {
+            None => return Err("Cannot fetch r0"),
+            Some(byte) => byte
+        } as usize;
+
+        let r1 = match self.fetch_1byte() {
+            None => return Err("Cannot fetch r1"),
             Some(byte) => byte
         } as usize;
 
         if self.opts.print_op {
-            println!("{:03}\tPUSH r{}", self.meta.steps, r);
+            println!("{:03}\tSTOR r{}, r{}", self.meta.steps, r0, r1);
         }
 
-        for byte in self.registers[r].to_le_bytes().iter() {
-            self.sp -= 1;
-            if !self.memory.set(self.sp, *byte) {
+        let mut address = self.registers[r0] as u32;
+        for byte in self.registers[r1].to_be_bytes().iter() {
+            if !self.memory.set(address, *byte) {
                 return Err("Cannot set");
             }
+            address += 1;
         }
 
         Ok(())
@@ -32,23 +38,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_push() {
+    fn test_stor() {
         let mut cpu = CPU::new();
 
-        cpu.sp = 4;
         cpu.registers[0] = 0x01020304;
-        cpu.flags.zero = true;
-        cpu.flags.negative = true;
+        cpu.registers[1] = 0x00000000;
         let _ = cpu.memory.set_bytes(5, &[
-            Op::PUSH.bytecode(), 0x00,
+            Op::STOR.bytecode(), 0x01, 0x00
         ]);
         cpu.pc = 5;
         cpu.start();
         cpu.step();
-        assert_eq!(cpu.registers[0], 0x01020304, "r0 {} != 0x01020304", cpu.registers[0]);
-        assert_eq!(true, cpu.flags.zero, "zero flag not set");
-        assert_eq!(true, cpu.flags.negative, "negative flag not set");
-        assert_eq!(0, cpu.sp, "sp {} != 0", cpu.sp);
+        assert_eq!(cpu.registers[0], 0x01020304, "{} != 0x01020304", cpu.registers[0]);
 
         assert_eq!(Some(0x01), cpu.memory.get(0), "mem[0]: 1 != {:?}", cpu.memory.get(0));
         assert_eq!(Some(0x02), cpu.memory.get(1), "mem[1]: 2 != {:?}", cpu.memory.get(1));

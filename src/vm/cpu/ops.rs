@@ -13,5 +13,6 @@ mod nop;
 mod panic;
 mod pop;
 mod push;
+mod stor;
 
 type Result = std::result::Result<(), &'static str>;

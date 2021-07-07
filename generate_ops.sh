@@ -16,9 +16,9 @@ echo "impl Op {"
 echo "    pub fn length(&self) -> u8 {"
 echo "        match self {"
 for op in `cat $FILE`; do
-MNEMONIC=`echo "$op" | cut -d',' -f2`
-LENGTH=`echo "$op" | cut -d',' -f3`
-echo "            Op::$MNEMONIC => $LENGTH,"
+  MNEMONIC=`echo "$op" | cut -d',' -f2`
+  LENGTH=`echo "$op" | cut -d',' -f3`
+  echo "            Op::$MNEMONIC => $LENGTH,"
 done
 echo "        }"
 echo "    }"
@@ -45,12 +45,12 @@ echo "#[cfg(test)]"
 echo "mod tests {"
 echo "    use super::*;"
 for op in `cat $FILE`; do
-MNEMONIC=`echo "$op" | cut -d',' -f2`
-MNEMONIC_LOWER=`echo "$MNEMONIC" | tr '[:upper:]' '[:lower:]'`
-echo ""
-echo "    #[test]"
-echo "    fn test_$MNEMONIC_LOWER() {"
-echo "        assert_eq!(Op::$MNEMONIC, Op::from(Op::$MNEMONIC.bytecode()));"
-echo "    }"
+  MNEMONIC=`echo "$op" | cut -d',' -f2`
+  MNEMONIC_LOWER=`echo "$MNEMONIC" | tr '[:upper:]' '[:lower:]'`
+  echo ""
+  echo "    #[test]"
+  echo "    fn test_$MNEMONIC_LOWER() {"
+  echo "        assert_eq!(Op::$MNEMONIC, Op::from(Op::$MNEMONIC.bytecode()));"
+  echo "    }"
 done
 echo "}"

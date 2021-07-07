@@ -30,4 +30,7 @@
 
 :end
     POP  r0 // restore initial target
+
+    MOV r31, 0x1050
+    STOR r31, r3
     HALT

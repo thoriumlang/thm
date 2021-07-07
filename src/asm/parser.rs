@@ -80,6 +80,7 @@ impl<'t> Parser<'t> {
             "DEC" => self.parse_dec(&position),
             "PUSH" => self.parse_push(&position),
             "POP" => self.parse_pop(&position),
+            "STOR" => self.parse_stor(&position),
             op => Err(format!("Invalid mnemonic '{}' at {}", op, position).to_string())
         };
     }
@@ -290,6 +291,26 @@ impl<'t> Parser<'t> {
         }
         let ret = Ok(Instruction::IR(Op::POP, reg));
         ret
+    }
+
+    fn parse_stor(&mut self, position: &Position) -> Result<Instruction> {
+        let reg = match self.read_register() {
+            None => return Err(format!("Expected <register> at {}", position).to_string()),
+            Some(t) => t,
+        };
+        match self.read_comma() {
+            false => return Err(format!("Expected , at {}", position).to_string()),
+            true => (),
+        }
+        let imm4 = match self.read_register() {
+            None => return Err(format!("Expected <register> at {}", position).to_string()),
+            Some(a) => a
+        };
+        match self.read_eol() {
+            false => return Err(format!("Expected <eol> at {}", position).to_string()),
+            true => (),
+        }
+        Ok(Instruction::IRR(Op::STOR, reg, imm4))
     }
 
     fn read_comma(&mut self) -> bool {

@@ -16,6 +16,7 @@ pub enum Op {
     JREQ = 12, // 0x0c
     JRNE = 13, // 0x0d
     JR = 14, // 0x0e
+    STOR = 15, // 0x0f
 }
 
 impl Op {
@@ -36,6 +37,7 @@ impl Op {
             Op::JREQ => 5,
             Op::JRNE => 5,
             Op::JR => 5,
+            Op::STOR => 6,
         }
     }
 
@@ -62,6 +64,7 @@ impl From<u8> for Op {
             12 => Self::JREQ,
             13 => Self::JRNE,
             14 => Self::JR,
+            15 => Self::STOR,
             _ => Self::PANIC,
         }
     }
@@ -144,5 +147,10 @@ mod tests {
     #[test]
     fn test_jr() {
         assert_eq!(Op::JR, Op::from(Op::JR.bytecode()));
+    }
+
+    #[test]
+    fn test_stor() {
+        assert_eq!(Op::STOR, Op::from(Op::STOR.bytecode()));
     }
 }
