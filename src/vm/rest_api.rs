@@ -1,5 +1,6 @@
 use std::sync::{Arc, RwLock};
 use std::thread;
+use std::thread::JoinHandle;
 
 use serde::{Deserialize, Serialize};
 use warp;
@@ -28,9 +29,25 @@ struct GetMemoryResponse {
     bytes: Vec<u8>,
 }
 
+#[derive(Deserialize, Serialize)]
+struct StepRequest {
+    count: Option<u32>,
+}
+
+#[derive(Deserialize, Serialize)]
+struct Registers {
+    pc: u32,
+}
+
+#[derive(Deserialize, Serialize)]
+struct StepResponse {
+    running: bool,
+    registers: Registers,
+}
+
 impl RestApi {
-    pub fn new(cpu: Arc<RwLock<CPU>>) {
-        thread::spawn(|| {
+    pub fn new(cpu: Arc<RwLock<CPU>>) -> JoinHandle<()> {
+        return thread::spawn(|| {
             tokio::runtime::Builder::new_multi_thread()
                 .enable_all()
                 .build()
@@ -56,6 +73,7 @@ impl RestApi {
                         .and(warp::path("vm"))
                         .and(warp::path("cmd"))
                         .and(warp::path("step"))
+                        .and(warp::query::<StepRequest>())
                         .and(cpu_filter.clone())
                         .and_then(execute_step);
 
@@ -64,7 +82,7 @@ impl RestApi {
                         .or(execute_step);
 
                     warp::serve(routes)
-                        .run(([127, 0, 0, 1], 8080))
+                        .run(([0, 0, 0, 0], 8080))
                         .await;
                 });
         });
@@ -92,9 +110,25 @@ impl RestApi {
             }
         }
 
-        async fn execute_step(cpu: Arc<RwLock<CPU>>) -> Result<impl warp::Reply, warp::Rejection> {
+        async fn execute_step(query: StepRequest, cpu: Arc<RwLock<CPU>>) -> Result<impl warp::Reply, warp::Rejection> {
+            let mut cpu = cpu.write().unwrap();
+            let mut running = true;
+
+            for i in 0..query.count.unwrap_or(1) {
+                running = cpu.step();
+                if !running {
+                    break;
+                }
+            }
+
+            let pc = cpu.pc;
             Ok(warp::reply::with_status(
-                warp::reply::json(&cpu.write().unwrap().step()), warp::http::StatusCode::OK
+                warp::reply::json(&StepResponse {
+                    running,
+                    registers: Registers {
+                        pc
+                    },
+                }), warp::http::StatusCode::OK,
             ))
         }
     }

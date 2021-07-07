@@ -58,8 +58,14 @@ impl CPU {
         self.opts = opts;
     }
 
-    pub fn step(&mut self) -> bool {
+    pub fn start(&mut self) {
         self.running = true;
+    }
+
+    pub fn step(&mut self) -> bool {
+        if !self.running {
+            return false;
+        }
         match self.fetch_opcode() {
             None => { let _ = self.op_panic("Cannot fetch op"); }
             Some(bytecode) => match match Self::decode_opcode(bytecode) {

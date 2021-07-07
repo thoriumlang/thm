@@ -1,5 +1,5 @@
 use std::fs::OpenOptions;
-use std::io::{Read, Write};
+use std::io::Read;
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 
@@ -49,6 +49,7 @@ fn main() {
     cpu.cs = (STACK_MAX_ADDRESS + 1) as u32;
 
     cpu.registers[0] = 16;
+    cpu.start();
 
     if opts.is_present("step") {
         cpu.set_opts(cpu::Opts {
@@ -60,27 +61,17 @@ fn main() {
 
     let cpu = Arc::new(RwLock::new(cpu));
 
-    RestApi::new(cpu.clone());
+    let api = RestApi::new(cpu.clone());
+    println!("Listening on 0.0.0.0:8080");
 
-    loop {
-        {
+    if opts.is_present("step") {
+        let _ = api.join();
+    } else {
+        loop {
             let mut cpu = cpu.write().unwrap();
             if !cpu.step() {
                 break;
             }
-        }
-
-        if opts.is_present("step") {
-            {
-                let cpu = cpu.read().unwrap();
-                cpu.dump();
-            }
-
-            print!("> ");
-            std::io::stdout().flush().unwrap();
-            let mut buffer = String::new();
-            std::io::stdin().read_line(&mut buffer).unwrap();
-            buffer.truncate(0);
         }
     }
 
