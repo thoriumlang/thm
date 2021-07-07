@@ -38,9 +38,10 @@ struct StepRequest {
 struct Registers {
     pc: u32,
 }
+
 #[derive(Deserialize, Serialize)]
 struct Meta {
-    steps_count: u64
+    steps_count: u64,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -78,7 +79,7 @@ impl RestApi {
                         .and(warp::path("vm"))
                         .and(warp::path("cmd"))
                         .and(warp::path("step"))
-                        .and(warp::query::<StepRequest>())
+                        .and(warp::body::json::<StepRequest>())
                         .and(cpu_filter.clone())
                         .and_then(execute_step);
 
