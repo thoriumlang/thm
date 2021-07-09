@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 use std::thread;
 use std::thread::JoinHandle;
@@ -7,6 +8,7 @@ use warp;
 use warp::Filter;
 
 use crate::cpu::CPU;
+use vmlib::REG_COUNT;
 
 pub struct RestApi {}
 
@@ -17,6 +19,7 @@ struct ErrorResponse {
 }
 
 const ERROR_INVALID_ADDRESS: u8 = 0;
+const ERROR_INVALID_REGISTER: u8 = 1;
 
 #[derive(Deserialize, Serialize)]
 struct GetMemoryRequest {
@@ -64,7 +67,7 @@ impl RestApi {
                     let get_register = warp::get()
                         .and(warp::path("cpu"))
                         .and(warp::path("registers"))
-                        .and(warp::path::param::<u8>())
+                        .and(warp::path::param::<String>())
                         .and(cpu_filter.clone())
                         .and_then(get_register);
 
@@ -93,7 +96,29 @@ impl RestApi {
                 });
         });
 
-        async fn get_register(r: u8, cpu: Arc<RwLock<CPU>>) -> Result<impl warp::Reply, warp::Rejection> {
+        async fn get_register(register: String, cpu: Arc<RwLock<CPU>>) -> Result<impl warp::Reply, warp::Rejection> {
+            const MAX_REGISTER: u8 = (REG_COUNT - 1) as u8;
+            let r = match register.as_str() {
+                "cs" => CPU::CS,
+                "pc" => CPU::PC,
+                "sp" => CPU::SP,
+                str => match u8::from_str(str) {
+                    Ok(r) => match r {
+                        0..=MAX_REGISTER => r,
+                        _ => return Ok(warp::reply::with_status(
+                            warp::reply::json(&ErrorResponse {
+                                code: ERROR_INVALID_REGISTER,
+                                message: format!("{} is not a valid register", register),
+                            }), warp::http::StatusCode::BAD_REQUEST)),
+                    },
+                    Err(_) => return Ok(warp::reply::with_status(
+                        warp::reply::json(&ErrorResponse {
+                            code: ERROR_INVALID_REGISTER,
+                            message: format!("{} is not a valid register", register),
+                        }), warp::http::StatusCode::BAD_REQUEST)),
+                }
+            };
+
             Ok(warp::reply::with_status(
                 warp::reply::json(&cpu.read().unwrap().read_register(r)),
                 warp::http::StatusCode::OK,

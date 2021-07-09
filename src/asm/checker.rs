@@ -14,9 +14,9 @@ pub struct Checker {
 impl Checker {
     pub fn new(vm_config: VmConfig) -> Checker {
         let mut registers = HashMap::new();
-        registers.insert("cs".to_string(), 255);
-        registers.insert("cp".to_string(), 254);
-        registers.insert("sp".to_string(), 253);
+        registers.insert("pc".to_string(), 255);
+        registers.insert("sp".to_string(), 254);
+        registers.insert("cs".to_string(), 253);
         for r in 0..vm_config.register_count {
             registers.insert(format!("r{}", r).to_string(), r);
         }

@@ -11,9 +11,9 @@ pub struct Emitter<'t> {
 impl<'t> Emitter<'t> {
     pub fn new(nodes: &'t Vec<Node>, addresses: &'t HashMap<String, u32>) -> Emitter<'t> {
         let mut registers = HashMap::new();
-        registers.insert("cs".to_string(), 255);
-        registers.insert("cp".to_string(), 254);
-        registers.insert("sp".to_string(), 253);
+        registers.insert("cp".to_string(), 255);
+        registers.insert("sp".to_string(), 254);
+        registers.insert("cs".to_string(), 253);
         for r in 0..32 {
             registers.insert(format!("r{}", r).to_string(), r);
         }

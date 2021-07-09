@@ -19,6 +19,7 @@ pub struct Flags {
 struct Meta {
     steps: u64,
 }
+
 pub struct CPU {
     // FIXME remove pub
     pub registers: [i32; REG_COUNT],
@@ -38,6 +39,10 @@ pub struct CPU {
 }
 
 impl CPU {
+    pub const PC: u8 = 255;
+    pub const SP: u8 = 254;
+    pub const CS: u8 = 253;
+
     pub fn new() -> CPU {
         Self::new_custom_memory(Memory::new(MIN_RAM_SIZE as u32, vec![]))
     }
@@ -57,7 +62,7 @@ impl CPU {
             opts: Opts { print_op: false },
             meta: Meta {
                 steps: 0,
-            }
+            },
         }
     }
 
@@ -156,7 +161,12 @@ impl CPU {
     }
 
     pub fn read_register(&self, r: u8) -> i32 {
-        self.registers[r as usize]
+        match r {
+            255 => self.pc as i32,
+            254 => self.sp as i32,
+            253 => self.cs as i32,
+            r => self.registers[r as usize],
+        }
     }
 
     pub fn read_memory(&self, from: u32, size: u32) -> Option<Vec<u8>> {
