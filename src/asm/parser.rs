@@ -82,11 +82,13 @@ impl<'t> Parser<'t> {
             "POP" => self.parse_pop(&position),
             "STOR" => self.parse_stor(&position),
             "LOAD" => self.parse_load(&position),
+            "CALL" => self.parse_call(&position),
+            "RET" => self.parse_ret(&position),
             op => Err(format!("Invalid mnemonic '{}' at {}", op, position).to_string())
         };
     }
 
-    fn parse_nop(&mut self, position: &Position)-> Result<Instruction> {
+    fn parse_nop(&mut self, position: &Position) -> Result<Instruction> {
         let ret = Ok(Instruction::I(Op::Nop));
         match self.read_eol() {
             false => return Err(format!("Expected <eol> at {}", position).to_string()),
@@ -332,6 +334,26 @@ impl<'t> Parser<'t> {
             true => (),
         }
         Ok(Instruction::IRR(Op::Load, r0, r1))
+    }
+
+    fn parse_call(&mut self, position: &Position) -> Result<Instruction> {
+        let address = match self.read_address() {
+            None => return Err(format!("Expected <addr> at {}", position).to_string()),
+            Some(t) => t,
+        };
+        match self.read_eol() {
+            false => return Err(format!("Expected <eol> at {}", position).to_string()),
+            true => (),
+        }
+        Ok(Instruction::IA(Op::Call, address))
+    }
+
+    fn parse_ret(&mut self, position: &Position) -> Result<Instruction> {
+        match self.read_eol() {
+            false => return Err(format!("Expected <eol> at {}", position).to_string()),
+            true => (),
+        }
+        Ok(Instruction::I(Op::Ret))
     }
 
     fn read_comma(&mut self) -> bool {

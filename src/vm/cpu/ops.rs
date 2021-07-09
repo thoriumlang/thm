@@ -1,4 +1,5 @@
 mod add;
+mod call;
 mod cmp;
 mod dec;
 mod halt;
@@ -13,6 +14,7 @@ mod nop;
 mod panic;
 mod pop;
 mod push;
+mod ret;
 mod stor;
 mod load;
 

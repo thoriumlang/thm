@@ -1,0 +1,48 @@
+// computes fibonacci in a recursive way
+// in:  r0 contains the index to iteration count
+// out: r3 contains the result
+
+    PUSH r0           // save initial target
+
+    CALL @fibonacci   // compute r1 = fibonacci(r0)
+    MOV r3, r0
+
+    POP r0            // restore initial target
+    HALT
+
+// in:      r0 contains the index to compute
+// out:     r0 contains the result
+// updates: r1
+:fibonacci
+    // if index == 0 -> return 0
+    MOV r1, 0
+    CMP r0, r1
+    JNE @not_0
+    RET
+
+:not_0
+    // if index == 1 -> return 1
+    MOV r1, 1
+    CMP r0, r1
+    JNE @not_1
+    RET
+
+:not_1
+    PUSH r0
+
+    // r1 = fib(n-1)
+    DEC r0
+    CALL @fibonacci
+    MOV r1, r0
+
+    // r0 = fib(n-2)
+    POP r0
+    DEC r0
+    DEC r0
+    PUSH r1
+    CALL @fibonacci
+    POP r1
+
+    // r0 = fib(n-2) + fib(n-1)
+    ADD r0, r1
+    RET

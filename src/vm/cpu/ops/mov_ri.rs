@@ -30,9 +30,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_movi() {
+    fn test_mov_ri() {
         let mut cpu = CPU::new();
-        cpu.registers[1] = 1;
         let _ = cpu.memory.set_bytes(0, &[
             Op::MovRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
         ]);
@@ -45,7 +44,7 @@ mod tests {
     }
 
     #[test]
-    fn test_movi_zero() {
+    fn test_mov_ri_zero() {
         let mut cpu = CPU::new();
         cpu.registers[0] = 1;
         let _ = cpu.memory.set_bytes(0, &[

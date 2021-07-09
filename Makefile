@@ -19,9 +19,12 @@ target/rom.bin: target/debug/tha src/rom.a
 fibonacci: target/fibonacci.bin
 target/fibonacci.bin: target/debug/tha examples/fibonacci.a
 	target/debug/tha examples/fibonacci.a target/fibonacci.bin
+target/fibonacci_rec.bin: target/debug/tha examples/fibonacci_rec.a
+	target/debug/tha examples/fibonacci_rec.a target/fibonacci_rec.bin
 
-it: t_tha t_thm target/rom.bin target/fibonacci.bin
+it: t_tha t_thm target/rom.bin target/fibonacci.bin target/fibonacci_rec.bin
 	target/debug/thm --mmap target/rom.bin target/fibonacci.bin
+	target/debug/thm --mmap target/rom.bin target/fibonacci_rec.bin
 
 install_dev:
 	cargo build
