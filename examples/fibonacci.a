@@ -33,4 +33,6 @@
 
     MOV r31, 0x1050
     STOR r31, r3
+    LOAD r4, r31
+
     HALT

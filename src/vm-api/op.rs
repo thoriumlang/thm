@@ -17,6 +17,7 @@ pub enum Op {
     Jrne = 13, // 0x0d
     Jr = 14, // 0x0e
     Stor = 15, // 0x0f
+    Load = 16, // 0x10
 }
 
 impl Op {
@@ -38,6 +39,7 @@ impl Op {
             Op::Jrne => 5,
             Op::Jr => 5,
             Op::Stor => 3,
+            Op::Load => 3,
         }
     }
 
@@ -65,6 +67,7 @@ impl From<u8> for Op {
             13 => Self::Jrne,
             14 => Self::Jr,
             15 => Self::Stor,
+            16 => Self::Load,
             _ => Self::Panic,
         }
     }
@@ -152,5 +155,10 @@ mod tests {
     #[test]
     fn test_stor() {
         assert_eq!(Op::Stor, Op::from(Op::Stor.bytecode()));
+    }
+
+    #[test]
+    fn test_load() {
+        assert_eq!(Op::Load, Op::from(Op::Load.bytecode()));
     }
 }

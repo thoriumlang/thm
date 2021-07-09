@@ -92,6 +92,7 @@ impl CPU {
                 Op::Jrne => self.op_jrne(),
                 Op::Jr => self.op_jr(),
                 Op::Stor => self.op_stor(),
+                Op::Load => self.op_load(),
             } {
                 Ok(_) => (),
                 Err(err) => self.op_panic(err).unwrap(),

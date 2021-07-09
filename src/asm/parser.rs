@@ -81,6 +81,7 @@ impl<'t> Parser<'t> {
             "PUSH" => self.parse_push(&position),
             "POP" => self.parse_pop(&position),
             "STOR" => self.parse_stor(&position),
+            "LOAD" => self.parse_load(&position),
             op => Err(format!("Invalid mnemonic '{}' at {}", op, position).to_string())
         };
     }
@@ -294,7 +295,7 @@ impl<'t> Parser<'t> {
     }
 
     fn parse_stor(&mut self, position: &Position) -> Result<Instruction> {
-        let reg = match self.read_register() {
+        let r0 = match self.read_register() {
             None => return Err(format!("Expected <register> at {}", position).to_string()),
             Some(t) => t,
         };
@@ -302,7 +303,7 @@ impl<'t> Parser<'t> {
             false => return Err(format!("Expected , at {}", position).to_string()),
             true => (),
         }
-        let imm4 = match self.read_register() {
+        let r1 = match self.read_register() {
             None => return Err(format!("Expected <register> at {}", position).to_string()),
             Some(a) => a
         };
@@ -310,7 +311,27 @@ impl<'t> Parser<'t> {
             false => return Err(format!("Expected <eol> at {}", position).to_string()),
             true => (),
         }
-        Ok(Instruction::IRR(Op::Stor, reg, imm4))
+        Ok(Instruction::IRR(Op::Stor, r0, r1))
+    }
+
+    fn parse_load(&mut self, position: &Position) -> Result<Instruction> {
+        let r0 = match self.read_register() {
+            None => return Err(format!("Expected <register> at {}", position).to_string()),
+            Some(t) => t,
+        };
+        match self.read_comma() {
+            false => return Err(format!("Expected , at {}", position).to_string()),
+            true => (),
+        }
+        let r1 = match self.read_register() {
+            None => return Err(format!("Expected <register> at {}", position).to_string()),
+            Some(a) => a
+        };
+        match self.read_eol() {
+            false => return Err(format!("Expected <eol> at {}", position).to_string()),
+            true => (),
+        }
+        Ok(Instruction::IRR(Op::Load, r0, r1))
     }
 
     fn read_comma(&mut self) -> bool {
