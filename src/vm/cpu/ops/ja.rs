@@ -34,11 +34,11 @@ mod tests {
         let mut cpu = CPU::new();
 
         let _ = cpu.memory.set_bytes(0, &[
-            Op::JA.bytecode(), 0x00, 0x01,
-            Op::MOVI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
-            Op::HALT.bytecode(),
-            Op::MOVI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
-            Op::HALT.bytecode()
+            Op::Ja.bytecode(), 0x00, 0x01,
+            Op::MovRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
+            Op::Halt.bytecode(),
+            Op::MovRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
+            Op::Halt.bytecode()
         ]);
         cpu.registers[0] = 0;
         cpu.registers[1] = 10;

@@ -27,11 +27,11 @@ mod tests {
         let mut cpu = CPU::new();
 
         let _ = cpu.memory.set_bytes(0, &[
-            Op::JR.bytecode(), 0x00, 0x00, 0x00, 0x0c,
-            Op::MOVI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
-            Op::HALT.bytecode(),
-            Op::MOVI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
-            Op::HALT.bytecode()
+            Op::Jr.bytecode(), 0x00, 0x00, 0x00, 0x0c,
+            Op::MovRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
+            Op::Halt.bytecode(),
+            Op::MovRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
+            Op::Halt.bytecode()
         ]);
         cpu.cs = 0;
         cpu.pc = 0;

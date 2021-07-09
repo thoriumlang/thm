@@ -86,7 +86,7 @@ impl<'t> Parser<'t> {
     }
 
     fn parse_nop(&mut self, position: &Position)-> Result<Instruction> {
-        let ret = Ok(Instruction::I(Op::NOP));
+        let ret = Ok(Instruction::I(Op::Nop));
         match self.read_eol() {
             false => return Err(format!("Expected <eol> at {}", position).to_string()),
             true => (),
@@ -95,7 +95,7 @@ impl<'t> Parser<'t> {
     }
 
     fn parse_halt(&mut self, position: &Position) -> Result<Instruction> {
-        let ret = Ok(Instruction::I(Op::HALT));
+        let ret = Ok(Instruction::I(Op::Halt));
         match self.read_eol() {
             false => return Err(format!("Expected <eol> at {}", position).to_string()),
             true => (),
@@ -108,7 +108,7 @@ impl<'t> Parser<'t> {
             false => return Err(format!("Expected <eol> at {}", position).to_string()),
             true => (),
         }
-        let ret = Ok(Instruction::I(Op::PANIC));
+        let ret = Ok(Instruction::I(Op::Panic));
         ret
     }
 
@@ -123,8 +123,8 @@ impl<'t> Parser<'t> {
         }
         let instruction = match self.read_next() {
             Some(t) => match t {
-                Token::Identifier(_, r2) => Instruction::IRR(Op::MOV, r1, r2),
-                Token::Integer(_, imm4) => Instruction::IRI(Op::MOVI, r1, imm4),
+                Token::Identifier(_, r2) => Instruction::IRR(Op::MovRR, r1, r2),
+                Token::Integer(_, imm4) => Instruction::IRI(Op::MovRI, r1, imm4),
                 _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
             }
             _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
@@ -153,7 +153,7 @@ impl<'t> Parser<'t> {
             false => return Err(format!("Expected <eol> at {}", position).to_string()),
             true => (),
         }
-        let ret = Ok(Instruction::IRR(Op::ADD, reg1, reg2));
+        let ret = Ok(Instruction::IRR(Op::Add, reg1, reg2));
         ret
     }
 
@@ -174,15 +174,15 @@ impl<'t> Parser<'t> {
             false => return Err(format!("Expected <eol> at {}", position).to_string()),
             true => (),
         }
-        let ret = Ok(Instruction::IRR(Op::CMP, reg1, reg2));
+        let ret = Ok(Instruction::IRR(Op::Cmp, reg1, reg2));
         ret
     }
 
     fn parse_j(&mut self, position: &Position) -> Result<Instruction> {
         let instruction = match self.read_next() {
             Some(t) => match t {
-                Token::Address(_, addr) => Instruction::IA(Op::JR, addr),
-                Token::Integer(_, imm4) => Instruction::II(Op::JR, imm4),
+                Token::Address(_, addr) => Instruction::IA(Op::Jr, addr),
+                Token::Integer(_, imm4) => Instruction::II(Op::Jr, imm4),
                 _ => return Err(format!("Expected <imm> or <addr> at {}", position).to_string())
             }
             _ => return Err(format!("Expected <imm> or <addr> at {}", position).to_string())
@@ -203,7 +203,7 @@ impl<'t> Parser<'t> {
             false => return Err(format!("Expected <eol> at {}", position).to_string()),
             true => (),
         }
-        let ret = Ok(Instruction::IA(Op::JREQ, address));
+        let ret = Ok(Instruction::IA(Op::Jreq, address));
         ret
     }
 
@@ -216,7 +216,7 @@ impl<'t> Parser<'t> {
             false => return Err(format!("Expected <eol> at {}", position).to_string()),
             true => (),
         }
-        let ret = Ok(Instruction::IA(Op::JRNE, address));
+        let ret = Ok(Instruction::IA(Op::Jrne, address));
         ret
     }
 
@@ -237,7 +237,7 @@ impl<'t> Parser<'t> {
             false => return Err(format!("Expected <eol> at {}", position).to_string()),
             true => (),
         }
-        let ret = Ok(Instruction::IRR(Op::JA, reg1, reg2));
+        let ret = Ok(Instruction::IRR(Op::Ja, reg1, reg2));
         ret
     }
 
@@ -250,7 +250,7 @@ impl<'t> Parser<'t> {
             false => return Err(format!("Expected <eol> at {}", position).to_string()),
             true => (),
         }
-        let ret = Ok(Instruction::IR(Op::INC, reg));
+        let ret = Ok(Instruction::IR(Op::Inc, reg));
         ret
     }
 
@@ -263,7 +263,7 @@ impl<'t> Parser<'t> {
             false => return Err(format!("Expected <eol> at {}", position).to_string()),
             true => (),
         }
-        let ret = Ok(Instruction::IR(Op::DEC, reg));
+        let ret = Ok(Instruction::IR(Op::Dec, reg));
         ret
     }
 
@@ -276,7 +276,7 @@ impl<'t> Parser<'t> {
             false => return Err(format!("Expected <eol> at {}", position).to_string()),
             true => (),
         }
-        let ret = Ok(Instruction::IR(Op::PUSH, reg));
+        let ret = Ok(Instruction::IR(Op::Push, reg));
         ret
     }
 
@@ -289,7 +289,7 @@ impl<'t> Parser<'t> {
             false => return Err(format!("Expected <eol> at {}", position).to_string()),
             true => (),
         }
-        let ret = Ok(Instruction::IR(Op::POP, reg));
+        let ret = Ok(Instruction::IR(Op::Pop, reg));
         ret
     }
 
@@ -310,7 +310,7 @@ impl<'t> Parser<'t> {
             false => return Err(format!("Expected <eol> at {}", position).to_string()),
             true => (),
         }
-        Ok(Instruction::IRR(Op::STOR, reg, imm4))
+        Ok(Instruction::IRR(Op::Stor, reg, imm4))
     }
 
     fn read_comma(&mut self) -> bool {
@@ -411,7 +411,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::I(Op::NOP));
+        let expected = Node::Instruction(Instruction::I(Op::Nop));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -425,7 +425,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::I(Op::HALT));
+        let expected = Node::Instruction(Instruction::I(Op::Halt));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -439,7 +439,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::I(Op::PANIC));
+        let expected = Node::Instruction(Instruction::I(Op::Panic));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -453,7 +453,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IRR(Op::MOV, "r1".to_string(), "r0".to_string()));
+        let expected = Node::Instruction(Instruction::IRR(Op::MovRR, "r1".to_string(), "r0".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -467,7 +467,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IRI(Op::MOVI, "r1".to_string(), 42));
+        let expected = Node::Instruction(Instruction::IRI(Op::MovRI, "r1".to_string(), 42));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -481,7 +481,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IRR(Op::ADD, "r1".to_string(), "r0".to_string()));
+        let expected = Node::Instruction(Instruction::IRR(Op::Add, "r1".to_string(), "r0".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -495,7 +495,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IRR(Op::CMP, "r1".to_string(), "r0".to_string()));
+        let expected = Node::Instruction(Instruction::IRR(Op::Cmp, "r1".to_string(), "r0".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -509,7 +509,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IA(Op::JR, "address".to_string()));
+        let expected = Node::Instruction(Instruction::IA(Op::Jr, "address".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -523,7 +523,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IA(Op::JREQ, "address".to_string()));
+        let expected = Node::Instruction(Instruction::IA(Op::Jreq, "address".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -537,7 +537,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IA(Op::JRNE, "address".to_string()));
+        let expected = Node::Instruction(Instruction::IA(Op::Jrne, "address".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -551,7 +551,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IRR(Op::JA, "r0".to_string(), "r1".to_string()));
+        let expected = Node::Instruction(Instruction::IRR(Op::Ja, "r0".to_string(), "r1".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -565,7 +565,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IR(Op::INC, "r1".to_string()));
+        let expected = Node::Instruction(Instruction::IR(Op::Inc, "r1".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -579,7 +579,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IR(Op::DEC, "r1".to_string()));
+        let expected = Node::Instruction(Instruction::IR(Op::Dec, "r1".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -593,7 +593,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IR(Op::PUSH, "r1".to_string()));
+        let expected = Node::Instruction(Instruction::IR(Op::Push, "r1".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -607,7 +607,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IR(Op::POP, "r1".to_string()));
+        let expected = Node::Instruction(Instruction::IR(Op::Pop, "r1".to_string()));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -634,7 +634,7 @@ mod tests {
 
         let expected = vec![
             Node::Label("label".to_string()),
-            Node::Instruction(Instruction::IRI(Op::MOVI, "r1".to_string(), 0))
+            Node::Instruction(Instruction::IRI(Op::MovRI, "r1".to_string(), 0))
         ];
         let actual = r.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);

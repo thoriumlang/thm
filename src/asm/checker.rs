@@ -64,7 +64,7 @@ mod tests {
 
     #[test]
     fn test_register_invalid_r() {
-        let nodes = vec![Node::Instruction(Instruction::IR(Op::INC, "r32".to_string()))];
+        let nodes = vec![Node::Instruction(Instruction::IR(Op::Inc, "r32".to_string()))];
 
         let checker = Checker::new(VM_CONFIG);
         let result = checker.check(&nodes);
@@ -75,7 +75,7 @@ mod tests {
 
     #[test]
     fn test_register_invalid_rr() {
-        let nodes = vec![Node::Instruction(Instruction::IRR(Op::MOV, "r32".to_string(), "r33".to_string()))];
+        let nodes = vec![Node::Instruction(Instruction::IRR(Op::MovRR, "r32".to_string(), "r33".to_string()))];
 
         let checker = Checker::new(VM_CONFIG);
         let result = checker.check(&nodes);
@@ -86,7 +86,7 @@ mod tests {
 
     #[test]
     fn test_register_invalid_ri() {
-        let nodes = vec![Node::Instruction(Instruction::IRI(Op::MOV, "r32".to_string(), 42))];
+        let nodes = vec![Node::Instruction(Instruction::IRI(Op::MovRR, "r32".to_string(), 42))];
 
         let checker = Checker::new(VM_CONFIG);
         let result = checker.check(&nodes);

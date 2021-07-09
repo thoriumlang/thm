@@ -33,7 +33,7 @@ mod tests {
         let mut cpu = CPU::new();
 
         let _ = cpu.memory.set_bytes(0, &[
-            Op::ADD.bytecode(), 0x00, 0x01,
+            Op::Add.bytecode(), 0x00, 0x01,
         ]);
         cpu.registers[0] = 1;
         cpu.registers[1] = 2;
@@ -51,7 +51,7 @@ mod tests {
         let mut cpu = CPU::new();
 
         let _ = cpu.memory.set_bytes(0, &[
-            Op::ADD.bytecode(), 0x00, 0x01,
+            Op::Add.bytecode(), 0x00, 0x01,
         ]);
         cpu.registers[0] = 0;
         cpu.registers[1] = 0;

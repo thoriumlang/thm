@@ -40,7 +40,7 @@ mod tests {
         cpu.flags.zero = true;
         cpu.flags.negative = true;
         let _ = cpu.memory.set_bytes(5, &[
-            Op::PUSH.bytecode(), 0x00,
+            Op::Push.bytecode(), 0x00,
         ]);
         cpu.pc = 5;
         cpu.start();

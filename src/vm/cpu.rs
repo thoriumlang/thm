@@ -76,22 +76,22 @@ impl CPU {
         match self.fetch_opcode() {
             None => { let _ = self.op_panic("Cannot fetch op"); }
             Some(bytecode) => match match Self::decode_opcode(bytecode) {
-                Op::NOP => self.op_nop(),
-                Op::HALT => self.op_halt(),
-                Op::PANIC => self.op_panic("op"),
-                Op::MOV => self.op_mov(),
-                Op::MOVI => self.op_movi(),
-                Op::ADD => self.op_add(),
-                Op::CMP => self.op_cmp(),
-                Op::INC => self.op_inc(),
-                Op::DEC => self.op_dec(),
-                Op::PUSH => self.op_push(),
-                Op::POP => self.op_pop(),
-                Op::JA => self.op_ja(),
-                Op::JREQ => self.op_jreq(),
-                Op::JRNE => self.op_jrne(),
-                Op::JR => self.op_jr(),
-                Op::STOR => self.op_stor(),
+                Op::Nop => self.op_nop(),
+                Op::Halt => self.op_halt(),
+                Op::Panic => self.op_panic("read PANIC op"),
+                Op::MovRR => self.op_mov_rr(),
+                Op::MovRI => self.op_mov_ri(),
+                Op::Add => self.op_add(),
+                Op::Cmp => self.op_cmp(),
+                Op::Inc => self.op_inc(),
+                Op::Dec => self.op_dec(),
+                Op::Push => self.op_push(),
+                Op::Pop => self.op_pop(),
+                Op::Ja => self.op_ja(),
+                Op::Jreq => self.op_jreq(),
+                Op::Jrne => self.op_jrne(),
+                Op::Jr => self.op_jr(),
+                Op::Stor => self.op_stor(),
             } {
                 Ok(_) => (),
                 Err(err) => self.op_panic(err).unwrap(),
@@ -195,9 +195,9 @@ mod tests {
 
         cpu.registers[0] = 0x01020304;
         let _ = cpu.memory.set_bytes(0, &[
-            Op::PUSH.bytecode(), 0x00,
-            Op::POP.bytecode(), 0x01,
-            Op::HALT.bytecode()
+            Op::Push.bytecode(), 0x00,
+            Op::Pop.bytecode(), 0x01,
+            Op::Halt.bytecode()
         ]);
         cpu.pc = 0;
         cpu.sp = (MIN_RAM_SIZE - 1) as u32;

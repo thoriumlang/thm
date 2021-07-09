@@ -29,7 +29,7 @@ mod tests {
         let mut cpu = CPU::new();
 
         let _ = cpu.memory.set_bytes(0, &[
-            Op::INC.bytecode(), 0x00,
+            Op::Inc.bytecode(), 0x00,
         ]);
         cpu.registers[0] = 0;
         cpu.flags.zero = true;
@@ -47,7 +47,7 @@ mod tests {
         let mut cpu = CPU::new();
 
         let _ = cpu.memory.set_bytes(0, &[
-            Op::INC.bytecode(), 0x00,
+            Op::Inc.bytecode(), 0x00,
         ]);
         cpu.registers[0] = -1;
         cpu.flags.zero = false;
@@ -65,7 +65,7 @@ mod tests {
         let mut cpu = CPU::new();
 
         let _ = cpu.memory.set_bytes(0, &[
-            Op::INC.bytecode(), 0x00,
+            Op::Inc.bytecode(), 0x00,
         ]);
         cpu.registers[0] = -2;
         cpu.flags.zero = false;

@@ -1,7 +1,7 @@
 use crate::cpu::{CPU, ops};
 
 impl CPU {
-    pub(in super::super) fn op_mov(&mut self) -> ops::Result {
+    pub(in super::super) fn op_mov_rr(&mut self) -> ops::Result {
         let r0 = match self.fetch_1byte() {
             None => return Err("Cannot fetch r0"),
             Some(byte) => byte,
@@ -34,7 +34,7 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.registers[1] = 1;
         let _ = cpu.memory.set_bytes(0, &[
-            Op::MOV.bytecode(), 0x00, 0x01,
+            Op::MovRR.bytecode(), 0x00, 0x01,
         ]);
         cpu.pc = 0;
         cpu.start();
@@ -50,7 +50,7 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.registers[0] = 1;
         let _ = cpu.memory.set_bytes(0, &[
-            Op::MOV.bytecode(), 0x00, 0x01,
+            Op::MovRR.bytecode(), 0x00, 0x01,
         ]);
         cpu.pc = 0;
         cpu.start();

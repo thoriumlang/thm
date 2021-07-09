@@ -9,10 +9,13 @@ impl CPU {
 
         if !self.flags.zero {
             self.pc = target;
-        }
-
-        if self.opts.print_op {
-            println!("{:03}\tJRNE {:#010x}", self.meta.steps, target);
+            if self.opts.print_op {
+                println!("{:03}\tJRNE {:#010x}", self.meta.steps, target);
+            }
+        } else {
+            if self.opts.print_op {
+                println!("{:03}\tNOP  (JRNE {:#010x})", self.meta.steps, target);
+            }
         }
 
         Ok(())
@@ -30,11 +33,11 @@ mod tests {
         let mut cpu = CPU::new();
 
         let _ = cpu.memory.set_bytes(0, &[
-            Op::JRNE.bytecode(), 0x00, 0x00, 0x00, 0x0C,
-            Op::MOVI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
-            Op::HALT.bytecode(),
-            Op::MOVI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
-            Op::HALT.bytecode()
+            Op::Jrne.bytecode(), 0x00, 0x00, 0x00, 0x0C,
+            Op::MovRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
+            Op::Halt.bytecode(),
+            Op::MovRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
+            Op::Halt.bytecode()
         ]);
         cpu.flags.zero = false;
         cpu.cs = 0;
@@ -49,11 +52,11 @@ mod tests {
         let mut cpu = CPU::new();
 
         let _ = cpu.memory.set_bytes(0, &[
-            Op::JRNE.bytecode(), 0x00, 0x00, 0x00, 0x0C,
-            Op::MOVI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
-            Op::HALT.bytecode(),
-            Op::MOVI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
-            Op::HALT.bytecode()
+            Op::Jrne.bytecode(), 0x00, 0x00, 0x00, 0x0C,
+            Op::MovRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
+            Op::Halt.bytecode(),
+            Op::MovRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
+            Op::Halt.bytecode()
         ]);
         cpu.flags.zero = true;
         cpu.cs = 0;

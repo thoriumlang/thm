@@ -44,7 +44,7 @@ mod tests {
         cpu.registers[0] = 0x01020304;
         cpu.registers[1] = 0x00000000;
         let _ = cpu.memory.set_bytes(5, &[
-            Op::STOR.bytecode(), 0x01, 0x00
+            Op::Stor.bytecode(), 0x01, 0x00
         ]);
         cpu.pc = 5;
         cpu.start();

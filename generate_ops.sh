@@ -36,7 +36,7 @@ for op in `cat $FILE`; do
   MNEMONIC=`echo "$op" | cut -d',' -f2`
 echo "            $BYTECODE => Self::$MNEMONIC,"
 done
-echo "            _ => Self::PANIC,"
+echo "            _ => Self::Panic,"
 echo "        }"
 echo "    }"
 echo "}"

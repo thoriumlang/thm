@@ -79,7 +79,7 @@ mod tests {
     #[test]
     fn emit() {
         let nodes = vec![
-            Node::Instruction(Instruction::IA(Op::JREQ, "label2".to_string())),
+            Node::Instruction(Instruction::IA(Op::Jreq, "label2".to_string())),
             Node::Label("label2".to_string()),
         ];
         let addresses = AddressResolver::new(&nodes).resolve().unwrap();
