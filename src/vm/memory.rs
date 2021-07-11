@@ -97,6 +97,17 @@ impl Memory {
         }
     }
 
+    pub fn get_bytes(&self, from: u32, size: u32) -> Option<Vec<u8>> {
+        let mut vec: Vec<u8> = Vec::with_capacity(size as usize);
+        for i in from..(from + size) {
+            match self.get(i) {
+                None => return None,
+                Some(v) => vec.push(v)
+            }
+        }
+        Some(vec)
+    }
+
     #[inline]
     fn location(&self, address: usize) -> Location {
         if address >= ROM_START && address < ROM_START + ROM_SIZE {

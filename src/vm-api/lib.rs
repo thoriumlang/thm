@@ -43,6 +43,8 @@ pub const ROM_SIZE: usize = 32 * 1024 * 1024; // 32 MB
 // fixme use CpuWord?
 pub const ROM_START: usize = MAX_ADDRESS - ROM_SIZE + 1;
 
+pub const VIDEO_BUFFER_1: usize = 0xFD69F800;
+
 // todo review casts
 
 #[cfg(test)]

@@ -1,12 +1,13 @@
 use crate::cpu::{CPU, ops};
 use super::super::vmlib::MAX_REGISTER;
+use crate::memory::Memory;
 
 impl CPU {
-    pub(in super::super) fn op_stor(&mut self) -> ops::Result {
+    pub(in super::super) fn op_stor(&mut self,memory: &mut Memory) -> ops::Result {
         // we map r = 0x12345678 like to:
         // addr = 12, addr+1 = 34, addr+2 = 56, addr+3 = 78
 
-        let r0 = match self.fetch_1byte() {
+        let r0 = match self.fetch_1byte(memory) {
             None => return Err("Cannot fetch r0"),
             Some(byte) => match byte as usize {
                 0..=MAX_REGISTER => byte as usize,
@@ -14,7 +15,7 @@ impl CPU {
             },
         };
 
-        let r1 = match self.fetch_1byte() {
+        let r1 = match self.fetch_1byte(memory) {
             None => return Err("Cannot fetch r1"),
             Some(byte) => match byte as usize {
                 0..=MAX_REGISTER => byte as usize,
@@ -28,7 +29,7 @@ impl CPU {
 
         let mut address = self.registers[r0] as u32;
         for byte in self.registers[r1].to_be_bytes().iter() {
-            if !self.memory.set(address, *byte) {
+            if !memory.set(address, *byte) {
                 return Err("Cannot set");
             }
             address += 1;
@@ -43,24 +44,28 @@ mod tests {
     use crate::cpu::Op;
 
     use super::*;
+    use super::super::super::vmlib::MIN_RAM_SIZE;
 
     #[test]
     fn test_stor() {
-        let mut cpu = CPU::new();
-
-        cpu.registers[0] = 0x01020304;
-        cpu.registers[1] = 0x00000000;
-        let _ = cpu.memory.set_bytes(5, &[
+        let mut memory = Memory::new(MIN_RAM_SIZE as u32, vec![]);
+        let _ = memory.set_bytes(5, &[
             Op::Stor.bytecode(), 0x01, 0x00
         ]);
+
+        let mut cpu = CPU::new();
+        cpu.registers[0] = 0x01020304;
+        cpu.registers[1] = 0x00000000;
         cpu.pc = 5;
         cpu.start();
-        cpu.step();
+
+        cpu.step(&mut memory);
+
         assert_eq!(cpu.registers[0], 0x01020304, "{} != 0x01020304", cpu.registers[0]);
 
-        assert_eq!(Some(0x01), cpu.memory.get(0), "mem[0]: 1 != {:?}", cpu.memory.get(0));
-        assert_eq!(Some(0x02), cpu.memory.get(1), "mem[1]: 2 != {:?}", cpu.memory.get(1));
-        assert_eq!(Some(0x03), cpu.memory.get(2), "mem[2]: 3 != {:?}", cpu.memory.get(2));
-        assert_eq!(Some(0x04), cpu.memory.get(3), "mem[3]: 4 != {:?}", cpu.memory.get(3));
+        assert_eq!(Some(0x01), memory.get(0), "mem[0]: 1 != {:?}", memory.get(0));
+        assert_eq!(Some(0x02), memory.get(1), "mem[1]: 2 != {:?}", memory.get(1));
+        assert_eq!(Some(0x03), memory.get(2), "mem[2]: 3 != {:?}", memory.get(2));
+        assert_eq!(Some(0x04), memory.get(3), "mem[3]: 4 != {:?}", memory.get(3));
     }
 }

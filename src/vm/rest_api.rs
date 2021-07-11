@@ -10,6 +10,8 @@ use warp::Filter;
 use vmlib::{MAX_REGISTER, REG_CS, REG_PC, REG_SP};
 
 use crate::cpu::CPU;
+use crate::memory::Memory;
+use std::borrow::BorrowMut;
 
 pub struct RestApi {}
 
@@ -56,7 +58,7 @@ struct StepResponse {
 }
 
 impl RestApi {
-    pub fn new(cpu: Arc<RwLock<CPU>>) -> JoinHandle<()> {
+    pub fn new(cpu: Arc<RwLock<CPU>>, memory: Arc<RwLock<Memory>>) -> JoinHandle<()> {
         return thread::spawn(|| {
             tokio::runtime::Builder::new_multi_thread()
                 .enable_all()
@@ -64,6 +66,7 @@ impl RestApi {
                 .unwrap()
                 .block_on(async move {
                     let cpu_filter = warp::any().map(move || cpu.clone());
+                    let memory_filter = warp::any().map(move || memory.clone());
 
                     let get_register = warp::get()
                         .and(warp::path("cpu"))
@@ -76,7 +79,7 @@ impl RestApi {
                         .and(warp::path("mem"))
                         .and(warp::path("range"))
                         .and(warp::query::<GetMemoryRequest>())
-                        .and(cpu_filter.clone())
+                        .and(memory_filter.clone())
                         .and_then(get_memory);
 
                     let execute_step = warp::post()
@@ -85,6 +88,7 @@ impl RestApi {
                         .and(warp::path("step"))
                         .and(warp::body::json::<StepRequest>())
                         .and(cpu_filter.clone())
+                        .and(memory_filter.clone())
                         .and_then(execute_step);
 
                     let routes = get_register
@@ -125,8 +129,8 @@ impl RestApi {
             ))
         }
 
-        async fn get_memory(query: GetMemoryRequest, cpu: Arc<RwLock<CPU>>) -> Result<impl warp::Reply, warp::Rejection> {
-            match cpu.read().unwrap().read_memory(query.from, query.to - query.from) {
+        async fn get_memory(query: GetMemoryRequest, memory: Arc<RwLock<Memory>>) -> Result<impl warp::Reply, warp::Rejection> {
+            match memory.read().unwrap().get_bytes(query.from, query.to - query.from) {
                 None => Ok(warp::reply::with_status(
                     warp::reply::json(&ErrorResponse {
                         code: ERROR_INVALID_ADDRESS,
@@ -141,18 +145,19 @@ impl RestApi {
             }
         }
 
-        async fn execute_step(query: StepRequest, cpu: Arc<RwLock<CPU>>) -> Result<impl warp::Reply, warp::Rejection> {
+        async fn execute_step(query: StepRequest, cpu: Arc<RwLock<CPU>>, memory: Arc<RwLock<Memory>>) -> Result<impl warp::Reply, warp::Rejection> {
             let mut cpu = cpu.write().unwrap();
+            let mut memory = memory.write().unwrap();
             let mut running = true;
 
             for _ in 0..query.count.unwrap_or(1) {
-                running = cpu.step();
+                running = cpu.step(memory.borrow_mut());
                 if !running {
                     break;
                 }
             }
 
-            let pc = cpu.pc;
+            let pc = cpu.read_register(REG_PC) as u32;
             Ok(warp::reply::with_status(
                 warp::reply::json(&StepResponse {
                     running,

@@ -1,11 +1,13 @@
 use crate::cpu::{CPU, ops};
+
 use super::super::vmlib::MAX_REGISTER;
+use crate::memory::Memory;
 
 impl CPU {
-    pub(in super::super) fn op_pop(&mut self) -> ops::Result {
+    pub(in super::super) fn op_pop(&mut self, memory: &mut Memory) -> ops::Result {
         // we map sp = 78, sp-1 = 56, sp-2 = 34 sp-3 = 12 like to:
         // r = 0x12345678
-        let r = match self.fetch_1byte() {
+        let r = match self.fetch_1byte(memory) {
             None => return Err("Cannot fetch r"),
             Some(byte) => match byte as usize {
                 0..=MAX_REGISTER => byte as usize,
@@ -16,7 +18,7 @@ impl CPU {
         let mut bytes: u32 = 0;
         for i in 0..4 {
             bytes = bytes << 8;
-            match self.memory.get(self.sp + i) {
+            match memory.get(self.sp + i) {
                 None => return Err("Cannot fetch 4 bytes"),
                 Some(byte) => bytes |= byte as u32,
             }
@@ -39,25 +41,29 @@ mod tests {
     use crate::cpu::Op;
 
     use super::*;
+    use super::super::super::vmlib::MIN_RAM_SIZE;
 
     #[test]
     fn test_pop() {
-        let mut cpu = CPU::new();
-
+        let mut memory = Memory::new(MIN_RAM_SIZE as u32, vec![]);
         // pretend we pushed something before
-        let _ = cpu.memory.set(0, 0x01);
-        let _ = cpu.memory.set(1, 0x02);
-        let _ = cpu.memory.set(2, 0x03);
-        let _ = cpu.memory.set(3, 0x04);
+        let _ = memory.set(0, 0x01);
+        let _ = memory.set(1, 0x02);
+        let _ = memory.set(2, 0x03);
+        let _ = memory.set(3, 0x04);
+        let _ = memory.set_bytes(4, &[
+            Op::Pop.bytecode(), 0x00,
+        ]);
+
+        let mut cpu = CPU::new();
         cpu.sp = 0;
         cpu.flags.zero = true;
         cpu.flags.negative = true;
-        let _ = cpu.memory.set_bytes(4, &[
-            Op::Pop.bytecode(), 0x00,
-        ]);
         cpu.pc = 4;
         cpu.start();
-        cpu.step();
+
+        cpu.step(&mut memory);
+
         assert_eq!(cpu.registers[0], 0x01020304, "reg {} != {}", cpu.registers[0], 0x01020304);
         assert_eq!(false, cpu.flags.zero, "zero flag not set");
         assert_eq!(false, cpu.flags.negative, "negative flag set");

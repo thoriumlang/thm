@@ -5,7 +5,7 @@ impl CPU {
         if self.opts.print_op {
             println!("{:03}\tHALT", self.meta.steps);
         }
-        self.running = false;
+        self.flags.running = false;
         Ok(())
     }
 }

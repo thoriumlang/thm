@@ -8,7 +8,6 @@ pub struct VmConfig {
 }
 
 pub struct Checker {
-    vm_config: VmConfig,
     registers: HashMap<String, usize>,
 }
 
@@ -22,7 +21,6 @@ impl Checker {
             registers.insert(format!("r{}", r).to_string(), r);
         }
         Checker {
-            vm_config,
             registers,
         }
     }

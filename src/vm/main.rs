@@ -1,3 +1,4 @@
+use std::borrow::BorrowMut;
 use std::fs::OpenOptions;
 use std::io::Read;
 use std::str::FromStr;
@@ -6,7 +7,7 @@ use std::sync::{Arc, RwLock};
 use clap::{App, Arg, ArgMatches, crate_authors, crate_version};
 
 use cpu::CPU;
-use vmlib::{MIN_RAM_SIZE, ROM_START, STACK_LEN, STACK_MAX_ADDRESS, STACK_SIZE};
+use vmlib::{MIN_RAM_SIZE, REG_SP, ROM_START, STACK_LEN, STACK_MAX_ADDRESS, STACK_SIZE};
 
 use crate::memory::Memory;
 use crate::rest_api::RestApi;
@@ -44,11 +45,11 @@ fn main() {
         memory.dump((STACK_MAX_ADDRESS as u32) + 1, ROM_START as u32);
     }
 
-    let mut cpu = CPU::new_custom_memory(memory);
-    cpu.sp = STACK_MAX_ADDRESS as u32;
-    cpu.cs = (STACK_MAX_ADDRESS + 1) as u32;
+    let memory = Arc::new(RwLock::new(memory));
 
-    cpu.registers[0] = 16;
+    let mut cpu = CPU::new();
+    cpu.write_register(REG_SP, STACK_MAX_ADDRESS as i32);
+    cpu.write_register(0, 16);
     cpu.start();
 
     if opts.is_present("step") {
@@ -61,7 +62,7 @@ fn main() {
 
     let cpu = Arc::new(RwLock::new(cpu));
 
-    let api = RestApi::new(cpu.clone());
+    let api = RestApi::new(cpu.clone(), memory.clone());
     println!("Listening on 0.0.0.0:8080");
 
     if opts.is_present("step") {
@@ -69,14 +70,14 @@ fn main() {
     } else {
         loop {
             let mut cpu = cpu.write().unwrap();
-            if !cpu.step() {
+            if !cpu.step(memory.write().unwrap().borrow_mut()) {
                 break;
             }
         }
     }
 
     let cpu = cpu.read().unwrap();
-    println!("f({}): {}", cpu.registers[0], cpu.registers[3]);
+    println!("f({}): {}", cpu.read_register(0), cpu.read_register(3));
     println!("f(16): 987");
 }
 

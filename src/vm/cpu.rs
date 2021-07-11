@@ -1,6 +1,6 @@
 extern crate vmlib;
 
-use vmlib::{MIN_RAM_SIZE, REG_COUNT, ROM_START};
+use vmlib::{REG_COUNT, ROM_START};
 use vmlib::op::Op;
 
 use crate::memory::Memory;
@@ -12,6 +12,7 @@ pub struct Opts {
 }
 
 pub struct Flags {
+    running: bool,
     zero: bool,
     negative: bool,
 }
@@ -21,40 +22,30 @@ struct Meta {
 }
 
 pub struct CPU {
-    // FIXME remove pub
-    pub registers: [i32; REG_COUNT],
+    registers: [i32; REG_COUNT],
     /// program pointer (aka ip)
-    // FIXME remove pub
-    pub pc: u32,
+    pc: u32,
     /// stack pointer
-    // FIXME remove pub
-    pub sp: u32,
+    sp: u32,
     /// start of code segment
-    pub cs: u32,
+    cs: u32,
     flags: Flags,
-    memory: Memory,
-    running: bool,
     opts: Opts,
     meta: Meta,
 }
 
 impl CPU {
     pub fn new() -> CPU {
-        Self::new_custom_memory(Memory::new(MIN_RAM_SIZE as u32, vec![]))
-    }
-
-    pub fn new_custom_memory(memory: Memory) -> CPU {
         CPU {
             registers: [0; REG_COUNT],
             pc: ROM_START as u32,
             sp: 0,
             cs: ROM_START as u32,
             flags: Flags {
+                running: false,
                 zero: true,
                 negative: false,
             },
-            memory,
-            running: false,
             opts: Opts { print_op: false },
             meta: Meta {
                 steps: 0,
@@ -67,43 +58,43 @@ impl CPU {
     }
 
     pub fn start(&mut self) {
-        self.running = true;
+        self.flags.running = true;
     }
 
-    pub fn step(&mut self) -> bool {
-        if !self.running {
+    pub fn step(&mut self, memory: &mut Memory) -> bool {
+        if !self.flags.running {
             return false;
         }
-        match self.fetch_opcode() {
+        match self.fetch_opcode(memory) {
             None => { let _ = self.op_panic("Cannot fetch op"); }
             Some(bytecode) => match match Self::decode_opcode(bytecode) {
                 Op::Nop => self.op_nop(),
                 Op::Halt => self.op_halt(),
                 Op::Panic => self.op_panic("read PANIC op"),
-                Op::MovRR => self.op_mov_rr(),
-                Op::MovRI => self.op_mov_ri(),
-                Op::AddRR => self.op_add_rr(),
-                Op::AddRI => self.op_add_ri(),
-                Op::Cmp => self.op_cmp(),
-                Op::Inc => self.op_inc(),
-                Op::Dec => self.op_dec(),
-                Op::Push => self.op_push(),
-                Op::Pop => self.op_pop(),
-                Op::Ja => self.op_ja(),
-                Op::Jreq => self.op_jreq(),
-                Op::Jrne => self.op_jrne(),
-                Op::Jr => self.op_jr(),
-                Op::Stor => self.op_stor(),
-                Op::Load => self.op_load(),
-                Op::Call => self.op_call(),
-                Op::Ret => self.op_ret(),
+                Op::MovRR => self.op_mov_rr(memory),
+                Op::MovRI => self.op_mov_ri(memory),
+                Op::AddRR => self.op_add_rr(memory),
+                Op::AddRI => self.op_add_ri(memory),
+                Op::Cmp => self.op_cmp(memory),
+                Op::Inc => self.op_inc(memory),
+                Op::Dec => self.op_dec(memory),
+                Op::Push => self.op_push(memory),
+                Op::Pop => self.op_pop(memory),
+                Op::Ja => self.op_ja(memory),
+                Op::Jreq => self.op_jreq(memory),
+                Op::Jrne => self.op_jrne(memory),
+                Op::Jr => self.op_jr(memory),
+                Op::Stor => self.op_stor(memory),
+                Op::Load => self.op_load(memory),
+                Op::Call => self.op_call(memory),
+                Op::Ret => self.op_ret(memory),
             } {
                 Ok(_) => (),
                 Err(err) => self.op_panic(err).unwrap(),
             }
         }
         self.meta.steps += 1;
-        self.running
+        self.flags.running
     }
 
     pub fn dump(&self) {
@@ -132,25 +123,25 @@ impl CPU {
         }
     }
 
-    fn fetch_opcode(&mut self) -> Option<u8> {
-        self.fetch_1byte()
+    fn fetch_opcode(&mut self, memory: &Memory) -> Option<u8> {
+        self.fetch_1byte(memory)
     }
 
     fn decode_opcode(opcode: u8) -> Op {
         Op::from(opcode)
     }
 
-    fn fetch_1byte(&mut self) -> Option<u8> {
-        let byte = self.memory.get(self.pc);
+    fn fetch_1byte(&mut self, memory: &Memory) -> Option<u8> {
+        let byte = memory.get(self.pc);
         self.pc += 1;
         return byte;
     }
 
-    fn fetch_4bytes(&mut self) -> Option<u32> {
+    fn fetch_4bytes(&mut self, memory: &Memory) -> Option<u32> {
         let mut result: u32 = 0;
         for i in 0..4 {
             result = result << 8;
-            match self.memory.get(self.pc + i) {
+            match memory.get(self.pc + i) {
                 None => return None,
                 Some(byte) => result |= byte as u32,
             }
@@ -168,15 +159,13 @@ impl CPU {
         }
     }
 
-    pub fn read_memory(&self, from: u32, size: u32) -> Option<Vec<u8>> {
-        let mut vec: Vec<u8> = Vec::with_capacity(size as usize);
-        for i in from..(from + size) {
-            match self.memory.get(i) {
-                None => return None,
-                Some(v) => vec.push(v)
-            }
+    pub fn write_register(&mut self, r: usize, val: i32) {
+        match r {
+            255 => self.pc = val as u32,
+            254 => self.sp = val as u32,
+            253 => self.cs = val as u32,
+            r => self.registers[r] = val,
         }
-        Some(vec)
     }
 
     #[inline]
@@ -189,7 +178,7 @@ impl CPU {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::vmlib::ROM_START;
+    use super::vmlib::{MIN_RAM_SIZE, ROM_START};
 
     #[test]
     fn test_create_cpu() {
@@ -201,18 +190,21 @@ mod tests {
 
     #[test]
     fn test_push_pop() {
-        let mut cpu = CPU::new();
-
-        cpu.registers[0] = 0x01020304;
-        let _ = cpu.memory.set_bytes(0, &[
+        let mut memory = Memory::new(MIN_RAM_SIZE as u32, vec![]);
+        let _ = memory.set_bytes(0, &[
             Op::Push.bytecode(), 0x00,
             Op::Pop.bytecode(), 0x01,
             Op::Halt.bytecode()
         ]);
+
+        let mut cpu = CPU::new();
+        cpu.registers[0] = 0x01020304;
         cpu.pc = 0;
         cpu.sp = (MIN_RAM_SIZE - 1) as u32;
         cpu.start();
-        while cpu.step() {}
+
+        while cpu.step(&mut memory) {}
+
         assert_eq!(cpu.registers[0], cpu.registers[1], "{} != {}", cpu.registers[0], cpu.registers[1]);
     }
 }

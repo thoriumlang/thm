@@ -1,8 +1,9 @@
 use crate::cpu::{CPU, ops};
+use crate::memory::Memory;
 
 impl CPU {
-    pub(in super::super) fn op_jrne(&mut self) -> ops::Result {
-        let target = match self.fetch_4bytes() {
+    pub(in super::super) fn op_jrne(&mut self, memory: &mut Memory) -> ops::Result {
+        let target = match self.fetch_4bytes(memory) {
             None => return Err("Cannot fetch target"),
             Some(bytes) => bytes,
         } + self.cs;
@@ -27,42 +28,49 @@ mod tests {
     use crate::cpu::Op;
 
     use super::*;
+    use super::super::super::vmlib::MIN_RAM_SIZE;
 
     #[test]
     fn test_jrne_zero() {
-        let mut cpu = CPU::new();
-
-        let _ = cpu.memory.set_bytes(0, &[
+        let mut memory = Memory::new(MIN_RAM_SIZE as u32, vec![]);
+        let _ = memory.set_bytes(0, &[
             Op::Jrne.bytecode(), 0x00, 0x00, 0x00, 0x0C,
             Op::MovRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
             Op::Halt.bytecode(),
             Op::MovRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
             Op::Halt.bytecode()
         ]);
+
+        let mut cpu = CPU::new();
         cpu.flags.zero = false;
         cpu.cs = 0;
         cpu.pc = 0;
         cpu.start();
-        while cpu.step() {}
+
+        while cpu.step(&mut memory) {}
+
         assert_eq!(cpu.registers[0], 2);
     }
 
     #[test]
     fn test_jrne_nonzero() {
-        let mut cpu = CPU::new();
-
-        let _ = cpu.memory.set_bytes(0, &[
+        let mut memory = Memory::new(MIN_RAM_SIZE as u32, vec![]);
+        let _ = memory.set_bytes(0, &[
             Op::Jrne.bytecode(), 0x00, 0x00, 0x00, 0x0C,
             Op::MovRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
             Op::Halt.bytecode(),
             Op::MovRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
             Op::Halt.bytecode()
         ]);
+
+        let mut cpu = CPU::new();
         cpu.flags.zero = true;
         cpu.cs = 0;
         cpu.pc = 0;
         cpu.start();
-        while cpu.step() {}
+
+        while cpu.step(&mut memory) {}
+
         assert_eq!(cpu.registers[0], 1);
     }
 }
