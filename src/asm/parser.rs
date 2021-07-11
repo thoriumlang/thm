@@ -387,16 +387,6 @@ impl<'t> Parser<'t> {
         };
     }
 
-    fn read_integer(&mut self) -> Option<u32> {
-        return match self.lexer.next() {
-            Some(Ok(t)) => match t {
-                Token::Integer(_, v) => Some(v),
-                _ => None
-            },
-            _ => None,
-        };
-    }
-
     fn read_address(&mut self) -> Option<String> {
         return match self.lexer.next() {
             Some(Ok(t)) => match t {
