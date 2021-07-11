@@ -43,3 +43,6 @@ install_release:
 
 op:
 	./generate_ops.sh src/vm-api/op.csv > src/vm-api/op.rs
+
+clean:
+	cargo clean

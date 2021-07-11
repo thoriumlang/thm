@@ -6,20 +6,21 @@ pub enum Op {
     Panic = 2, // 0x02
     MovRI = 3, // 0x03
     MovRR = 4, // 0x04
-    Add = 5, // 0x05
-    Cmp = 6, // 0x06
-    Inc = 7, // 0x07
-    Dec = 8, // 0x08
-    Push = 9, // 0x09
-    Pop = 10, // 0x0a
-    Ja = 11, // 0x0b
-    Jreq = 12, // 0x0c
-    Jrne = 13, // 0x0d
-    Jr = 14, // 0x0e
-    Stor = 15, // 0x0f
-    Load = 16, // 0x10
-    Call = 17, // 0x11
-    Ret = 18, // 0x12
+    AddRR = 5, // 0x05
+    AddRI = 6, // 0x06
+    Cmp = 7, // 0x07
+    Inc = 8, // 0x08
+    Dec = 9, // 0x09
+    Push = 10, // 0x0a
+    Pop = 11, // 0x0b
+    Ja = 12, // 0x0c
+    Jreq = 13, // 0x0d
+    Jrne = 14, // 0x0e
+    Jr = 15, // 0x0f
+    Stor = 16, // 0x10
+    Load = 17, // 0x11
+    Call = 18, // 0x12
+    Ret = 19, // 0x13
 }
 
 impl Op {
@@ -30,7 +31,8 @@ impl Op {
             Op::Panic => 1,
             Op::MovRI => 6,
             Op::MovRR => 3,
-            Op::Add => 3,
+            Op::AddRR => 3,
+            Op::AddRI => 6,
             Op::Cmp => 3,
             Op::Inc => 2,
             Op::Dec => 2,
@@ -60,20 +62,21 @@ impl From<u8> for Op {
             2 => Self::Panic,
             3 => Self::MovRI,
             4 => Self::MovRR,
-            5 => Self::Add,
-            6 => Self::Cmp,
-            7 => Self::Inc,
-            8 => Self::Dec,
-            9 => Self::Push,
-            10 => Self::Pop,
-            11 => Self::Ja,
-            12 => Self::Jreq,
-            13 => Self::Jrne,
-            14 => Self::Jr,
-            15 => Self::Stor,
-            16 => Self::Load,
-            17 => Self::Call,
-            18 => Self::Ret,
+            5 => Self::AddRR,
+            6 => Self::AddRI,
+            7 => Self::Cmp,
+            8 => Self::Inc,
+            9 => Self::Dec,
+            10 => Self::Push,
+            11 => Self::Pop,
+            12 => Self::Ja,
+            13 => Self::Jreq,
+            14 => Self::Jrne,
+            15 => Self::Jr,
+            16 => Self::Stor,
+            17 => Self::Load,
+            18 => Self::Call,
+            19 => Self::Ret,
             _ => Self::Panic,
         }
     }
@@ -109,8 +112,13 @@ mod tests {
     }
 
     #[test]
-    fn test_add() {
-        assert_eq!(Op::Add, Op::from(Op::Add.bytecode()));
+    fn test_addrr() {
+        assert_eq!(Op::AddRR, Op::from(Op::AddRR.bytecode()));
+    }
+
+    #[test]
+    fn test_addri() {
+        assert_eq!(Op::AddRI, Op::from(Op::AddRI.bytecode()));
     }
 
     #[test]

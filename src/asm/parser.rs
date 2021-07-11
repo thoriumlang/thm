@@ -140,7 +140,7 @@ impl<'t> Parser<'t> {
     }
 
     fn parse_add(&mut self, position: &Position) -> Result<Instruction> {
-        let reg1 = match self.read_register() {
+        let r1 = match self.read_register() {
             None => return Err(format!("Expected <register> at {}", position).to_string()),
             Some(t) => t,
         };
@@ -148,16 +148,19 @@ impl<'t> Parser<'t> {
             false => return Err(format!("Expected , at {}", position).to_string()),
             true => (),
         }
-        let reg2 = match self.read_register() {
-            None => return Err(format!("Expected <register> at {}", position).to_string()),
-            Some(t) => t
+        let instruction = match self.read_next() {
+            Some(t) => match t {
+                Token::Identifier(_, r2) => Instruction::IRR(Op::AddRR, r1, r2),
+                Token::Integer(_, imm4) => Instruction::IRI(Op::AddRI, r1, imm4),
+                _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
+            }
+            _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
         };
         match self.read_eol() {
             false => return Err(format!("Expected <eol> at {}", position).to_string()),
             true => (),
         }
-        let ret = Ok(Instruction::IRR(Op::Add, reg1, reg2));
-        ret
+        Ok(instruction)
     }
 
     fn parse_cmp(&mut self, position: &Position) -> Result<Instruction> {
@@ -516,7 +519,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add() {
+    fn test_add_rr() {
         let mut lexer = Lexer::from_text("ADD r1, r0\n");
         let r = Parser::from_lexer(&mut lexer).next();
         assert_eq!(true, r.is_some());
@@ -524,7 +527,21 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IRR(Op::Add, "r1".to_string(), "r0".to_string()));
+        let expected = Node::Instruction(Instruction::IRR(Op::AddRR, "r1".to_string(), "r0".to_string()));
+        let actual = item.unwrap();
+        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+    }
+
+    #[test]
+    fn test_add_ri() {
+        let mut lexer = Lexer::from_text("ADD r1, 9\n");
+        let r = Parser::from_lexer(&mut lexer).next();
+        assert_eq!(true, r.is_some());
+
+        let item = r.unwrap();
+        assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
+
+        let expected = Node::Instruction(Instruction::IRI(Op::AddRI, "r1".to_string(), 9));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }

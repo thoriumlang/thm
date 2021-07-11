@@ -1,8 +1,9 @@
 use crate::cpu::{CPU, ops};
+
 use super::super::vmlib::MAX_REGISTER;
 
 impl CPU {
-    pub(in super::super) fn op_add_rr(&mut self) -> ops::Result {
+    pub(in super::super) fn op_add_ri(&mut self) -> ops::Result {
         let r0 = match self.fetch_1byte() {
             None => return Err("Cannot fetch r0"),
             Some(byte) => match byte as usize {
@@ -10,19 +11,17 @@ impl CPU {
                 _ => return Err("r0 is not a valid op register")
             },
         };
-        let r1 = match self.fetch_1byte() {
-            None => return Err("Cannot fetch r1"),
-            Some(byte) => match byte as usize {
-                0..=MAX_REGISTER => byte as usize,
-                _ => return Err("r1 is not a valid op register")
-            },
-        };
-        self.registers[r0] += self.registers[r1];
+        let imm4 = match self.fetch_4bytes() {
+            None => return Err("Cannot fetch imm4"),
+            Some(byte) => byte,
+        } as i32;
+
+        self.registers[r0] += imm4;
         self.flags.zero = self.registers[r0] == 0;
         self.flags.negative = self.registers[r0] < 0;
 
         if self.opts.print_op {
-            println!("{:03}\tADD  r{}, r{}", self.meta.steps, r0, r1);
+            println!("{:03}\tADD  r{}, {}", self.meta.steps, r0, imm4);
         }
 
         Ok(())
@@ -36,37 +35,33 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_add_rr() {
+    fn test_add_ri() {
         let mut cpu = CPU::new();
 
         let _ = cpu.memory.set_bytes(0, &[
-            Op::AddRR.bytecode(), 0x00, 0x01,
+            Op::AddRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
         ]);
-        cpu.registers[0] = 1;
-        cpu.registers[1] = 2;
+        cpu.registers[0] = 0;
         cpu.pc = 0;
         cpu.start();
         cpu.step();
-        assert_eq!(cpu.registers[0], 3);
-        assert_eq!(cpu.registers[1], 2);
+        assert_eq!(cpu.registers[0], 1);
         assert_eq!(cpu.flags.zero, false);
         assert_eq!(cpu.flags.negative, false);
     }
 
     #[test]
-    fn test_add_rr_zero() {
+    fn test_add_ri_zero() {
         let mut cpu = CPU::new();
 
         let _ = cpu.memory.set_bytes(0, &[
-            Op::AddRR.bytecode(), 0x00, 0x01,
+            Op::AddRI.bytecode(), 0x00, 0xff, 0xff, 0xff, 0xff,
         ]);
-        cpu.registers[0] = 0;
-        cpu.registers[1] = 0;
+        cpu.registers[0] = 1;
         cpu.pc = 0;
         cpu.start();
         cpu.step();
         assert_eq!(cpu.registers[0], 0);
-        assert_eq!(cpu.registers[1], 0);
         assert_eq!(cpu.flags.zero, true);
         assert_eq!(cpu.flags.negative, false);
     }

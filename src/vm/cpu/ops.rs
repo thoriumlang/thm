@@ -1,4 +1,5 @@
-mod add;
+mod add_rr;
+mod add_ri;
 mod call;
 mod cmp;
 mod dec;
