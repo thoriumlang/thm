@@ -45,8 +45,6 @@ fn main() {
         memory.dump((STACK_MAX_ADDRESS as u32) + 1, ROM_START as u32);
     }
 
-    let memory = Arc::new(RwLock::new(memory));
-
     let mut cpu = CPU::new();
     cpu.write_register(REG_SP, STACK_MAX_ADDRESS as i32);
     cpu.write_register(0, 16);
@@ -60,10 +58,9 @@ fn main() {
         println!();
     }
 
+    let memory = Arc::new(RwLock::new(memory));
     let cpu = Arc::new(RwLock::new(cpu));
-
     let api = RestApi::new(cpu.clone(), memory.clone());
-    println!("Listening on 0.0.0.0:8080");
 
     if opts.is_present("step") {
         let _ = api.join();

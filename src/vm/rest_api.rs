@@ -95,6 +95,7 @@ impl RestApi {
                         .or(get_memory)
                         .or(execute_step);
 
+                    println!("Listening on 0.0.0.0:8080");
                     warp::serve(routes)
                         .run(([0, 0, 0, 0], 8080))
                         .await;
