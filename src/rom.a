@@ -4,10 +4,19 @@
 //  - 0x00000001 - ?  set to a NUL-terminated string representing the filename to load and execute
 //  - sp              set to the highest stack address
 //  - pc              set to ROM start
-//  - cs              set to sp + 1
+//  - cs              set to ROM start
 //  - r0..r31         set to 0
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// this is a very dump implementation of the ROM that just jumps to address 0 relative to CS
+    // cs = sp + 1
+    PUSH r0
+    PUSH r1
+    MOV  r1, 9     // 2 regs on stack + 1
+    MOV  r0, sp
+    ADD  r0, r1
+    MOV  cs, r0
+    POP  r1
+    POP  r0
 
-J 0
+    // jump to cs + 0
+    J    0

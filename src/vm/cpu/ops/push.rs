@@ -1,4 +1,5 @@
 use crate::cpu::{CPU, ops};
+use super::super::vmlib::MAX_REGISTER;
 
 impl CPU {
     pub(in super::super) fn op_push(&mut self) -> ops::Result {
@@ -7,8 +8,11 @@ impl CPU {
 
         let r = match self.fetch_1byte() {
             None => return Err("Cannot fetch r"),
-            Some(byte) => byte
-        } as usize;
+            Some(byte) => match byte as usize {
+                0..=MAX_REGISTER => byte as usize,
+                _ => return Err("r is not a valid op register")
+            },
+        };
 
         if self.opts.print_op {
             println!("{:03}\tPUSH r{}", self.meta.steps, r);

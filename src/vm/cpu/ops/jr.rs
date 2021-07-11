@@ -8,7 +8,7 @@ impl CPU {
         } + self.cs;
 
         if self.opts.print_op {
-            println!("{:03}\tJR    {:#010x}", self.meta.steps, target);
+            println!("{:03}\tJR   {:#010x}", self.meta.steps, target);
         }
 
         self.pc = target;

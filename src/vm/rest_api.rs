@@ -7,8 +7,9 @@ use serde::{Deserialize, Serialize};
 use warp;
 use warp::Filter;
 
+use vmlib::{MAX_REGISTER, REG_CS, REG_PC, REG_SP};
+
 use crate::cpu::CPU;
-use vmlib::REG_COUNT;
 
 pub struct RestApi {}
 
@@ -97,12 +98,11 @@ impl RestApi {
         });
 
         async fn get_register(register: String, cpu: Arc<RwLock<CPU>>) -> Result<impl warp::Reply, warp::Rejection> {
-            const MAX_REGISTER: u8 = (REG_COUNT - 1) as u8;
             let r = match register.as_str() {
-                "cs" => CPU::CS,
-                "pc" => CPU::PC,
-                "sp" => CPU::SP,
-                str => match u8::from_str(str) {
+                "cs" => REG_CS,
+                "pc" => REG_PC,
+                "sp" => REG_SP,
+                str => match usize::from_str(str) {
                     Ok(r) => match r {
                         0..=MAX_REGISTER => r,
                         _ => return Ok(warp::reply::with_status(

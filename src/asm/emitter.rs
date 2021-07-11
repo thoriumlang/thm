@@ -1,19 +1,20 @@
 use std::collections::HashMap;
 
 use crate::parser::{Instruction, Node};
+use vmlib::{REG_SP, REG_PC, REG_CS};
 
 pub struct Emitter<'t> {
     nodes: &'t Vec<Node>,
     addresses: &'t HashMap<String, u32>,
-    registers: HashMap<String, u8>,
+    registers: HashMap<String, usize>,
 }
 
 impl<'t> Emitter<'t> {
     pub fn new(nodes: &'t Vec<Node>, addresses: &'t HashMap<String, u32>) -> Emitter<'t> {
         let mut registers = HashMap::new();
-        registers.insert("cp".to_string(), 255);
-        registers.insert("sp".to_string(), 254);
-        registers.insert("cs".to_string(), 253);
+        registers.insert("cp".to_string(), REG_PC);
+        registers.insert("sp".to_string(), REG_SP);
+        registers.insert("cs".to_string(), REG_CS);
         for r in 0..32 {
             registers.insert(format!("r{}", r).to_string(), r);
         }
@@ -37,13 +38,13 @@ impl<'t> Emitter<'t> {
                         bytes.extend_from_slice(&b);
                     }
                     Instruction::IRI(op, r, value) => {
-                        bytes.append(vec![op.bytecode(), *self.decode_register(r)].as_mut());
+                        bytes.append(vec![op.bytecode(), *self.decode_register(r) as u8].as_mut());
                         let b = value.to_be_bytes();
                         bytes.extend_from_slice(&b);
                     }
-                    Instruction::IR(op, r) => bytes.append(vec![op.bytecode(), *self.decode_register(r)].as_mut()),
+                    Instruction::IR(op, r) => bytes.append(vec![op.bytecode(), *self.decode_register(r) as u8].as_mut()),
                     Instruction::IRR(op, r1, r2) => bytes.append(vec![
-                        op.bytecode(), *self.decode_register(r1), *self.decode_register(r2)
+                        op.bytecode(), *self.decode_register(r1) as u8, *self.decode_register(r2) as u8
                     ].as_mut()),
                     Instruction::IA(op, addr) => {
                         bytes.push(op.bytecode());
@@ -62,7 +63,7 @@ impl<'t> Emitter<'t> {
         self.addresses.get(address).unwrap().to_owned()
     }
 
-    fn decode_register(&self, r: &String) -> &u8 {
+    fn decode_register(&self, r: &String) -> &usize {
         self.registers.get(r).unwrap()
     }
 }

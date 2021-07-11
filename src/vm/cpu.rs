@@ -39,10 +39,6 @@ pub struct CPU {
 }
 
 impl CPU {
-    pub const PC: u8 = 255;
-    pub const SP: u8 = 254;
-    pub const CS: u8 = 253;
-
     pub fn new() -> CPU {
         Self::new_custom_memory(Memory::new(MIN_RAM_SIZE as u32, vec![]))
     }
@@ -52,7 +48,7 @@ impl CPU {
             registers: [0; REG_COUNT],
             pc: ROM_START as u32,
             sp: 0,
-            cs: 0,
+            cs: ROM_START as u32,
             flags: Flags {
                 zero: true,
                 negative: false,
@@ -162,12 +158,12 @@ impl CPU {
         return Some(result);
     }
 
-    pub fn read_register(&self, r: u8) -> i32 {
+    pub fn read_register(&self, r: usize) -> i32 {
         match r {
             255 => self.pc as i32,
             254 => self.sp as i32,
             253 => self.cs as i32,
-            r => self.registers[r as usize],
+            r => self.registers[r],
         }
     }
 

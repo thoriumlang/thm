@@ -1,5 +1,7 @@
 use crate::cpu::{CPU, ops};
 
+use super::super::vmlib::{MAX_REGISTER, REG_CS, REG_SP};
+
 impl CPU {
     pub(in super::super) fn op_mov_rr(&mut self) -> ops::Result {
         let r0 = match self.fetch_1byte() {
@@ -11,12 +13,38 @@ impl CPU {
             Some(byte) => byte,
         } as usize;
 
-        self.registers[r0] = self.registers[r1];
-        self.flags.zero = self.registers[r0] == 0;
-        self.flags.negative = self.registers[r0] < 0;
+        let value = match r1 {
+            REG_SP => self.sp as i32,
+            REG_CS => self.cs as i32,
+            0..=MAX_REGISTER => self.registers[r1],
+            _ => return Err("r1 is not a valid source register"),
+        } as i32;
+
+        match r0 {
+            REG_SP => self.sp = value as u32,
+            REG_CS => self.cs = value as u32,
+            0..=MAX_REGISTER => self.registers[r0] = value,
+            _ => {
+                println!("{}", r0);
+                return Err("r0 is not a valid destination register");
+            }
+        }
+
+        self.flags.zero = value == 0;
+        self.flags.negative = value < 0;
 
         if self.opts.print_op {
-            println!("{:03}\tMOV  r{}, r{}", self.meta.steps, r0, r1);
+            let r0 = match r0 {
+                REG_SP => "sp".to_string(),
+                REG_CS => "cs".to_string(),
+                i => format!("r{}", i)
+            };
+            let r1 = match r1 {
+                REG_SP => "sp".to_string(),
+                REG_CS => "cs".to_string(),
+                i => format!("r{}", i)
+            };
+            println!("{:03}\tMOV  {}, {}", self.meta.steps, r0, r1);
         }
 
         Ok(())

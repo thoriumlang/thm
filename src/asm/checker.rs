@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::parser::{Instruction, Node};
+use vmlib::{REG_PC, REG_SP, REG_CS};
 
 pub struct VmConfig {
     pub register_count: u8,
@@ -8,16 +9,16 @@ pub struct VmConfig {
 
 pub struct Checker {
     vm_config: VmConfig,
-    registers: HashMap<String, u8>,
+    registers: HashMap<String, usize>,
 }
 
 impl Checker {
     pub fn new(vm_config: VmConfig) -> Checker {
         let mut registers = HashMap::new();
-        registers.insert("pc".to_string(), 255);
-        registers.insert("sp".to_string(), 254);
-        registers.insert("cs".to_string(), 253);
-        for r in 0..vm_config.register_count {
+        registers.insert("pc".to_string(), REG_PC);
+        registers.insert("sp".to_string(), REG_SP);
+        registers.insert("cs".to_string(), REG_CS);
+        for r in 0..vm_config.register_count as usize {
             registers.insert(format!("r{}", r).to_string(), r);
         }
         Checker {

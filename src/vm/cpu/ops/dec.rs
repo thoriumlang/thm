@@ -1,11 +1,15 @@
 use crate::cpu::{CPU, ops};
+use super::super::vmlib::MAX_REGISTER;
 
 impl CPU {
     pub(in super::super) fn op_dec(&mut self) -> ops::Result {
         let r = match self.fetch_1byte() {
             None => return Err("Cannot fetch r"),
-            Some(byte) => byte
-        } as usize;
+            Some(byte) => match byte as usize {
+                0..=MAX_REGISTER => byte as usize,
+                _ => return Err("r is not a valid source register")
+            },
+        };
         self.registers[r] -= 1;
         self.flags.zero = self.registers[r] == 0;
         self.flags.negative = self.registers[r] < 0;
