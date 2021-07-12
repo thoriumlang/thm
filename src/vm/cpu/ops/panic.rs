@@ -6,6 +6,7 @@ impl CPU {
             println!("{:03}\tPANIC", self.meta.steps);
         }
         let _ = self.op_halt();
-        panic!("Panic at {:#010x}: {}", self.pc, message);
+        println!("Panic at {:#010x}: {}", self.pc, message);
+        Ok(())
     }
 }

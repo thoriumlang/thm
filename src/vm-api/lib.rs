@@ -43,7 +43,21 @@ pub const ROM_SIZE: usize = 32 * 1024 * 1024; // 32 MB
 // fixme use CpuWord?
 pub const ROM_START: usize = MAX_ADDRESS - ROM_SIZE + 1;
 
-pub const VIDEO_BUFFER_1: usize = 0xFD69F800;
+pub const INTERRUPT_START: usize = ROM_START - 1024;
+
+// fixme make it better
+//pub const WIDTH: usize = 800;
+//pub const HEIGHT: usize = 600;
+pub const WIDTH: usize = 320;
+pub const HEIGHT: usize = 200;
+pub const PIXEL_DEPTH: usize = 4; // todo we only need 3 bytes (rgb)
+
+pub const VIDEO_BUFFER_SIZE: usize = WIDTH * HEIGHT * PIXEL_DEPTH;
+pub const VIDEO_BUFFER_1: usize = INTERRUPT_START - VIDEO_BUFFER_SIZE;
+pub const VIDEO_BUFFER_0: usize = VIDEO_BUFFER_1 - VIDEO_BUFFER_SIZE;
+// pub const VIDEO_START: usize = VIDEO_BUFFER_1 - 1024;
+pub const VIDEO_START: usize = 0xfdc56000;
+pub const VIDEO_END: usize = VIDEO_BUFFER_1 + VIDEO_BUFFER_SIZE - 1;
 
 // todo review casts
 

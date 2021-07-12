@@ -3,18 +3,32 @@ use std::fs::OpenOptions;
 use std::io::{Read, Write};
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
+use std::thread;
 
 use clap::{App, Arg, ArgMatches, crate_authors, crate_version, SubCommand};
 
 use cpu::CPU;
-use vmlib::{MIN_RAM_SIZE, REG_SP, ROM_START, STACK_LEN, STACK_MAX_ADDRESS, STACK_SIZE};
+use vmlib::INTERRUPT_START;
+use vmlib::MAX_ADDRESS;
+use vmlib::MIN_RAM_SIZE;
+use vmlib::REG_SP;
+use vmlib::ROM_SIZE;
+use vmlib::ROM_START;
+use vmlib::STACK_LEN;
+use vmlib::STACK_MAX_ADDRESS;
+use vmlib::STACK_SIZE;
+use vmlib::VIDEO_BUFFER_0;
+use vmlib::VIDEO_BUFFER_1;
+use vmlib::VIDEO_START;
 
 use crate::memory::Memory;
 use crate::rest_api::RestApi;
+use crate::video::Video;
 
 mod cpu;
 mod memory;
 mod rest_api;
+mod video;
 
 fn main() {
     let opts = parse_opts();
@@ -29,8 +43,8 @@ fn run(opts: &ArgMatches) {
     let rom = load_bin(opts.value_of("rom").unwrap());
     let program: Vec<u8> = load_bin(opts.value_of("image").unwrap());
     let ram_size = opts.value_of("ram")
-        .map(|s| usize::from_str(s).unwrap_or(MIN_RAM_SIZE + 128))
-        .unwrap_or(MIN_RAM_SIZE + 128);
+        .map(|s| usize::from_str(s).unwrap_or(MIN_RAM_SIZE + 256))
+        .unwrap_or(MIN_RAM_SIZE + 256);
 
     if ram_size < MIN_RAM_SIZE + program.len() {
         panic!("Not enough RAM: {} < {}", ram_size, MIN_RAM_SIZE + program.len());
@@ -42,11 +56,14 @@ fn run(opts: &ArgMatches) {
     }
 
     if opts.is_present("mmap") {
-        println!("RAM size: {} Bytes", ram_size);
-        println!("Stack:    {} Bytes ({} 32-bits words)", STACK_SIZE, STACK_LEN);
-        println!("          {:#010x} - {:#010x}", 0, STACK_MAX_ADDRESS);
-        println!("Free:     {} Bytes", ram_size - STACK_SIZE);
-        println!("          {:#010x} - {:#010x}", STACK_MAX_ADDRESS + 1, ram_size - 1);
+        println!("RAM size:  \t{} Bytes", ram_size);
+        println!("Stack:     \t{:#010x} - {:#010x} ({} Bytes) ({} 32-bits words)", 0, STACK_MAX_ADDRESS, STACK_SIZE, STACK_LEN);
+        println!("Free:      \t{:#010x} - {:#010x} ({} Bytes)", STACK_MAX_ADDRESS + 1, ram_size - 1, ram_size - STACK_SIZE);
+        println!("Video meta \t{:#010x} - {:#010x} ({} Bytes)", VIDEO_START, VIDEO_BUFFER_0 - 1, VIDEO_BUFFER_0 - VIDEO_START);
+        println!("VBuffer0   \t{:#010x} - {:#010x} ({} Bytes)", VIDEO_BUFFER_0, VIDEO_BUFFER_1 - 1, VIDEO_BUFFER_1 - VIDEO_BUFFER_0);
+        println!("VBuffer1   \t{:#010x} - {:#010x} ({} Bytes)", VIDEO_BUFFER_1, INTERRUPT_START - 1, INTERRUPT_START - VIDEO_BUFFER_1);
+        println!("Interrupts \t{:#010x} - {:#010x} ({} Bytes)", INTERRUPT_START, ROM_START - 1, ROM_START - INTERRUPT_START);
+        println!("ROM:       \t{:#010x} - {:#010x} ({} Bytes)", ROM_START, MAX_ADDRESS, ROM_SIZE);
         memory.zones().iter().for_each(|z| println!("{}", z));
         memory.dump(0, 16);
         memory.dump((STACK_MAX_ADDRESS as u32) + 1, ROM_START as u32);
@@ -69,19 +86,29 @@ fn run(opts: &ArgMatches) {
     let cpu = Arc::new(RwLock::new(cpu));
     let api = RestApi::new(cpu.clone(), memory.clone());
 
-    if opts.is_present("step") {
-        let _ = api.join();
-    } else {
-        loop {
-            let mut cpu = cpu.write().unwrap();
-            if !cpu.step(memory.write().unwrap().borrow_mut()) {
-                break;
-            }
+    let executor_thread = match opts.is_present("step") {
+        true => api,
+        false => {
+            let cpu = cpu.clone();
+            let memory = memory.clone();
+            thread::Builder::new().name("cpu".into()).spawn(move || {
+                loop {
+                    let mut cpu = cpu.write().unwrap();
+                    let mut memory = memory.write().unwrap();
+                    if !cpu.step(memory.borrow_mut()) {
+                        break;
+                    }
+                }
+                let cpu = cpu.read().unwrap();
+                println!("f({}): {}", cpu.read_register(0), cpu.read_register(3));
+            }).unwrap()
         }
-    }
+    };
 
-    let cpu = cpu.read().unwrap();
-    println!("f({}): {}", cpu.read_register(0), cpu.read_register(3));
+    if !opts.is_present("no-screen") {
+        Video::new(memory.clone());
+    }
+    let _ = executor_thread.join();
 }
 
 fn meta(opts: &ArgMatches) {
@@ -93,7 +120,11 @@ fn meta(opts: &ArgMatches) {
             .unwrap();
 
         let mut data = String::new();
-        data.push_str(format!("$__rom_start = {:#010x}", ROM_START).as_str());
+        data.push_str(format!("$__rom_start = {:#010x}\n", ROM_START).as_str());
+        data.push_str(format!("$__video_start = {:#010x}\n", VIDEO_START).as_str());
+        // data.push_str(format!("$__video_buffer_0_start = {:#010x}\n", VIDEO_BUFFER_0).as_str());
+        // data.push_str(format!("$__video_buffer_1_start = {:#010x}\n", VIDEO_BUFFER_1).as_str());
+        // data.push_str(format!("$__video_buffer_size = {:#010x}\n", VIDEO_BUFFER_SIZE).as_str());
 
         file.write_all(data.as_bytes()).unwrap();
     }
@@ -130,12 +161,12 @@ fn parse_opts<'a>() -> ArgMatches<'a> {
                     .short("r")
                     .long("ram")
                     .value_name("RAM")
-                    .default_value("STACK_SIZE + 128 Bytes")
+                    .default_value("STACK_SIZE + 256 Bytes")
                     .help("Amount of RAM"),
             )
             .arg(
-                Arg::with_name("step")
-                    .short("s")
+                Arg::with_name("debug")
+                    .short("d")
                     .long("step")
                     .help("Execute instructions step by step"),
             )
@@ -156,6 +187,12 @@ fn parse_opts<'a>() -> ArgMatches<'a> {
                     .help("Sets rom to load")
                     .required(true)
                     .index(2),
+            )
+            .arg(
+                Arg::with_name("no-screen")
+                    .short("s")
+                    .long("no-screen")
+                    .help("No video")
             )
             .arg(
                 Arg::with_name("r0")

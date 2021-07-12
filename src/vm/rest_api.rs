@@ -59,7 +59,7 @@ struct StepResponse {
 
 impl RestApi {
     pub fn new(cpu: Arc<RwLock<CPU>>, memory: Arc<RwLock<Memory>>) -> JoinHandle<()> {
-        return thread::spawn(|| {
+        return thread::Builder::new().name("api".into()).spawn(|| {
             tokio::runtime::Builder::new_multi_thread()
                 .enable_all()
                 .build()
@@ -100,7 +100,7 @@ impl RestApi {
                         .run(([0, 0, 0, 0], 8080))
                         .await;
                 });
-        });
+        }).unwrap();
 
         async fn get_register(register: String, cpu: Arc<RwLock<CPU>>) -> Result<impl warp::Reply, warp::Rejection> {
             let r = match register.as_str() {

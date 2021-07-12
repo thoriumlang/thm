@@ -1,8 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use vmlib::{ROM_SIZE, ROM_START};
-
-use crate::memory::Location::ROM;
+use vmlib::{ROM_SIZE, ROM_START, VIDEO_START, VIDEO_END};
 
 /// Holds the memory maps and allow to store / load values
 pub struct Memory {
@@ -12,6 +10,8 @@ pub struct Memory {
     ram: Vec<u8>,
     /// ROM goes from ROM_START to MAX_ADDRESS
     rom: Vec<u8>,
+    /// VIDEO
+    video: Vec<u8>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -19,6 +19,7 @@ pub enum Location {
     UNMAPPED,
     RAM,
     ROM,
+    VIDEO,
 }
 
 #[derive(Debug, PartialEq)]
@@ -30,7 +31,7 @@ pub struct Zone {
 
 impl Display for Zone {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "zone {:?}: {:#010x} - {:#010x} ({} Bytes)", self.kind, self.from, self.to, self.to - self.from + 1)
+        write!(f, "zone {:?}\t{:#010x} - {:#010x} ({} Bytes)", self.kind, self.from, self.to, self.to - self.from + 1)
     }
 }
 
@@ -47,6 +48,7 @@ impl Memory {
             memory_size,
             ram,
             rom,
+            video: vec![0; VIDEO_END - VIDEO_START + 1], // todo const
         }
     }
 
@@ -64,6 +66,10 @@ impl Memory {
         match self.location(address) {
             Location::RAM => {
                 self.ram[address as usize] = value;
+                true
+            }
+            Location::VIDEO => {
+                self.video[address - VIDEO_START] = value;
                 true
             }
             _ => false,
@@ -84,7 +90,7 @@ impl Memory {
     pub fn get(&self, address: u32) -> Option<u8> {
         let address = address as usize;
 
-        match self.location(address) {
+        match self.location(address) { // tod   o rewrite using zones()
             Location::RAM => Some(self.ram[address]),
             Location::ROM => Some({
                 if self.rom.len() > address - ROM_START {
@@ -93,7 +99,17 @@ impl Memory {
                     0
                 }
             }),
-            _ => None,
+            Location::VIDEO => Some({
+                if self.video.len() > address - VIDEO_START {
+                    self.video[address - VIDEO_START]
+                } else {
+                    0
+                }
+            }),
+            _ => {
+                println!("Tried to read from {:#010x}", address);
+                None
+            },
         }
     }
 
@@ -116,6 +132,9 @@ impl Memory {
         if address < self.memory_size {
             return Location::RAM;
         }
+        if address >= VIDEO_START && address <= VIDEO_END {
+            return Location::VIDEO;
+        }
         return Location::UNMAPPED;
     }
 
@@ -129,7 +148,12 @@ impl Memory {
             Zone {
                 from: ROM_START as u32,
                 to: (ROM_START + ROM_SIZE - 1) as u32,
-                kind: ROM,
+                kind: Location::ROM,
+            },
+            Zone {
+                from: VIDEO_START as u32,
+                to: VIDEO_END as u32,  // todo const
+                kind: Location::VIDEO,
             }
         ]
     }
