@@ -4,6 +4,7 @@ use vmlib::{REG_COUNT, ROM_START};
 use vmlib::op::Op;
 
 use crate::memory::Memory;
+use std::time::Instant;
 
 mod ops;
 
@@ -19,6 +20,7 @@ pub struct Flags {
 
 struct Meta {
     steps: u64,
+    bench: [Instant; 256],
 }
 
 pub struct CPU {
@@ -36,6 +38,7 @@ pub struct CPU {
 
 impl CPU {
     pub fn new() -> CPU {
+        let now = Instant::now();
         CPU {
             registers: [0; REG_COUNT],
             pc: ROM_START as u32,
@@ -49,6 +52,7 @@ impl CPU {
             opts: Opts { print_op: false },
             meta: Meta {
                 steps: 0,
+                bench: [now; 256],
             },
         }
     }
@@ -88,6 +92,7 @@ impl CPU {
                 Op::Load => self.op_load(memory),
                 Op::Call => self.op_call(memory),
                 Op::Ret => self.op_ret(memory),
+                Op::Xbm => self.op_xbm(memory),
             } {
                 Ok(_) => (),
                 Err(err) => self.op_panic(err).unwrap(),

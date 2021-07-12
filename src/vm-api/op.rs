@@ -21,6 +21,7 @@ pub enum Op {
     Load = 17, // 0x11
     Call = 18, // 0x12
     Ret = 19, // 0x13
+    Xbm = 20, // 0x14
 }
 
 impl Op {
@@ -46,6 +47,7 @@ impl Op {
             Op::Load => 3,
             Op::Call => 5,
             Op::Ret => 1,
+            Op::Xbm => 2,
         }
     }
 
@@ -77,6 +79,7 @@ impl From<u8> for Op {
             17 => Self::Load,
             18 => Self::Call,
             19 => Self::Ret,
+            20 => Self::Xbm,
             _ => Self::Panic,
         }
     }
@@ -184,5 +187,10 @@ mod tests {
     #[test]
     fn test_ret() {
         assert_eq!(Op::Ret, Op::from(Op::Ret.bytecode()));
+    }
+
+    #[test]
+    fn test_xbm() {
+        assert_eq!(Op::Xbm, Op::from(Op::Xbm.bytecode()));
     }
 }

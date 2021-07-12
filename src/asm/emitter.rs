@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
+use vmlib::{REG_CS, REG_PC, REG_SP};
+
 use crate::parser::{Instruction, Node};
-use vmlib::{REG_SP, REG_PC, REG_CS};
 
 pub struct Emitter<'t> {
     nodes: &'t Vec<Node>,
@@ -32,6 +33,7 @@ impl<'t> Emitter<'t> {
             match node {
                 Node::Instruction(instruction) => match instruction {
                     Instruction::I(op) => bytes.push(op.bytecode()),
+                    Instruction::IB(op, imm1) => bytes.append(vec![op.bytecode(), *imm1].as_mut()),
                     Instruction::II(op, imm4) => {
                         bytes.push(op.bytecode());
                         let b = imm4.to_be_bytes();

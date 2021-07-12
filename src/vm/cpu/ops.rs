@@ -18,5 +18,6 @@ mod push;
 mod ret;
 mod stor;
 mod load;
+mod xbm;
 
 type Result = std::result::Result<(), &'static str>;

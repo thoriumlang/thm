@@ -18,6 +18,7 @@ pub struct Label {
 #[derive(Debug, PartialEq)]
 pub enum Instruction {
     I(Op),
+    IB(Op, u8),
     II(Op, u32),
     IRI(Op, String, u32),
     IR(Op, String),
@@ -29,6 +30,7 @@ impl Instruction {
     pub fn op(&self) -> Op {
         return match self {
             &Instruction::I(op) => op,
+            &Instruction::IB(op, _) => op,
             &Instruction::II(op, _) => op,
             &Instruction::IRI(op, _, _) => op,
             &Instruction::IR(op, _) => op,
@@ -84,6 +86,7 @@ impl<'t> Parser<'t> {
             "LOAD" => self.parse_load(&position),
             "CALL" => self.parse_call(&position),
             "RET" => self.parse_ret(&position),
+            "XBM" => self.parse_xbm(&position),
             op => Err(format!("Invalid mnemonic '{}' at {}", op, position).to_string())
         };
     }
@@ -359,6 +362,20 @@ impl<'t> Parser<'t> {
         Ok(Instruction::I(Op::Ret))
     }
 
+    fn parse_xbm(&mut self, position: &Position) -> Result<Instruction> {
+        let i = match self.read_imm1() {
+            None => return Err(format!("Expected <imm1> at {}", position).to_string()),
+            Some(t) => t,
+        };
+
+        match self.read_eol() {
+            false => return Err(format!("Expected <eol> at {}", position).to_string()),
+            true => (),
+        }
+
+        Ok(Instruction::IB(Op::Xbm, i))
+    }
+
     fn read_comma(&mut self) -> bool {
         return match self.lexer.next() {
             Some(Ok(Token::Comma(_))) => true,
@@ -393,6 +410,19 @@ impl<'t> Parser<'t> {
                 Token::Address(_, s) => Some(s),
                 _ => None
             },
+            _ => None,
+        };
+    }
+
+    fn read_imm1(&mut self) -> Option<u8> {
+        return match self.lexer.next() {
+            Some(Ok(t)) => match t {
+                Token::Integer(_, v) => match v {
+                    0..=255 => Some(v as u8),
+                    _ => None,
+                },
+                _ => None,
+            }
             _ => None,
         };
     }
@@ -714,6 +744,20 @@ mod tests {
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
         let expected = Node::Instruction(Instruction::I(Op::Ret));
+        let actual = item.unwrap();
+        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+    }
+
+    #[test]
+    fn test_xbm() {
+        let mut lexer = Lexer::from_text("XBM 1\n");
+        let r = Parser::from_lexer(&mut lexer).next();
+        assert_eq!(true, r.is_some());
+
+        let item = r.unwrap();
+        assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
+
+        let expected = Node::Instruction(Instruction::IB(Op::Xbm, 1));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
