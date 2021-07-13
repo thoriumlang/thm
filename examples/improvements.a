@@ -1,0 +1,27 @@
+#include <predef>
+
+#define do_thing(a, b, c)
+    MOV a, b
+#end
+
+do_thing(a, b, c)
+
+// evaluations
+MOV r0, [1024 + 2]
+              -
+              *
+
+MOV r0, [@address + 4]
+                  -
+                  *
+
+.text // start of code
+.data // start of data
+.align <multiple-of> <pad-with> // <pad-with> is NOP when in .text, 0x00 when in .data
+.global <address>
+.byte <byte> // outputs <byte>
+.asciiz "Salut" // outputs ascii char codes followed by 0x00
+.ascii "salut"
+
+@. // is the current address
+
