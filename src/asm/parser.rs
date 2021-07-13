@@ -74,6 +74,7 @@ impl<'t> Parser<'t> {
             "MOV" => self.parse_mov(&position),
             "ADD" => self.parse_add(&position),
             "SUB" => self.parse_sub(&position),
+            "MUL" => self.parse_mul(&position),
             "CMP" => self.parse_cmp(&position),
             "J" => self.parse_j(&position),
             "JEQ" => self.parse_jeq(&position),
@@ -180,6 +181,30 @@ impl<'t> Parser<'t> {
             Some(t) => match t {
                 Token::Identifier(_, r2) => Instruction::IRR(Op::SubRR, r1, r2),
                 Token::Integer(_, imm4) => Instruction::IRI(Op::SubRI, r1, imm4),
+                _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
+            }
+            _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
+        };
+        match self.read_eol() {
+            false => return Err(format!("Expected <eol> at {}", position).to_string()),
+            true => (),
+        }
+        Ok(instruction)
+    }
+
+    fn parse_mul(&mut self, position: &Position) -> Result<Instruction> {
+        let r1 = match self.read_register() {
+            None => return Err(format!("Expected <register> at {}", position).to_string()),
+            Some(t) => t,
+        };
+        match self.read_comma() {
+            false => return Err(format!("Expected , at {}", position).to_string()),
+            true => (),
+        }
+        let instruction = match self.read_next() {
+            Some(t) => match t {
+                Token::Identifier(_, r2) => Instruction::IRR(Op::MulRR, r1, r2),
+                Token::Integer(_, imm4) => Instruction::IRI(Op::MulRI, r1, imm4),
                 _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
             }
             _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
@@ -615,6 +640,34 @@ mod tests {
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
         let expected = Node::Instruction(Instruction::IRI(Op::SubRI, "r1".to_string(), 9));
+        let actual = item.unwrap();
+        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+    }
+
+    #[test]
+    fn test_mul_rr() {
+        let mut lexer = Lexer::from_text("MUL r1, r0\n");
+        let r = Parser::from_lexer(&mut lexer).next();
+        assert_eq!(true, r.is_some());
+
+        let item = r.unwrap();
+        assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
+
+        let expected = Node::Instruction(Instruction::IRR(Op::MulRR, "r1".to_string(), "r0".to_string()));
+        let actual = item.unwrap();
+        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+    }
+
+    #[test]
+    fn test_mul_ri() {
+        let mut lexer = Lexer::from_text("MUL r1, 9\n");
+        let r = Parser::from_lexer(&mut lexer).next();
+        assert_eq!(true, r.is_some());
+
+        let item = r.unwrap();
+        assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
+
+        let expected = Node::Instruction(Instruction::IRI(Op::MulRI, "r1".to_string(), 9));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }

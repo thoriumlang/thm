@@ -1,5 +1,5 @@
-mod add_rr;
 mod add_ri;
+mod add_rr;
 mod call;
 mod cmp;
 mod dec;
@@ -9,16 +9,18 @@ mod jr;
 mod ja;
 mod jreq;
 mod jrne;
-mod mov_rr;
 mod mov_ri;
+mod mov_rr;
+mod mul_ri;
+mod mul_rr;
 mod nop;
 mod panic;
 mod pop;
 mod push;
 mod ret;
 mod stor;
-mod sub_rr;
 mod sub_ri;
+mod sub_rr;
 mod load;
 mod xbm;
 

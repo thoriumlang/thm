@@ -81,6 +81,8 @@ impl CPU {
                 Op::AddRI => self.op_add_ri(memory),
                 Op::SubRR => self.op_sub_rr(memory),
                 Op::SubRI => self.op_sub_ri(memory),
+                Op::MulRR => self.op_mul_rr(memory),
+                Op::MulRI => self.op_mul_ri(memory),
                 Op::Cmp => self.op_cmp(memory),
                 Op::Inc => self.op_inc(memory),
                 Op::Dec => self.op_dec(memory),

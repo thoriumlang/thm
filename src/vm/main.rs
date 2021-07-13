@@ -75,7 +75,6 @@ fn main() {
 
     let cpu = cpu.read().unwrap();
     println!("f({}): {}", cpu.read_register(0), cpu.read_register(3));
-    println!("f(16): 987");
 }
 
 fn load_bin(path: &str) -> Vec<u8> {

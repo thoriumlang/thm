@@ -1,0 +1,17 @@
+// computes n!
+// in:  r0 contains the index to iteration count
+// out: r3 contains the result
+
+    PUSH r0
+    MOV  r1, r0
+
+:loop
+    DEC  r1
+    JEQ  @end
+    MUL  r0, r1
+    J    @loop
+
+:end
+    MOV  r3, r0
+    POP  r0
+    HALT

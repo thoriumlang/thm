@@ -10,6 +10,8 @@ pub enum Op {
     AddRI = 6, // 0x06
     SubRR = 7, // 0x07
     SubRI = 8, // 0x08
+    MulRR = 9, // 0x09
+    MulRI = 10, // 0x0a
     Inc = 15, // 0x0f
     Dec = 16, // 0x10
     Cmp = 24, // 0x18
@@ -38,6 +40,8 @@ impl Op {
             Op::AddRI => 6,
             Op::SubRR => 3,
             Op::SubRI => 6,
+            Op::MulRR => 3,
+            Op::MulRI => 6,
             Op::Inc => 2,
             Op::Dec => 2,
             Op::Cmp => 3,
@@ -72,6 +76,8 @@ impl From<u8> for Op {
             6 => Self::AddRI,
             7 => Self::SubRR,
             8 => Self::SubRI,
+            9 => Self::MulRR,
+            10 => Self::MulRI,
             15 => Self::Inc,
             16 => Self::Dec,
             24 => Self::Cmp,
@@ -138,6 +144,16 @@ mod tests {
     #[test]
     fn test_subri() {
         assert_eq!(Op::SubRI, Op::from(Op::SubRI.bytecode()));
+    }
+
+    #[test]
+    fn test_mulrr() {
+        assert_eq!(Op::MulRR, Op::from(Op::MulRR.bytecode()));
+    }
+
+    #[test]
+    fn test_mulri() {
+        assert_eq!(Op::MulRI, Op::from(Op::MulRI.bytecode()));
     }
 
     #[test]

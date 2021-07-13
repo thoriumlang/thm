@@ -7,6 +7,8 @@
 6,AddRI,6
 7,SubRR,3
 8,SubRI,6
+9,MulRR,3
+10,MulRI,6
 15,Inc,2
 16,Dec,2
 24,Cmp,3
