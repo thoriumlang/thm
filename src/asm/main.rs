@@ -27,27 +27,25 @@ fn main() {
     let mut lexer = Lexer::from_file(input).unwrap();
     let mut parser = Parser::from_lexer(&mut lexer);
 
-    let nodes = parser.parse();
-    if nodes.is_err() {
-        println!("Syntax error: {}", nodes.err().unwrap());
-        return;
-    }
-    let nodes = nodes.unwrap();
-
-    let resolver = AddressResolver::new(&nodes);
-    let addresses = resolver.resolve();
-
-    if addresses.is_err() {
-        println!("Semantic error: {}", addresses.err().unwrap());
-        return;
-    }
-    let addresses = addresses.unwrap();
-
-    let vm_config = VmConfig {
-        register_count: REG_COUNT as u8,
+    let nodes = match parser.parse() {
+        Err(err) => {
+            println!("Syntax error: {}", err);
+            return;
+        }
+        Ok(nodes) => nodes,
     };
-    let checker = Checker::new(vm_config);
-    match checker.check(&nodes) {
+
+    let addresses = match AddressResolver::new(&nodes).resolve() {
+        Err(err) => {
+            println!("Semantic error: {}", err);
+            return;
+        }
+        Ok(addresses) => addresses,
+    };
+
+    match Checker::new(VmConfig {
+        register_count: REG_COUNT as u8,
+    }).check(&nodes) {
         None => (),
         Some(errors) => {
             errors.iter().for_each(|error| println!("Semantic error: {}", error));
@@ -55,16 +53,16 @@ fn main() {
         }
     }
 
-    let emitter = Emitter::new(&nodes, &addresses);
-    let code = emitter.emit();
+    let code = Emitter::new(&nodes, &addresses).emit();
 
-    let mut file = OpenOptions::new()
+    OpenOptions::new()
         .create(true)
         .write(true)
         .open(output)
+        .unwrap()
+        .write_all(code.as_slice())
         .unwrap();
 
-    file.write_all(code.as_slice()).unwrap();
     println!("Wrote {} bytes to {}", code.len(), output);
 }
 
