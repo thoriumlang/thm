@@ -25,8 +25,9 @@ target/fact.bin: target/debug/tha examples/fact.a
 	target/debug/tha examples/fact.a target/fact.bin
 
 it: t_tha t_thm rom examples
-	target/debug/thm --mmap target/rom.bin target/fibonacci.bin
-	target/debug/thm --mmap target/rom.bin target/fibonacci_rec.bin
+	target/debug/thm --mmap target/rom.bin target/fibonacci.bin     -016
+	target/debug/thm --mmap target/rom.bin target/fibonacci_rec.bin -016
+	target/debug/thm --mmap target/rom.bin target/fact.bin          -05
 
 install_dev:
 	cargo build

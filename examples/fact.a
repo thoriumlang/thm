@@ -3,6 +3,12 @@
 // out: r3 contains the result
 
     PUSH r0
+
+    // if n == 0, we quit
+    MOV  r1, 0
+    CMP  r0, r1
+    JEQ  @end
+
     MOV  r1, r0
 
 :loop

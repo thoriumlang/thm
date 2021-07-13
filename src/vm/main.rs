@@ -47,7 +47,7 @@ fn main() {
 
     let mut cpu = CPU::new();
     cpu.write_register(REG_SP, STACK_MAX_ADDRESS as i32);
-    cpu.write_register(0, 16);
+    cpu.write_register(0, opts.value_of("r0").map_or(0, |v| i32::from_str(v).unwrap_or_default()));
     cpu.start();
 
     if opts.is_present("step") {
@@ -98,7 +98,8 @@ fn parse_opts<'a>() -> ArgMatches<'a> {
                 .short("r")
                 .long("ram")
                 .value_name("ram")
-                .help("Amount of RAM (defaults to STACK_SIZE + 128 B)"),
+                .default_value("STACK_SIZE + 128 Bytes")
+                .help("Amount of RAM"),
         )
         .arg(
             Arg::with_name("step")
@@ -123,6 +124,14 @@ fn parse_opts<'a>() -> ArgMatches<'a> {
                 .help("Sets rom to load")
                 .required(true)
                 .index(2),
+        )
+        .arg(
+            Arg::with_name("r0")
+                .short("0")
+                .help("Initial value of r0")
+                .default_value("0")
+                .required(false)
+                .takes_value(true)
         )
         .get_matches()
 }
