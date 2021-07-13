@@ -37,8 +37,7 @@
 
     // r0 = fib(n-2)
     POP r0
-    DEC r0
-    DEC r0
+    SUB r0, 2
     PUSH r1
     CALL @fibonacci
     POP r1

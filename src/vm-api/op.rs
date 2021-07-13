@@ -8,20 +8,22 @@ pub enum Op {
     MovRR = 4, // 0x04
     AddRR = 5, // 0x05
     AddRI = 6, // 0x06
-    Cmp = 7, // 0x07
-    Inc = 8, // 0x08
-    Dec = 9, // 0x09
-    Push = 10, // 0x0a
-    Pop = 11, // 0x0b
-    Ja = 12, // 0x0c
-    Jreq = 13, // 0x0d
-    Jrne = 14, // 0x0e
-    Jr = 15, // 0x0f
-    Stor = 16, // 0x10
-    Load = 17, // 0x11
-    Call = 18, // 0x12
-    Ret = 19, // 0x13
-    Xbm = 20, // 0x14
+    SubRR = 7, // 0x07
+    SubRI = 8, // 0x08
+    Inc = 15, // 0x0f
+    Dec = 16, // 0x10
+    Cmp = 24, // 0x18
+    Push = 25, // 0x19
+    Pop = 26, // 0x1a
+    Ja = 27, // 0x1b
+    Jreq = 28, // 0x1c
+    Jrne = 29, // 0x1d
+    Jr = 30, // 0x1e
+    Stor = 31, // 0x1f
+    Load = 32, // 0x20
+    Call = 33, // 0x21
+    Ret = 34, // 0x22
+    Xbm = 35, // 0x23
 }
 
 impl Op {
@@ -34,9 +36,11 @@ impl Op {
             Op::MovRR => 3,
             Op::AddRR => 3,
             Op::AddRI => 6,
-            Op::Cmp => 3,
+            Op::SubRR => 3,
+            Op::SubRI => 6,
             Op::Inc => 2,
             Op::Dec => 2,
+            Op::Cmp => 3,
             Op::Push => 2,
             Op::Pop => 2,
             Op::Ja => 3,
@@ -66,20 +70,22 @@ impl From<u8> for Op {
             4 => Self::MovRR,
             5 => Self::AddRR,
             6 => Self::AddRI,
-            7 => Self::Cmp,
-            8 => Self::Inc,
-            9 => Self::Dec,
-            10 => Self::Push,
-            11 => Self::Pop,
-            12 => Self::Ja,
-            13 => Self::Jreq,
-            14 => Self::Jrne,
-            15 => Self::Jr,
-            16 => Self::Stor,
-            17 => Self::Load,
-            18 => Self::Call,
-            19 => Self::Ret,
-            20 => Self::Xbm,
+            7 => Self::SubRR,
+            8 => Self::SubRI,
+            15 => Self::Inc,
+            16 => Self::Dec,
+            24 => Self::Cmp,
+            25 => Self::Push,
+            26 => Self::Pop,
+            27 => Self::Ja,
+            28 => Self::Jreq,
+            29 => Self::Jrne,
+            30 => Self::Jr,
+            31 => Self::Stor,
+            32 => Self::Load,
+            33 => Self::Call,
+            34 => Self::Ret,
+            35 => Self::Xbm,
             _ => Self::Panic,
         }
     }
@@ -125,8 +131,13 @@ mod tests {
     }
 
     #[test]
-    fn test_cmp() {
-        assert_eq!(Op::Cmp, Op::from(Op::Cmp.bytecode()));
+    fn test_subrr() {
+        assert_eq!(Op::SubRR, Op::from(Op::SubRR.bytecode()));
+    }
+
+    #[test]
+    fn test_subri() {
+        assert_eq!(Op::SubRI, Op::from(Op::SubRI.bytecode()));
     }
 
     #[test]
@@ -137,6 +148,11 @@ mod tests {
     #[test]
     fn test_dec() {
         assert_eq!(Op::Dec, Op::from(Op::Dec.bytecode()));
+    }
+
+    #[test]
+    fn test_cmp() {
+        assert_eq!(Op::Cmp, Op::from(Op::Cmp.bytecode()));
     }
 
     #[test]

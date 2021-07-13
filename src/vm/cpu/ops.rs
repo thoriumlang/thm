@@ -17,6 +17,8 @@ mod pop;
 mod push;
 mod ret;
 mod stor;
+mod sub_rr;
+mod sub_ri;
 mod load;
 mod xbm;
 
