@@ -1,3 +1,5 @@
+use std::convert::TryInto;
+
 use crate::cpu::{CPU, ops};
 use crate::memory::Memory;
 
@@ -12,15 +14,12 @@ impl CPU {
         let r1 = self.fetch_register(memory, &Self::is_general_purpose_register)
             .ok_or("load: cannot fetch r1")?;
 
-        let mut bytes: u32 = 0;
-        for i in 0..4 {
-            bytes = bytes << 8;
-            match memory.get((self.registers[r1] + i) as u32) {
-                None => return Err("Cannot fetch 4 bytes"),
-                Some(byte) => bytes |= byte as u32,
-            }
-        }
-        self.registers[r0] = bytes as i32;
+        let address = self.registers[r1] as u32;
+        let bytes = memory.get_bytes(address, 4)
+            .ok_or("load: cannot get memory")?
+            .as_slice().try_into().expect("load: did not read 4 bytes");
+
+        self.registers[r0] = i32::from_be_bytes(bytes);
         self.flags.zero = self.registers[r0] == 0;
         self.flags.negative = self.registers[r0] < 0;
 

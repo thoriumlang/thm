@@ -2,7 +2,7 @@ use crate::cpu::{CPU, ops};
 use crate::memory::Memory;
 
 impl CPU {
-    pub(in super::super) fn op_stor(&mut self,memory: &mut Memory) -> ops::Result {
+    pub(in super::super) fn op_stor(&mut self, memory: &mut Memory) -> ops::Result {
         // we map r = 0x12345678 like to:
         // addr = 12, addr+1 = 34, addr+2 = 56, addr+3 = 78
 
@@ -16,12 +16,10 @@ impl CPU {
             println!("{:03}\tSTOR r{}, r{}", self.meta.steps, r0, r1);
         }
 
-        let mut address = self.registers[r0] as u32;
-        for byte in self.registers[r1].to_be_bytes().iter() {
-            if !memory.set(address, *byte) {
-                return Err("Cannot set");
-            }
-            address += 1;
+        let address = self.registers[r0] as u32;
+        let bytes = self.registers[r1].to_be_bytes();
+        if !memory.set_bytes(address, &bytes) {
+            return Err("stor: cannot set memory");
         }
 
         Ok(())
