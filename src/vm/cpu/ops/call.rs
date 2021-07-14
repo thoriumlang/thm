@@ -10,12 +10,10 @@ impl CPU {
             println!("{:03}\tCALL {:#010x}", self.meta.steps, target);
         }
 
-        // todo maybe mutualize code for call/push
-        for byte in self.pc.to_le_bytes().iter() {
-            self.sp -= 1;
-            if !memory.set(self.sp, *byte) {
-                return Err("Cannot set");
-            }
+        self.sp -= 4;
+        let bytes = self.pc.to_be_bytes();
+        if !memory.set_bytes(self.sp,&bytes) {
+            return Err("call: cannot set memory");
         }
 
         self.pc = target;

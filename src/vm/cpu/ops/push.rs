@@ -13,11 +13,10 @@ impl CPU {
             println!("{:03}\tPUSH r{}", self.meta.steps, r);
         }
 
-        for byte in self.registers[r].to_le_bytes().iter() {
-            self.sp -= 1;
-            if !memory.set(self.sp, *byte) {
-                return Err("Cannot set");
-            }
+        self.sp -= 4;
+        let bytes = self.registers[r].to_be_bytes();
+        if !memory.set_bytes(self.sp,&bytes) {
+            return Err("push: cannot set memory");
         }
 
         Ok(())
