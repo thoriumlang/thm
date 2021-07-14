@@ -2,11 +2,9 @@ use crate::cpu::{CPU, ops};
 use crate::memory::Memory;
 
 impl CPU {
-    pub(in super::super) fn op_jr(&mut self, memory:&mut Memory) -> ops::Result {
-        let target = match self.fetch_4bytes(memory) {
-            None => return Err("Cannot fetch target"),
-            Some(bytes) => bytes
-        } + self.cs;
+    pub(in super::super) fn op_jr(&mut self, memory: &mut Memory) -> ops::Result {
+        let target = self.fetch_word(memory)
+            .ok_or("jr: cannot fetch target")? + self.cs;
 
         if self.opts.print_op {
             println!("{:03}\tJR   {:#010x}", self.meta.steps, target);

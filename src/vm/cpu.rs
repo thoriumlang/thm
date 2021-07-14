@@ -1,10 +1,13 @@
 extern crate vmlib;
 
+use std::time::Instant;
+
 use vmlib::{REG_COUNT, ROM_START};
 use vmlib::op::Op;
 
 use crate::memory::Memory;
-use std::time::Instant;
+
+use self::vmlib::MAX_REGISTER;
 
 mod ops;
 
@@ -133,20 +136,30 @@ impl CPU {
     }
 
     fn fetch_opcode(&mut self, memory: &Memory) -> Option<u8> {
-        self.fetch_1byte(memory)
+        self.fetch_byte(memory)
     }
 
     fn decode_opcode(opcode: u8) -> Op {
         Op::from(opcode)
     }
 
-    fn fetch_1byte(&mut self, memory: &Memory) -> Option<u8> {
+    fn fetch_byte(&mut self, memory: &Memory) -> Option<u8> {
         let byte = memory.get(self.pc);
         self.pc += 1;
         return byte;
     }
 
-    fn fetch_4bytes(&mut self, memory: &Memory) -> Option<u32> {
+    fn fetch_register(&mut self, memory: &Memory, f: &dyn Fn(&usize) -> bool) -> Option<usize> {
+        self.fetch_byte(memory)
+            .map(|r| r as usize)
+            .filter(f)
+    }
+
+    fn is_general_purpose_register(r: &usize) -> bool {
+        (0..(MAX_REGISTER + 1)).contains(r)
+    }
+
+    fn fetch_word(&mut self, memory: &Memory) -> Option<u32> {
         let mut result: u32 = 0;
         for i in 0..4 {
             result = result << 8;

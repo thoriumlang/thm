@@ -5,30 +5,32 @@ use super::super::vmlib::{MAX_REGISTER, REG_CS, REG_SP};
 
 impl CPU {
     pub(in super::super) fn op_mov_rr(&mut self, memory: &mut Memory) -> ops::Result {
-        let r0 = match self.fetch_1byte(memory) {
-            None => return Err("Cannot fetch r0"),
-            Some(byte) => byte,
-        } as usize;
-        let r1 = match self.fetch_1byte(memory) {
-            None => return Err("Cannot fetch r1"),
-            Some(byte) => byte,
-        } as usize;
+        let r0 = self.fetch_register(memory, &|r: &usize| {
+            Self::is_general_purpose_register(r) || match r {
+                &REG_SP | &REG_CS => true,
+                _ => false
+            }
+        }).ok_or("mov_rr: cannot fetch r0")?;
+
+        let r1 = self.fetch_register(memory, &|r: &usize| {
+            Self::is_general_purpose_register(r) || match r {
+                &REG_SP | &REG_CS => true,
+                _ => false
+            }
+        }).ok_or("mov_rr: cannot fetch r1")?;
 
         let value = match r1 {
             REG_SP => self.sp as i32,
             REG_CS => self.cs as i32,
             0..=MAX_REGISTER => self.registers[r1],
-            _ => return Err("r1 is not a valid source register"),
+            _ => panic!("mov_rr: r1 not covered!"),
         } as i32;
 
         match r0 {
             REG_SP => self.sp = value as u32,
             REG_CS => self.cs = value as u32,
             0..=MAX_REGISTER => self.registers[r0] = value,
-            _ => {
-                println!("{}", r0);
-                return Err("r0 is not a valid destination register");
-            }
+            _ => panic!("mov_rr: r0 not covered!"),
         }
 
         self.flags.zero = value == 0;

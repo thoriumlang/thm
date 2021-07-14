@@ -1,5 +1,4 @@
 use crate::cpu::{CPU, ops};
-use super::super::vmlib::MAX_REGISTER;
 use crate::memory::Memory;
 
 impl CPU {
@@ -7,21 +6,11 @@ impl CPU {
         // we map r = 0x12345678 like to:
         // addr = 12, addr+1 = 34, addr+2 = 56, addr+3 = 78
 
-        let r0 = match self.fetch_1byte(memory) {
-            None => return Err("Cannot fetch r0"),
-            Some(byte) => match byte as usize {
-                0..=MAX_REGISTER => byte as usize,
-                _ => return Err("r0 is not a valid op register")
-            },
-        };
+        let r0 = self.fetch_register(memory, &Self::is_general_purpose_register)
+            .ok_or("stor: cannot fetch r0")?;
 
-        let r1 = match self.fetch_1byte(memory) {
-            None => return Err("Cannot fetch r1"),
-            Some(byte) => match byte as usize {
-                0..=MAX_REGISTER => byte as usize,
-                _ => return Err("r1 is not a valid op register")
-            },
-        };
+        let r1 = self.fetch_register(memory, &Self::is_general_purpose_register)
+            .ok_or("stor: cannot fetch r1")?;
 
         if self.opts.print_op {
             println!("{:03}\tSTOR r{}, r{}", self.meta.steps, r0, r1);

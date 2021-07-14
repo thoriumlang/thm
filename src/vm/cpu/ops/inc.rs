@@ -1,16 +1,11 @@
 use crate::cpu::{CPU, ops};
-use super::super::vmlib::MAX_REGISTER;
 use crate::memory::Memory;
 
 impl CPU {
     pub(in super::super) fn op_inc(&mut self, memory: &mut Memory) -> ops::Result {
-        let r = match self.fetch_1byte(memory) {
-            None => return Err("Cannot fetch r"),
-            Some(byte) => match byte as usize {
-                0..=MAX_REGISTER => byte as usize,
-                _ => return Err("r is not a valid op register")
-            },
-        } as usize;
+        let r = self.fetch_register(memory, &Self::is_general_purpose_register)
+            .ok_or("inc: cannot fetch r")?;
+
         self.registers[r] += 1;
         self.flags.zero = self.registers[r] == 0;
         self.flags.negative = self.registers[r] < 0;

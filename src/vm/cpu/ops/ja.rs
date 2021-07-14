@@ -3,14 +3,11 @@ use crate::memory::Memory;
 
 impl CPU {
     pub(in super::super) fn op_ja(&mut self, memory: &mut Memory) -> ops::Result {
-        let r0 = match self.fetch_1byte(memory) {
-            None => return Err("Cannot fetch r0"),
-            Some(byte) => byte,
-        } as usize;
-        let r1 = match self.fetch_1byte(memory) {
-            None => return Err("Cannot fetch r1"),
-            Some(byte) => byte,
-        } as usize;
+        let r0 = self.fetch_register(memory, &Self::is_general_purpose_register)
+            .ok_or("ja: cannot fetch r0")?;
+
+        let r1 = self.fetch_register(memory, &Self::is_general_purpose_register)
+            .ok_or("ja: cannot fetch r1")?;
 
         let target = self.registers[r0] as u32 + self.registers[r1] as u32;
 

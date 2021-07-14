@@ -5,10 +5,8 @@ use crate::memory::Memory;
 
 impl CPU {
     pub(in super::super) fn op_xbm(&mut self, memory: &Memory) -> ops::Result {
-        let i = match self.fetch_1byte(memory) {
-            None => return Err("Cannot fetch i"),
-            Some(byte) => byte,
-        } as usize;
+        let i = self.fetch_byte(memory)
+            .ok_or("xbm: cannot fetch i")? as usize;
 
         if self.opts.print_op {
             println!("{:03}\tXBM  {}", self.meta.steps, i);

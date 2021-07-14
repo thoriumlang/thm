@@ -3,10 +3,8 @@ use crate::memory::Memory;
 
 impl CPU {
     pub(in super::super) fn op_call(&mut self, memory: &mut Memory) -> ops::Result {
-        let target = match self.fetch_4bytes(memory) {
-            None => return Err("Cannot fetch addr"),
-            Some(byte) => byte
-        } + self.cs;
+        let target = self.fetch_word(memory)
+            .ok_or("call: cannot fetch target")? + self.cs;
 
         if self.opts.print_op {
             println!("{:03}\tCALL {:#010x}", self.meta.steps, target);

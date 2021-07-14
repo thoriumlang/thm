@@ -1,19 +1,13 @@
 use crate::cpu::{CPU, ops};
-
-use super::super::vmlib::MAX_REGISTER;
 use crate::memory::Memory;
 
 impl CPU {
     pub(in super::super) fn op_pop(&mut self, memory: &mut Memory) -> ops::Result {
         // we map sp = 78, sp-1 = 56, sp-2 = 34 sp-3 = 12 like to:
         // r = 0x12345678
-        let r = match self.fetch_1byte(memory) {
-            None => return Err("Cannot fetch r"),
-            Some(byte) => match byte as usize {
-                0..=MAX_REGISTER => byte as usize,
-                _ => return Err("r is not a valid op register")
-            },
-        };
+
+        let r = self.fetch_register(memory, &Self::is_general_purpose_register)
+            .ok_or("pop: cannot fetch r")?;
 
         let mut bytes: u32 = 0;
         for i in 0..4 {

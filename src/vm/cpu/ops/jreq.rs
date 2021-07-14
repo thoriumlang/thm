@@ -3,10 +3,8 @@ use crate::memory::Memory;
 
 impl CPU {
     pub(in super::super) fn op_jreq(&mut self, memory:&mut Memory) -> ops::Result {
-        let target = match self.fetch_4bytes(memory) {
-            None => return Err("Cannot fetch target"),
-            Some(bytes) => bytes,
-        } + self.cs;
+        let target = self.fetch_word(memory)
+            .ok_or("jreq: cannot fetch target")? + self.cs;
 
         if self.flags.zero {
             self.pc = target;
