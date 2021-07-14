@@ -8,6 +8,7 @@ use vmlib::op::Op;
 use crate::memory::Memory;
 
 use self::vmlib::MAX_REGISTER;
+use std::convert::TryInto;
 
 mod ops;
 
@@ -160,16 +161,13 @@ impl CPU {
     }
 
     fn fetch_word(&mut self, memory: &Memory) -> Option<u32> {
-        let mut result: u32 = 0;
-        for i in 0..4 {
-            result = result << 8;
-            match memory.get(self.pc + i) {
-                None => return None,
-                Some(byte) => result |= byte as u32,
-            }
+        match memory.get_bytes(self.pc, 4).and_then(|v| v.as_slice().try_into().ok()) {
+            Some(bytes) => {
+                self.pc += 4;
+                Some(u32::from_be_bytes(bytes))
+            },
+            _ => None
         }
-        self.pc += 4;
-        return Some(result);
     }
 
     pub fn read_register(&self, r: usize) -> i32 {
