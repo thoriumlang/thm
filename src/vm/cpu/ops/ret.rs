@@ -1,5 +1,6 @@
 use crate::cpu::{CPU, ops};
 use crate::memory::Memory;
+use std::convert::TryInto;
 
 impl CPU {
     pub(in super::super) fn op_ret(&mut self, memory: &mut Memory) -> ops::Result {
@@ -7,18 +8,12 @@ impl CPU {
             println!("{:03}\tRET", self.meta.steps);
         }
 
-        // todo maybe mutualize code for ret/pop
-        let mut target: u32 = 0;
-        for i in 0..4 {
-            target = target << 8;
-            match memory.get(self.sp + i) {
-                None => return Err("Cannot fetch 4 bytes"),
-                Some(byte) => target |= byte as u32,
-            }
-        }
-        self.sp += 4;
+        let bytes = memory.get_bytes(self.sp, 4)
+            .ok_or("load: cannot get memory")?
+            .as_slice().try_into().expect("load: did not read 4 bytes");
 
-        self.pc = target;
+        self.sp += 4;
+        self.pc = u32::from_be_bytes(bytes);
 
         Ok(())
     }
