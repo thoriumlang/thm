@@ -16,10 +16,8 @@ impl CPU {
             println!("{:03}\tSTOR r{}, r{}", self.meta.steps, r0, r1);
         }
 
-        let address = self.registers[r0] as u32;
-        let bytes = self.registers[r1].to_be_bytes();
-        if !memory.set_bytes(address, &bytes) {
-            return Err("stor: cannot set memory");
+        if !Self::store_word(memory, self.registers[r1] as u32, self.registers[r0] as u32) {
+            return Err("stor: cannot write memory");
         }
 
         Ok(())

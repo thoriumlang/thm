@@ -1,5 +1,3 @@
-use std::convert::TryInto;
-
 use crate::cpu::{CPU, ops};
 use crate::memory::Memory;
 
@@ -15,11 +13,9 @@ impl CPU {
             .ok_or("load: cannot fetch r1")?;
 
         let address = self.registers[r1] as u32;
-        let bytes = memory.get_bytes(address, 4)
-            .ok_or("load: cannot get memory")?
-            .as_slice().try_into().expect("load: did not read 4 bytes");
+        let value = Self::load_word(memory, address).ok_or("load: cannot read memory")? as i32;
 
-        self.registers[r0] = i32::from_be_bytes(bytes);
+        self.registers[r0] = value;
         self.update_flags(self.registers[r0]);
 
         if self.opts.print_op {

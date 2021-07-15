@@ -1,6 +1,5 @@
 use crate::cpu::{CPU, ops};
 use crate::memory::Memory;
-use std::convert::TryInto;
 
 impl CPU {
     pub(in super::super) fn op_ret(&mut self, memory: &mut Memory) -> ops::Result {
@@ -8,12 +7,10 @@ impl CPU {
             println!("{:03}\tRET", self.meta.steps);
         }
 
-        let bytes = memory.get_bytes(self.sp, 4)
-            .ok_or("load: cannot get memory")?
-            .as_slice().try_into().expect("load: did not read 4 bytes");
+        let address = Self::load_word(memory, self.sp).ok_or("load: cannot read memory")? as u32;
 
+        self.pc = address;
         self.sp += 4;
-        self.pc = u32::from_be_bytes(bytes);
 
         Ok(())
     }

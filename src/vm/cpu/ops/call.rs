@@ -11,9 +11,8 @@ impl CPU {
         }
 
         self.sp -= 4;
-        let bytes = self.pc.to_be_bytes();
-        if !memory.set_bytes(self.sp,&bytes) {
-            return Err("call: cannot set memory");
+        if !Self::store_word(memory, self.pc, self.sp) {
+            return Err("call: cannot write memory");
         }
 
         self.pc = target;

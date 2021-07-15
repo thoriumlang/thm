@@ -1,5 +1,6 @@
 extern crate vmlib;
 
+use std::convert::TryInto;
 use std::time::Instant;
 
 use vmlib::{REG_COUNT, ROM_START};
@@ -8,7 +9,6 @@ use vmlib::op::Op;
 use crate::memory::Memory;
 
 use self::vmlib::MAX_REGISTER;
-use std::convert::TryInto;
 
 mod ops;
 
@@ -136,43 +136,58 @@ impl CPU {
         }
     }
 
+    #[inline]
     fn fetch_opcode(&mut self, memory: &Memory) -> Option<u8> {
         self.fetch_byte(memory)
     }
 
+    #[inline]
     fn decode_opcode(opcode: u8) -> Op {
         Op::from(opcode)
     }
 
+    #[inline]
     fn fetch_byte(&mut self, memory: &Memory) -> Option<u8> {
         let byte = memory.get(self.pc);
         self.pc += 1;
         return byte;
     }
 
+    #[inline]
     fn fetch_register(&mut self, memory: &Memory, f: &dyn Fn(&usize) -> bool) -> Option<usize> {
         self.fetch_byte(memory)
             .map(|r| r as usize)
             .filter(f)
     }
 
+    #[inline]
     fn is_general_purpose_register(r: &usize) -> bool {
         (0..(MAX_REGISTER + 1)).contains(r)
     }
 
+    #[inline]
     fn fetch_word(&mut self, memory: &Memory) -> Option<u32> {
-        match memory.get_bytes(self.pc, 4).and_then(|v| v.as_slice().try_into().ok()) {
-            Some(bytes) => {
-                self.pc += 4;
-                Some(u32::from_be_bytes(bytes))
-            },
-            _ => None
-        }
+        let word = Self::load_word(memory, self.pc);
+        self.pc += 4;
+        word
     }
 
+    #[inline]
     fn update_flags(&mut self, value: i32) {
         self.flags.zero = value == 0;
         self.flags.negative = value < 0;
+    }
+
+    #[inline]
+    fn load_word(memory: &Memory, address: u32) -> Option<u32> {
+        memory.get_bytes(address, 4)
+            .and_then(|bytes| bytes.as_slice().try_into().ok())
+            .and_then(|bytes| Some(u32::from_be_bytes(bytes)))
+    }
+
+    #[inline]
+    fn store_word(memory: &mut Memory, word: u32, address: u32) -> bool {
+        memory.set_bytes(address, &word.to_be_bytes())
     }
 
     pub fn read_register(&self, r: usize) -> i32 {

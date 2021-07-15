@@ -1,6 +1,5 @@
 use crate::cpu::{CPU, ops};
 use crate::memory::Memory;
-use std::convert::TryInto;
 
 impl CPU {
     pub(in super::super) fn op_pop(&mut self, memory: &mut Memory) -> ops::Result {
@@ -10,12 +9,10 @@ impl CPU {
         let r = self.fetch_register(memory, &Self::is_general_purpose_register)
             .ok_or("pop: cannot fetch r")?;
 
-        let bytes = memory.get_bytes(self.sp, 4)
-            .ok_or("load: cannot get memory")?
-            .as_slice().try_into().expect("load: did not read 4 bytes");
+        let value = Self::load_word(memory, self.sp).ok_or("pop: cannot read memory")? as i32;
 
+        self.registers[r] = value;
         self.sp += 4;
-        self.registers[r] = i32::from_be_bytes(bytes);
         self.update_flags(self.registers[r]);
 
         if self.opts.print_op {

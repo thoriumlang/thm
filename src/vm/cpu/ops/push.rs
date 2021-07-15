@@ -14,9 +14,8 @@ impl CPU {
         }
 
         self.sp -= 4;
-        let bytes = self.registers[r].to_be_bytes();
-        if !memory.set_bytes(self.sp,&bytes) {
-            return Err("push: cannot set memory");
+        if !Self::store_word(memory, self.registers[r] as u32, self.sp) {
+            return Err("push: cannot write memory");
         }
 
         Ok(())
