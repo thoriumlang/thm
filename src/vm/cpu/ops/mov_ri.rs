@@ -10,8 +10,7 @@ impl CPU {
             .ok_or("mov_ri: cannot fetch w" )? as i32;
 
         self.registers[r] = w;
-        self.flags.zero = self.registers[r] == 0;
-        self.flags.negative = self.registers[r] < 0;
+        self.update_flags(self.registers[r]);
 
         if self.opts.print_op {
             println!("{:03}\tMOV  r{}, {:#010x}", self.meta.steps, r, w);

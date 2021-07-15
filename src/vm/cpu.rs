@@ -170,6 +170,11 @@ impl CPU {
         }
     }
 
+    fn update_flags(&mut self, value: i32) {
+        self.flags.zero = value == 0;
+        self.flags.negative = value < 0;
+    }
+
     pub fn read_register(&self, r: usize) -> i32 {
         match r {
             255 => self.pc as i32,

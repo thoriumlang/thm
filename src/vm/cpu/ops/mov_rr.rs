@@ -33,8 +33,7 @@ impl CPU {
             _ => panic!("mov_rr: r0 not covered!"),
         }
 
-        self.flags.zero = value == 0;
-        self.flags.negative = value < 0;
+        self.update_flags(value);
 
         if self.opts.print_op {
             let r0 = match r0 {

@@ -16,8 +16,7 @@ impl CPU {
 
         self.sp += 4;
         self.registers[r] = i32::from_be_bytes(bytes);
-        self.flags.zero = self.registers[r] == 0;
-        self.flags.negative = self.registers[r] < 0;
+        self.update_flags(self.registers[r]);
 
         if self.opts.print_op {
             println!("{:03}\tPOP  r{}", self.meta.steps, r);

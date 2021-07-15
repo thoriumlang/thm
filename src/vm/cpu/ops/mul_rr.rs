@@ -10,8 +10,7 @@ impl CPU {
             .ok_or("mul_rr: cannot fetch r1")?;
 
         self.registers[r0] *= self.registers[r1];
-        self.flags.zero = self.registers[r0] == 0;
-        self.flags.negative = self.registers[r0] < 0;
+        self.update_flags(self.registers[r0]);
 
         if self.opts.print_op {
             println!("{:03}\tMUL  r{}, r{}", self.meta.steps, r0, r1);

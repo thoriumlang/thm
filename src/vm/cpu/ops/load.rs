@@ -20,8 +20,7 @@ impl CPU {
             .as_slice().try_into().expect("load: did not read 4 bytes");
 
         self.registers[r0] = i32::from_be_bytes(bytes);
-        self.flags.zero = self.registers[r0] == 0;
-        self.flags.negative = self.registers[r0] < 0;
+        self.update_flags(self.registers[r0]);
 
         if self.opts.print_op {
             println!("{:03}\tLOAD r{}, r{}", self.meta.steps, r0, r1);

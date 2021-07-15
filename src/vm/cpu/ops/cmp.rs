@@ -9,8 +9,8 @@ impl CPU {
         let r1 = self.fetch_register(memory, &Self::is_general_purpose_register)
             .ok_or("cmp: cannot fetch r1")?;
 
-        self.flags.zero = self.registers[r0] == self.registers[r1];
-        self.flags.negative = self.registers[r0] < self.registers[r1];
+        let val = self.registers[r0] - self.registers[r1];
+        self.update_flags(val);
 
         if self.opts.print_op {
             println!("{:03}\tCMP  r{}, r{}", self.meta.steps, r0, r1);
