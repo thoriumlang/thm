@@ -1,14 +1,15 @@
 use std::sync::{Arc, RwLock};
 use std::thread;
+use bytes::BytesMut;
 
 struct Bus {
-    data: RwLock<Vec<u8>>,
+    data: RwLock<BytesMut>,
 }
 
 impl Bus {
     pub fn new() -> Bus {
         Bus {
-            data: RwLock::new(vec![0u8; 1024])
+            data: RwLock::new(BytesMut::from(vec![0u8; 1024].as_slice()))
         }
     }
 
