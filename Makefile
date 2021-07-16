@@ -18,10 +18,13 @@ target/rom.bin: target/debug/tha src/rom.a
 
 examples: target/fibonacci.bin target/fibonacci_rec.bin target/fact.bin
 target/fibonacci.bin: target/debug/tha examples/fibonacci.a
+	rm -f target/fibonacci.bin
 	target/debug/tha examples/fibonacci.a target/fibonacci.bin
 target/fibonacci_rec.bin: target/debug/tha examples/fibonacci_rec.a
+	rm -f target/fibonacci_rec.bin
 	target/debug/tha examples/fibonacci_rec.a target/fibonacci_rec.bin
 target/fact.bin: target/debug/tha examples/fact.a
+	rm -f target/fact.bin
 	target/debug/tha examples/fact.a target/fact.bin
 
 it: t_tha t_thm rom examples

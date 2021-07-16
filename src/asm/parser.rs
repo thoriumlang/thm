@@ -89,348 +89,331 @@ impl<'t> Parser<'t> {
             "CALL" => self.parse_call(&position),
             "RET" => self.parse_ret(&position),
             "XBM" => self.parse_xbm(&position),
-            op => Err(format!("Invalid mnemonic '{}' at {}", op, position).to_string())
+            op => Err(format!("Invalid mnemonic '{}' at {}", op, position).into())
         };
     }
 
     fn parse_nop(&mut self, position: &Position) -> Result<Instruction> {
-        let ret = Ok(Instruction::I(Op::Nop));
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+        if self.read_eol() {
+            return Ok(Instruction::I(Op::Nop));
         }
-        ret
+        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn parse_halt(&mut self, position: &Position) -> Result<Instruction> {
-        let ret = Ok(Instruction::I(Op::Halt));
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+        if self.read_eol() {
+            return Ok(Instruction::I(Op::Halt));
         }
-        ret
+        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn parse_panic(&mut self, position: &Position) -> Result<Instruction> {
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+        if self.read_eol() {
+            return Ok(Instruction::I(Op::Panic));
         }
-        let ret = Ok(Instruction::I(Op::Panic));
-        ret
+        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn parse_mov(&mut self, position: &Position) -> Result<Instruction> {
         let r1 = match self.read_register() {
-            None => return Err(format!("Expected <register> at {}", position).to_string()),
-            Some(t) => t,
+            None => return Err(format!("Expected <r> at {}", position).into()),
+            Some(str) => str,
         };
-        match self.read_comma() {
-            false => return Err(format!("Expected , at {}", position).to_string()),
-            true => (),
+
+        if !self.read_comma() {
+            return Err(format!("Expected ',' at {}", position).into());
         }
-        let instruction = match self.read_next() {
-            Some(t) => match t {
-                Token::Identifier(_, r2) => Instruction::IRR(Op::MovRR, r1, r2),
-                Token::Integer(_, imm4) => Instruction::IRI(Op::MovRI, r1, imm4),
-                _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
-            }
-            _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
-        };
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+
+        let instruction = self.read_next()
+            .and_then(|token| match token {
+                Token::Identifier(_, r2) => Some(Ok(Instruction::IRR(Op::MovRR, r1, r2))),
+                Token::Integer(_, w) => Some(Ok(Instruction::IRI(Op::MovRI, r1, w))),
+                _ => None,
+            })
+            .unwrap_or(Err(format!("Expected <w> or <r> at {}", position).into()));
+
+        if self.read_eol() {
+            return instruction;
         }
-        Ok(instruction)
+        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn parse_add(&mut self, position: &Position) -> Result<Instruction> {
         let r1 = match self.read_register() {
-            None => return Err(format!("Expected <register> at {}", position).to_string()),
-            Some(t) => t,
+            None => return Err(format!("Expected <r> at {}", position).into()),
+            Some(str) => str,
         };
-        match self.read_comma() {
-            false => return Err(format!("Expected , at {}", position).to_string()),
-            true => (),
+
+        if !self.read_comma() {
+            return Err(format!("Expected ',' at {}", position).into());
         }
-        let instruction = match self.read_next() {
-            Some(t) => match t {
-                Token::Identifier(_, r2) => Instruction::IRR(Op::AddRR, r1, r2),
-                Token::Integer(_, imm4) => Instruction::IRI(Op::AddRI, r1, imm4),
-                _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
-            }
-            _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
-        };
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+
+        let instruction = self.read_next()
+            .and_then(|token| match token {
+                Token::Identifier(_, r2) => Some(Ok(Instruction::IRR(Op::AddRR, r1, r2))),
+                Token::Integer(_, w) => Some(Ok(Instruction::IRI(Op::AddRI, r1, w))),
+                _ => None,
+            })
+            .unwrap_or(Err(format!("Expected <w> or <r> at {}", position).into()));
+
+        if self.read_eol() {
+            return instruction;
         }
-        Ok(instruction)
+        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn parse_sub(&mut self, position: &Position) -> Result<Instruction> {
         let r1 = match self.read_register() {
-            None => return Err(format!("Expected <register> at {}", position).to_string()),
-            Some(t) => t,
+            None => return Err(format!("Expected <r> at {}", position).into()),
+            Some(str) => str,
         };
-        match self.read_comma() {
-            false => return Err(format!("Expected , at {}", position).to_string()),
-            true => (),
+
+        if !self.read_comma() {
+            return Err(format!("Expected ',' at {}", position).into());
         }
-        let instruction = match self.read_next() {
-            Some(t) => match t {
-                Token::Identifier(_, r2) => Instruction::IRR(Op::SubRR, r1, r2),
-                Token::Integer(_, imm4) => Instruction::IRI(Op::SubRI, r1, imm4),
-                _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
-            }
-            _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
-        };
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+
+        let instruction = self.read_next()
+            .and_then(|token| match token {
+                Token::Identifier(_, r2) => Some(Ok(Instruction::IRR(Op::SubRR, r1, r2))),
+                Token::Integer(_, w) => Some(Ok(Instruction::IRI(Op::SubRI, r1, w))),
+                _ => None,
+            })
+            .unwrap_or(Err(format!("Expected <w> or <r> at {}", position).into()));
+
+        if self.read_eol() {
+            return instruction;
         }
-        Ok(instruction)
+        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn parse_mul(&mut self, position: &Position) -> Result<Instruction> {
         let r1 = match self.read_register() {
-            None => return Err(format!("Expected <register> at {}", position).to_string()),
-            Some(t) => t,
+            None => return Err(format!("Expected <r> at {}", position).to_string()),
+            Some(str) => str,
         };
-        match self.read_comma() {
-            false => return Err(format!("Expected , at {}", position).to_string()),
-            true => (),
+
+        if !self.read_comma() {
+            return Err(format!("Expected ',' at {}", position).to_string());
         }
-        let instruction = match self.read_next() {
-            Some(t) => match t {
-                Token::Identifier(_, r2) => Instruction::IRR(Op::MulRR, r1, r2),
-                Token::Integer(_, imm4) => Instruction::IRI(Op::MulRI, r1, imm4),
-                _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
-            }
-            _ => return Err(format!("Expected <imm> or <r> at {}", position).to_string())
-        };
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+
+        let instruction = self.read_next()
+            .and_then(|token| match token {
+                Token::Identifier(_, r2) => Some(Ok(Instruction::IRR(Op::MulRR, r1, r2))),
+                Token::Integer(_, w) => Some(Ok(Instruction::IRI(Op::MulRI, r1, w))),
+                _ => None,
+            })
+            .unwrap_or(Err(format!("Expected <w> or <r> at {}", position).into()));
+
+        if self.read_eol() {
+            return instruction;
         }
-        Ok(instruction)
+        Err(format!("Expected <eol> at {}", position).to_string())
     }
 
     fn parse_cmp(&mut self, position: &Position) -> Result<Instruction> {
-        let reg1 = match self.read_register() {
-            None => return Err(format!("Expected <register> at {}", position).to_string()),
-            Some(t) => t,
+        let r1 = match self.read_register() {
+            None => return Err(format!("Expected <r> at {}", position).into()),
+            Some(str) => str,
         };
-        match self.read_comma() {
-            false => return Err(format!("Expected , at {}", position).to_string()),
-            true => (),
+
+        if !self.read_comma() {
+            return Err(format!("Expected ',' at {}", position).into());
         }
-        let reg2 = match self.read_register() {
-            None => return Err(format!("Expected <register> at {}", position).to_string()),
-            Some(t) => t
+
+        let r2 = match self.read_register() {
+            None => return Err(format!("Expected <r> at {}", position).into()),
+            Some(str) => str
         };
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+
+        if self.read_eol() {
+            return Ok(Instruction::IRR(Op::Cmp, r1, r2));
         }
-        let ret = Ok(Instruction::IRR(Op::Cmp, reg1, reg2));
-        ret
+        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn parse_j(&mut self, position: &Position) -> Result<Instruction> {
-        let instruction = match self.read_next() {
-            Some(t) => match t {
-                Token::Address(_, addr) => Instruction::IA(Op::Jr, addr),
-                Token::Integer(_, imm4) => Instruction::II(Op::Jr, imm4),
-                _ => return Err(format!("Expected <imm> or <addr> at {}", position).to_string())
-            }
-            _ => return Err(format!("Expected <imm> or <addr> at {}", position).to_string())
-        };
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+        let instruction = self.read_next()
+            .and_then(|token| match token {
+                Token::Address(_, addr) => Some(Ok(Instruction::IA(Op::Jr, addr))),
+                Token::Integer(_, w) => Some(Ok(Instruction::II(Op::Jr, w))),
+                _ => None,
+            })
+            .unwrap_or(Err(format!("Expected <w> or <addr> at {}", position).into()));
+
+        if self.read_eol() {
+            return instruction;
         }
-        Ok(instruction)
+        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn parse_jeq(&mut self, position: &Position) -> Result<Instruction> {
-        let address = match self.read_address() {
-            None => return Err(format!("Expected <addr> at {}", position).to_string()),
-            Some(t) => t,
-        };
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+        let instruction = self.read_address()
+            .map(|addr| Ok(Instruction::IA(Op::Jreq, addr)))
+            .unwrap_or(Err(format!("Expected <addr> at {}", position).into()));
+
+        if self.read_eol() {
+            return instruction;
         }
-        let ret = Ok(Instruction::IA(Op::Jreq, address));
-        ret
+        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn parse_jne(&mut self, position: &Position) -> Result<Instruction> {
-        let address = match self.read_address() {
-            None => return Err(format!("Expected <addr> at {}", position).to_string()),
-            Some(t) => t,
-        };
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+        let instruction = self.read_address()
+            .map(|addr| Ok(Instruction::IA(Op::Jrne, addr)))
+            .unwrap_or(Err(format!("Expected <addr> at {}", position).into()));
+
+        if self.read_eol() {
+            return instruction;
         }
-        let ret = Ok(Instruction::IA(Op::Jrne, address));
-        ret
+        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn parse_ja(&mut self, position: &Position) -> Result<Instruction> {
-        let reg1 = match self.read_register() {
-            None => return Err(format!("Expected <register> at {}", position).to_string()),
-            Some(t) => t,
+        let r1 = match self.read_register() {
+            None => return Err(format!("Expected <r> at {}", position).into()),
+            Some(str) => str,
         };
-        match self.read_comma() {
-            false => return Err(format!("Expected , at {}", position).to_string()),
-            true => (),
+
+        if !self.read_comma() {
+            return Err(format!("Expected ',' at {}", position).into());
         }
-        let reg2 = match self.read_register() {
-            None => return Err(format!("Expected <register> at {}", position).to_string()),
-            Some(t) => t
+
+        let r2 = match self.read_register() {
+            None => return Err(format!("Expected <r> at {}", position).into()),
+            Some(str) => str
         };
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+
+        if self.read_eol() {
+            return Ok(Instruction::IRR(Op::Ja, r1, r2));
         }
-        let ret = Ok(Instruction::IRR(Op::Ja, reg1, reg2));
-        ret
+        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn parse_inc(&mut self, position: &Position) -> Result<Instruction> {
-        let reg = match self.read_register() {
-            None => return Err(format!("Expected <register> at {}", position).to_string()),
-            Some(t) => t,
+        let r = match self.read_register() {
+            None => return Err(format!("Expected <r> at {}", position).into()),
+            Some(str) => str,
         };
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+        if self.read_eol() {
+            return Ok(Instruction::IR(Op::Inc, r));
         }
-        let ret = Ok(Instruction::IR(Op::Inc, reg));
-        ret
+        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn parse_dec(&mut self, position: &Position) -> Result<Instruction> {
-        let reg = match self.read_register() {
-            None => return Err(format!("Expected <register> at {}", position).to_string()),
-            Some(t) => t,
+        let r = match self.read_register() {
+            None => return Err(format!("Expected <r> at {}", position).into()),
+            Some(str) => str,
         };
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+
+        if self.read_eol() {
+            return Ok(Instruction::IR(Op::Dec, r));
         }
-        let ret = Ok(Instruction::IR(Op::Dec, reg));
-        ret
+        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn parse_push(&mut self, position: &Position) -> Result<Instruction> {
-        let reg = match self.read_register() {
-            None => return Err(format!("Expected <register> at {}", position).to_string()),
-            Some(t) => t,
+        let r = match self.read_register() {
+            None => return Err(format!("Expected <r> at {}", position).into()),
+            Some(str) => str,
         };
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+
+        if self.read_eol() {
+            return Ok(Instruction::IR(Op::Push, r));
         }
-        let ret = Ok(Instruction::IR(Op::Push, reg));
-        ret
+        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn parse_pop(&mut self, position: &Position) -> Result<Instruction> {
-        let reg = match self.read_register() {
-            None => return Err(format!("Expected <register> at {}", position).to_string()),
-            Some(t) => t,
+        let r = match self.read_register() {
+            None => return Err(format!("Expected <r> at {}", position).into()),
+            Some(str) => str,
         };
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+
+        if self.read_eol() {
+            return Ok(Instruction::IR(Op::Pop, r));
         }
-        let ret = Ok(Instruction::IR(Op::Pop, reg));
-        ret
+        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn parse_stor(&mut self, position: &Position) -> Result<Instruction> {
         let r0 = match self.read_register() {
-            None => return Err(format!("Expected <register> at {}", position).to_string()),
-            Some(t) => t,
+            None => return Err(format!("Expected <r> at {}", position).into()),
+            Some(str) => str,
         };
-        match self.read_comma() {
-            false => return Err(format!("Expected , at {}", position).to_string()),
-            true => (),
+
+        if !self.read_comma() {
+            return Err(format!("Expected ',' at {}", position).into());
         }
+
         let r1 = match self.read_register() {
-            None => return Err(format!("Expected <register> at {}", position).to_string()),
-            Some(a) => a
+            None => return Err(format!("Expected <r> at {}", position).into()),
+            Some(str) => str
         };
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+
+        if self.read_eol() {
+            return Ok(Instruction::IRR(Op::Stor, r0, r1));
         }
-        Ok(Instruction::IRR(Op::Stor, r0, r1))
+        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn parse_load(&mut self, position: &Position) -> Result<Instruction> {
         let r0 = match self.read_register() {
-            None => return Err(format!("Expected <register> at {}", position).to_string()),
-            Some(t) => t,
+            None => return Err(format!("Expected <r> at {}", position).into()),
+            Some(str) => str,
         };
-        match self.read_comma() {
-            false => return Err(format!("Expected , at {}", position).to_string()),
-            true => (),
+
+        if !self.read_comma() {
+            return Err(format!("Expected ',' at {}", position).into());
         }
+
         let r1 = match self.read_register() {
-            None => return Err(format!("Expected <register> at {}", position).to_string()),
-            Some(a) => a
+            None => return Err(format!("Expected <r> at {}", position).into()),
+            Some(str) => str
         };
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+
+        if self.read_eol() {
+            return Ok(Instruction::IRR(Op::Load, r0, r1));
         }
-        Ok(Instruction::IRR(Op::Load, r0, r1))
+        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn parse_call(&mut self, position: &Position) -> Result<Instruction> {
-        let address = match self.read_address() {
-            None => return Err(format!("Expected <addr> at {}", position).to_string()),
-            Some(t) => t,
+        let addr = match self.read_address() {
+            None => return Err(format!("Expected <addr> at {}", position).into()),
+            Some(str) => str,
         };
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+
+        if self.read_eol() {
+            return Ok(Instruction::IA(Op::Call, addr));
         }
-        Ok(Instruction::IA(Op::Call, address))
+        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn parse_ret(&mut self, position: &Position) -> Result<Instruction> {
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+        if self.read_eol() {
+            return Ok(Instruction::I(Op::Ret));
         }
-        Ok(Instruction::I(Op::Ret))
+        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn parse_xbm(&mut self, position: &Position) -> Result<Instruction> {
         let i = match self.read_imm1() {
-            None => return Err(format!("Expected <imm1> at {}", position).to_string()),
-            Some(t) => t,
+            None => return Err(format!("Expected <b> at {}", position).into()),
+            Some(i) => i,
         };
 
-        match self.read_eol() {
-            false => return Err(format!("Expected <eol> at {}", position).to_string()),
-            true => (),
+        if self.read_eol() {
+            return Ok(Instruction::IB(Op::Xbm, i));
         }
-
-        Ok(Instruction::IB(Op::Xbm, i))
+        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn read_comma(&mut self) -> bool {
-        return match self.lexer.next() {
+        match self.lexer.next() {
             Some(Ok(Token::Comma(_))) => true,
             _ => false,
-        };
+        }
     }
 
     fn read_eol(&mut self) -> bool {
@@ -448,33 +431,30 @@ impl<'t> Parser<'t> {
     }
 
     fn read_register(&mut self) -> Option<String> {
-        return match self.lexer.next() {
+        match self.lexer.next() {
             Some(Ok(Token::Identifier(_, r))) => Some(r),
             _ => None,
-        };
+        }
     }
 
     fn read_address(&mut self) -> Option<String> {
-        return match self.lexer.next() {
+        match self.lexer.next() {
             Some(Ok(t)) => match t {
                 Token::Address(_, s) => Some(s),
                 _ => None
             },
             _ => None,
-        };
+        }
     }
 
     fn read_imm1(&mut self) -> Option<u8> {
-        return match self.lexer.next() {
-            Some(Ok(t)) => match t {
-                Token::Integer(_, v) => match v {
-                    0..=255 => Some(v as u8),
-                    _ => None,
-                },
+        match self.lexer.next() {
+            Some(Ok(Token::Integer(_, v))) => match v {
+                0..=255 => Some(v as u8),
                 _ => None,
             }
             _ => None,
-        };
+        }
     }
 }
 
@@ -485,30 +465,20 @@ impl<'t> Iterator for Parser<'t> {
         loop {
             return match self.lexer.next() {
                 None => None,
-                Some(t) => {
-                    match t {
-                        Ok(t) => {
-                            return match t {
-                                Token::Label(position, label) => {
-                                    match self.lexer.next() {
-                                        Some(Ok(Token::Eol(_))) => Some(Ok(Node::Label(label))),
-                                        _ => Some(Err(format!("Expected <eol> at {}", position).to_string())),
-                                    }
-                                }
-                                Token::Address(position, _) => Some(Err(format!("Expected section, label or op at {}", position).to_string())),
-                                Token::Identifier(position, _) => Some(Err(format!("Expected section, label or op at {}", position).to_string())),
-                                Token::Op(position, op) => {
-                                    Some(self.parse_instruction(op.as_str(), position).map(|i| Node::Instruction(i)))
-                                }
-                                Token::Integer(position, _) => Some(Err(format!("Expected section, label or op at {}", position).to_string())),
-                                Token::Section(_, _) => None,
-                                Token::Comma(position) => Some(Err(format!("Expected section, label or op at {}", position).to_string())),
-                                Token::Eol(_) => continue,
-                            };
-                        }
-                        Err(err) => Some(Err(err)),
+                Some(Err(err)) => Some(Err(err)),
+                Some(Ok(token)) => match token {
+                    Token::Eol(_) => continue,
+                    Token::Section(_, _) => None,
+                    Token::Label(position, label) => match self.lexer.next() {
+                        Some(Ok(Token::Eol(_))) => Some(Ok(Node::Label(label))),
+                        _ => Some(Err(format!("Expected <eol> at {}", position).into())),
                     }
-                }
+                    Token::Op(position, op) => Some(self.parse_instruction(op.as_str(), position).map(|i| Node::Instruction(i))),
+                    Token::Address(position, _)
+                    | Token::Identifier(position, _)
+                    | Token::Integer(position, _)
+                    | Token::Comma(position) => Some(Err(format!("Expected section, label or op at {}", position).into())),
+                },
             };
         }
     }
