@@ -11,6 +11,7 @@ clap = "2.33.3"
 warp = "0.3.1"
 tokio = { version = "1.7.1", features = ["rt-multi-thread"] }
 serde = { version = "1.0.126", features = ["derive"] }
+bytes = "1.0.1"
 
 [lib]
 name = "vmlib"
@@ -23,3 +24,7 @@ path = "src/vm/main.rs"
 [[bin]]
 name = "tha"
 path = "src/asm/main.rs"
+
+[[bin]]
+name = "poc"
+path = "src/poc/main.rs"

@@ -787,6 +787,7 @@ dependencies = [
 name = "thm"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "clap",
  "serde",
  "tokio",
