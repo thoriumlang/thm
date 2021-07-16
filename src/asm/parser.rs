@@ -3,6 +3,7 @@ use std::iter::Peekable;
 use vmlib::op::Op;
 
 use crate::lexer::{Lexer, Position, Token};
+use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
 pub enum Node {
@@ -42,6 +43,7 @@ impl Instruction {
 
 pub struct Parser<'t> {
     lexer: Peekable<&'t mut Lexer>,
+    variables: HashMap<String, Token>,
 }
 
 type Result<T> = std::result::Result<T, String>;
@@ -50,6 +52,7 @@ impl<'t> Parser<'t> {
     pub fn from_lexer(lexer: &'t mut Lexer) -> Self {
         Parser {
             lexer: lexer.peekable(),
+            variables: HashMap::new(),
         }
     }
 
@@ -64,6 +67,22 @@ impl<'t> Parser<'t> {
                 }
             }
         }
+    }
+
+    fn parse_variable(&mut self, name: String, position: &Position) -> Result<()> {
+        match self.lexer.next() {
+            Some(Ok(Token::Equal(_))) => {}
+            _ => return Err(format!("Expected '=' at {}", position).into()),
+        }
+
+        let token = self.lexer.next();
+        match token {
+            Some(Ok(Token::Integer(_, _)))
+            | Some(Ok(Token::Address(_, _))) => self.variables.insert(name, token.unwrap().unwrap()),
+            _ =>  return Err(format!("Expected <integer> or <address> at {}", position).into()),
+        };
+
+        Ok(())
     }
 
     fn parse_instruction(&mut self, op: &str, position: Position) -> Result<Instruction> {
@@ -128,9 +147,13 @@ impl<'t> Parser<'t> {
             .and_then(|token| match token {
                 Token::Identifier(_, r2) => Some(Ok(Instruction::IRR(Op::MovRR, r1, r2))),
                 Token::Integer(_, w) => Some(Ok(Instruction::IRI(Op::MovRI, r1, w))),
+                Token::Variable(_, name) => match self.variables.get(&name) {
+                    Some(Token::Integer(_, w)) => Some(Ok(Instruction::IRI(Op::MovRI, r1, *w))),
+                    _ => None
+                },
                 _ => None,
             })
-            .unwrap_or(Err(format!("Expected <w> or <r> at {}", position).into()));
+            .unwrap_or(Err(format!("Expected <variable>, <w> or <r> at {}", position).into()));
 
         if self.read_eol() {
             return instruction;
@@ -472,9 +495,16 @@ impl<'t> Iterator for Parser<'t> {
                     Token::Label(position, label) => match self.lexer.next() {
                         Some(Ok(Token::Eol(_))) => Some(Ok(Node::Label(label))),
                         _ => Some(Err(format!("Expected <eol> at {}", position).into())),
-                    }
+                    },
+                    Token::Variable(position, name) => {
+                        match self.parse_variable(name, &position) {
+                            Ok(_) => continue,
+                            Err(err) => Some(Err(err))
+                        }
+                    },
                     Token::Op(position, op) => Some(self.parse_instruction(op.as_str(), position).map(|i| Node::Instruction(i))),
-                    Token::Address(position, _)
+                    Token::Equal(position)
+                    | Token::Address(position, _)
                     | Token::Identifier(position, _)
                     | Token::Integer(position, _)
                     | Token::Comma(position) => Some(Err(format!("Expected section, label or op at {}", position).into())),
@@ -487,6 +517,35 @@ impl<'t> Iterator for Parser<'t> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_parse_variable() {
+        let mut lexer = Lexer::from_text("$v = 1\n");
+        let mut parser = Parser::from_lexer(&mut lexer);
+
+        let r = parser.next();
+        assert_eq!(true, r.is_none());
+
+        assert_eq!(true, parser.variables.contains_key("$v"));
+        match  parser.variables.get("$v").unwrap() {
+            Token::Integer(_, v) => assert_eq!(1, *v),
+            _ => assert_eq!(true, false, "map did not contain Token::Integer(_, 1)"),
+        }
+    }
+
+    #[test]
+    fn test_use_variable() {
+        let mut lexer = Lexer::from_text("$v = 42\nMOV r1, $v\n");
+        let r = Parser::from_lexer(&mut lexer).next();
+        assert_eq!(true, r.is_some());
+
+        let item = r.unwrap();
+        assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
+
+        let expected = Node::Instruction(Instruction::IRI(Op::MovRI, "r1".into(), 42));
+        let actual = item.unwrap();
+        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+    }
 
     #[test]
     fn test_nop() {

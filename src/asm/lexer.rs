@@ -32,6 +32,8 @@ pub enum Token {
     Section(Position, String),
     Comma(Position),
     Identifier(Position, String),
+    Variable(Position, String),
+    Equal(Position),
     Eol(Position),
 }
 
@@ -39,6 +41,8 @@ pub struct Lexer {
     raw_data: Peekable<IntoIter<char>>,
     position: Position,
 }
+
+type Result<T> = std::result::Result<T, String>;
 
 impl Lexer {
     pub fn from_text(text: &str) -> Self {
@@ -100,6 +104,10 @@ impl Lexer {
 
     fn is_identifier(c: char) -> bool {
         c.is_ascii_lowercase()
+    }
+
+    fn is_variable(c: char) -> bool {
+        c == '$'
     }
 
     fn identifier(&mut self, c: char) -> Result<String> {
@@ -239,22 +247,19 @@ impl Lexer {
     }
 }
 
-type Result<T> = std::result::Result<T, String>;
-
 impl Iterator for Lexer {
     type Item = Result<Token>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            let start_line = self.position.line;
-            let start_column = self.position.column;
+            let position = Position::new(self.position.line, self.position.column);
             match self.next_char() { // todo next_char could return char kind as well as raw char
                 Some('/') => {
                     match self.next_char() {
                         Some('/') => {
                             loop {
                                 match self.next_char() {
-                                    None | Some('\n') => return Some(Ok(Token::Eol(Position::new(start_line, start_column)))),
+                                    None | Some('\n') => return Some(Ok(Token::Eol(position))),
                                     _ => continue,
                                 }
                             }
@@ -262,15 +267,17 @@ impl Iterator for Lexer {
                         _ => return Some(Err(format!("Unexpected `/` at {}", self.position))),
                     }
                 }
-                Some('\n') => return Some(Ok(Token::Eol(Position::new(start_line, start_column)))),
-                Some(',') => return Some(Ok(Token::Comma(Position::new(start_line, start_column)))),
+                Some('\n') => return Some(Ok(Token::Eol(position))),
+                Some(',') => return Some(Ok(Token::Comma(position))),
+                Some('=') => return Some(Ok(Token::Equal(position))),
                 Some(c) if c.is_whitespace() => continue,
-                Some(c) if Self::is_section(c) => return Some(self.label().map(|s| Token::Section(Position::new(start_line, start_column), s))),
-                Some(c) if Self::is_label(c) => return Some(self.label().map(|s| Token::Label(Position::new(start_line, start_column), s))),
-                Some(c) if Self::is_address(c) => return Some(self.label().map(|s| Token::Address(Position::new(start_line, start_column), s))),
-                Some(c) if Self::is_identifier(c) => return Some(self.identifier(c).map(|s| Token::Identifier(Position::new(start_line, start_column), s))),
-                Some(c) if Self::is_op(c) => return Some(self.op(c).map(|s| Token::Op(Position::new(start_line, start_column), s))),
-                Some(c) if Self::is_number(c) => return Some(self.number(c).map(|n| Token::Integer(Position::new(start_line, start_column), n))),
+                Some(c) if Self::is_section(c) => return Some(self.label().map(|s| Token::Section(position, s))),
+                Some(c) if Self::is_label(c) => return Some(self.label().map(|s| Token::Label(position, s))),
+                Some(c) if Self::is_address(c) => return Some(self.label().map(|s| Token::Address(position, s))),
+                Some(c) if Self::is_variable(c) => return Some(self.identifier(c).map(|s| Token::Variable(position, s))),
+                Some(c) if Self::is_identifier(c) => return Some(self.identifier(c).map(|s| Token::Identifier(position, s))),
+                Some(c) if Self::is_op(c) => return Some(self.op(c).map(|s| Token::Op(position, s))),
+                Some(c) if Self::is_number(c) => return Some(self.number(c).map(|n| Token::Integer(position, n))),
                 Some(c) => return Some(Err(format!("Unexpected `{}`", c))),
                 None => return None,
             }
