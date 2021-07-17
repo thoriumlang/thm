@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs::OpenOptions;
 use std::io::Write;
 
@@ -8,7 +9,7 @@ use vmlib::REG_COUNT;
 use crate::address_resolver::AddressResolver;
 use crate::checker::{Checker, VmConfig};
 use crate::emitter::Emitter;
-use crate::lexer::Lexer;
+use crate::lexer::{Lexer, Token};
 use crate::parser::Parser;
 
 mod lexer;
@@ -19,21 +20,19 @@ mod emitter;
 
 fn main() {
     let matches = parse_opts();
-    let input = matches.value_of("input").unwrap();
+    let input: Vec<_> = matches.values_of("input").unwrap().collect();
     let output = matches.value_of("output").unwrap();
 
-    println!("input: {}\noutput: {}", input, output);
-
-    let mut lexer = Lexer::from_file(input).unwrap();
-    let mut parser = Parser::from_lexer(&mut lexer);
-
-    let nodes = match parser.parse() {
-        Err(err) => {
+    let mut symbols: HashMap<String, Token> = HashMap::new();
+    let mut nodes = vec![];
+    for f in input {
+        let mut lexer = Lexer::from_file(f).unwrap();
+        let mut parser = Parser::from_lexer(&mut lexer, &mut nodes, &mut symbols);
+        if let Err(err) = parser.parse() {
             println!("Syntax error: {}", err);
             return;
         }
-        Ok(nodes) => nodes,
-    };
+    }
 
     let addresses = match AddressResolver::new(&nodes).resolve() {
         Err(err) => {
@@ -73,15 +72,21 @@ fn parse_opts<'a>() -> ArgMatches<'a> {
         .about("The Thorium VM")
         .arg(
             Arg::with_name("input")
-                .help("Input file")
+                .help("Input files")
+                .long("input")
+                .short("i")
+                .multiple(true)
+                .number_of_values(1)
                 .required(true)
-                .index(1),
         )
         .arg(
             Arg::with_name("output")
                 .help("Output file")
+                .long("output")
+                .short("o")
+                .multiple(false)
+                .number_of_values(1)
                 .required(true)
-                .index(2)
         )
         .get_matches()
 }

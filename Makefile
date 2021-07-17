@@ -12,25 +12,29 @@ t_tha: tha
 t_thm: thm
 	cargo test --bin thm
 
+meta.a: target/meta.a
+target/meta.a: t_thm
+	rm -r target/meta.a
+	target/debug/thm meta -g target/meta.a
 rom: target/rom.bin
 target/rom.bin: target/debug/tha src/rom.a
-	target/debug/tha src/rom.a target/rom.bin
+	target/debug/tha -i target/meta.a -i src/rom.a -o target/rom.bin
 
 examples: target/fibonacci.bin target/fibonacci_rec.bin target/fact.bin
 target/fibonacci.bin: target/debug/tha examples/fibonacci.a
 	rm -f target/fibonacci.bin
-	target/debug/tha examples/fibonacci.a target/fibonacci.bin
+	target/debug/tha -i target/meta.a -i examples/fibonacci.a -o target/fibonacci.bin
 target/fibonacci_rec.bin: target/debug/tha examples/fibonacci_rec.a
 	rm -f target/fibonacci_rec.bin
-	target/debug/tha examples/fibonacci_rec.a target/fibonacci_rec.bin
+	target/debug/tha -i target/meta.a -i examples/fibonacci_rec.a -o target/fibonacci_rec.bin
 target/fact.bin: target/debug/tha examples/fact.a
 	rm -f target/fact.bin
-	target/debug/tha examples/fact.a target/fact.bin
+	target/debug/tha -i target/meta.a -i examples/fact.a -o target/fact.bin
 
 it: t_tha t_thm rom examples
-	target/debug/thm --mmap target/rom.bin target/fibonacci.bin     -016
-	target/debug/thm --mmap target/rom.bin target/fibonacci_rec.bin -016
-	target/debug/thm --mmap target/rom.bin target/fact.bin          -05
+	target/debug/thm run --mmap target/rom.bin target/fibonacci.bin     -016
+	target/debug/thm run --mmap target/rom.bin target/fibonacci_rec.bin -016
+	target/debug/thm run --mmap target/rom.bin target/fact.bin          -05
 
 install_dev:
 	cargo build

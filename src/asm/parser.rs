@@ -6,6 +6,12 @@ use vmlib::op::Op;
 use crate::lexer::{Lexer, Position, Token};
 
 #[derive(Debug, PartialEq)]
+pub struct ParseResult {
+    pub nodes: Vec<Node>,
+    pub symbols: HashMap<String, Token>,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum Node {
     Label(String),
     Instruction(Instruction),
@@ -43,27 +49,28 @@ impl Instruction {
 
 pub struct Parser<'t> {
     lexer: Peekable<&'t mut Lexer>,
-    variables: HashMap<String, Token>,
+    symbols: &'t mut HashMap<String, Token>,
+    nodes: &'t mut Vec<Node>,
 }
 
 type Result<T> = std::result::Result<T, String>;
 
 impl<'t> Parser<'t> {
-    pub fn from_lexer(lexer: &'t mut Lexer) -> Self {
+    pub fn from_lexer(lexer: &'t mut Lexer, nodes: &'t mut Vec<Node>, symbols: &'t mut HashMap<String, Token>) -> Self {
         Parser {
             lexer: lexer.peekable(),
-            variables: HashMap::new(),
+            symbols,
+            nodes,
         }
     }
 
-    pub fn parse(&mut self) -> Result<Vec<Node>> {
-        let mut res = vec![];
+    pub fn parse(&mut self) -> Result<()> {
         loop {
             match self.next() {
-                None => return Ok(res),
+                None => return Ok(()),
                 Some(Err(err)) => return Err(err),
                 Some(Ok(n)) => {
-                    res.push(n);
+                    self.nodes.push(n);
                 }
             }
         }
@@ -77,7 +84,7 @@ impl<'t> Parser<'t> {
 
         let token = self.lexer.next();
         match token {
-            Some(Ok(Token::Integer(_, _))) => self.variables.insert(name, token.unwrap().unwrap()),
+            Some(Ok(Token::Integer(_, _))) => self.symbols.insert(name, token.unwrap().unwrap()),
             _ => return Err(format!("Expected <integer> at {}", position).into()),
         };
 
@@ -167,7 +174,7 @@ impl<'t> Parser<'t> {
             .and_then(|token| match token {
                 Token::Identifier(_, r2) => Some(Ok(Instruction::IRR(op_rr, r1, r2))),
                 Token::Integer(_, w) => Some(Ok(Instruction::IRW(op_ri, r1, w))),
-                Token::Variable(_, name) => match self.variables.get(&name) {
+                Token::Variable(_, name) => match self.symbols.get(&name) {
                     Some(Token::Integer(_, w)) => Some(Ok(Instruction::IRW(op_ri, r1, *w))),
                     _ => None
                 },
@@ -186,7 +193,7 @@ impl<'t> Parser<'t> {
             .and_then(|token| match token {
                 Token::Address(_, addr) => Some(Ok(Instruction::IA(op, addr))),
                 Token::Integer(_, w) => Some(Ok(Instruction::IW(op, w))),
-                Token::Variable(_, name) => match self.variables.get(&name) {
+                Token::Variable(_, name) => match self.symbols.get(&name) {
                     Some(Token::Integer(_, w)) => Some(Ok(Instruction::IW(op, *w))),
                     _ => None
                 },
@@ -313,7 +320,9 @@ mod tests {
                 let (input, op) = $value;
 
                 let mut lexer = Lexer::from_text(input);
-                let r = Parser::from_lexer(&mut lexer).next();
+                let mut nodes = vec![];
+                let mut symbols = HashMap::new();
+                let r = Parser::from_lexer(&mut lexer, &mut nodes, &mut symbols).next();
                 assert_eq!(true, r.is_some());
 
                 let item = r.unwrap();
@@ -335,7 +344,9 @@ mod tests {
                 let (input, op, a0) = $value;
 
                 let mut lexer = Lexer::from_text(input);
-                let r = Parser::from_lexer(&mut lexer).next();
+                let mut nodes = vec![];
+                let mut symbols = HashMap::new();
+                let r = Parser::from_lexer(&mut lexer, &mut nodes, &mut symbols).next();
                 assert_eq!(true, r.is_some());
 
                 let item = r.unwrap();
@@ -357,7 +368,9 @@ mod tests {
                 let (input, op, b0) = $value;
 
                 let mut lexer = Lexer::from_text(input);
-                let r = Parser::from_lexer(&mut lexer).next();
+                let mut nodes = vec![];
+                let mut symbols = HashMap::new();
+                let r = Parser::from_lexer(&mut lexer, &mut nodes, &mut symbols).next();
                 assert_eq!(true, r.is_some());
 
                 let item = r.unwrap();
@@ -379,7 +392,9 @@ mod tests {
                 let (input, op, r0) = $value;
 
                 let mut lexer = Lexer::from_text(input);
-                let r = Parser::from_lexer(&mut lexer).next();
+                let mut nodes = vec![];
+                let mut symbols = HashMap::new();
+                let r = Parser::from_lexer(&mut lexer, &mut nodes, &mut symbols).next();
                 assert_eq!(true, r.is_some());
 
                 let item = r.unwrap();
@@ -401,7 +416,9 @@ mod tests {
                 let (input, op, r0, r1) = $value;
 
                 let mut lexer = Lexer::from_text(input);
-                let r = Parser::from_lexer(&mut lexer).next();
+                let mut nodes = vec![];
+                let mut symbols = HashMap::new();
+                let r = Parser::from_lexer(&mut lexer, &mut nodes, &mut symbols).next();
                 assert_eq!(true, r.is_some());
 
                 let item = r.unwrap();
@@ -423,7 +440,9 @@ mod tests {
                 let (input, op, r0, w0) = $value;
 
                 let mut lexer = Lexer::from_text(input);
-                let r = Parser::from_lexer(&mut lexer).next();
+                let mut nodes = vec![];
+                let mut symbols = HashMap::new();
+                let r = Parser::from_lexer(&mut lexer, &mut nodes, &mut symbols).next();
                 assert_eq!(true, r.is_some());
 
                 let item = r.unwrap();
@@ -483,13 +502,14 @@ mod tests {
     #[test]
     fn test_parse_variable() {
         let mut lexer = Lexer::from_text("$v = 1\n");
-        let mut parser = Parser::from_lexer(&mut lexer);
+        let mut nodes = vec![];
+        let mut symbols = HashMap::new();
+        let r = Parser::from_lexer(&mut lexer, &mut nodes, &mut symbols).next();
 
-        let r = parser.next();
         assert_eq!(true, r.is_none());
 
-        assert_eq!(true, parser.variables.contains_key("$v"));
-        match parser.variables.get("$v").unwrap() {
+        assert_eq!(true, symbols.contains_key("$v"));
+        match symbols.get("$v").unwrap() {
             Token::Integer(_, v) => assert_eq!(1, *v),
             _ => assert_eq!(true, false, "map did not contain Token::Integer(_, 1)"),
         }
@@ -498,7 +518,9 @@ mod tests {
     #[test]
     fn test_use_variable() {
         let mut lexer = Lexer::from_text("$v = 42\nMOV r1, $v\n");
-        let r = Parser::from_lexer(&mut lexer).next();
+        let mut nodes = vec![];
+        let mut symbols = HashMap::new();
+        let r = Parser::from_lexer(&mut lexer, &mut nodes, &mut symbols).next();
         assert_eq!(true, r.is_some());
 
         let item = r.unwrap();
@@ -512,7 +534,9 @@ mod tests {
     #[test]
     fn test_label() {
         let mut lexer = Lexer::from_text(" :label\n");
-        let r = Parser::from_lexer(&mut lexer).next();
+        let mut nodes = vec![];
+        let mut symbols = HashMap::new();
+        let r = Parser::from_lexer(&mut lexer, &mut nodes, &mut symbols).next();
         assert_eq!(true, r.is_some());
 
         let item = r.unwrap();
@@ -526,14 +550,15 @@ mod tests {
     #[test]
     fn test_parse() {
         let mut lexer = Lexer::from_text("//test\n  :label\nMOV r1, 0\n");
-        let r = Parser::from_lexer(&mut lexer).parse();
+        let mut nodes = vec![];
+        let mut symbols = HashMap::new();
+        let r = Parser::from_lexer(&mut lexer, &mut nodes, &mut symbols).parse();
         assert_eq!(true, r.is_ok(), "Expected Ok(...), got {:?}", r);
 
         let expected = vec![
             Node::Label("label".to_string()),
             Node::Instruction(Instruction::IRW(Op::MovRW, "r1".to_string(), 0))
         ];
-        let actual = r.unwrap();
-        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+        assert_eq!(expected, nodes, "Expected {:?}, got {:?}", expected, nodes);
     }
 }
