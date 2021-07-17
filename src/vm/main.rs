@@ -1,10 +1,10 @@
 use std::borrow::BorrowMut;
 use std::fs::OpenOptions;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 
-use clap::{App, Arg, ArgMatches, crate_authors, crate_version};
+use clap::{App, Arg, ArgMatches, crate_authors, crate_version, SubCommand};
 
 use cpu::CPU;
 use vmlib::{MIN_RAM_SIZE, REG_SP, ROM_START, STACK_LEN, STACK_MAX_ADDRESS, STACK_SIZE};
@@ -18,7 +18,14 @@ mod rest_api;
 
 fn main() {
     let opts = parse_opts();
+    if let Some(opts) = opts.subcommand_matches("run") {
+        run(opts);
+    } else if let Some(opts) = opts.subcommand_matches("meta") {
+        meta(opts);
+    }
+}
 
+fn run(opts: &ArgMatches) {
     let rom = load_bin(opts.value_of("rom").unwrap());
     let program: Vec<u8> = load_bin(opts.value_of("image").unwrap());
     let ram_size = opts.value_of("ram")
@@ -77,6 +84,21 @@ fn main() {
     println!("f({}): {}", cpu.read_register(0), cpu.read_register(3));
 }
 
+fn meta(opts: &ArgMatches) {
+    if opts.is_present("generate-file") {
+        let mut file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .open(opts.value_of("generate-file").unwrap())
+            .unwrap();
+
+        let mut data = String::new();
+        data.push_str(format!("$__rom_start = {:#010x}", ROM_START).as_str());
+
+        file.write_all(data.as_bytes()).unwrap();
+    }
+}
+
 fn load_bin(path: &str) -> Vec<u8> {
     let mut bin = vec![];
     OpenOptions::new()
@@ -93,45 +115,56 @@ fn parse_opts<'a>() -> ArgMatches<'a> {
         .version(crate_version!())
         .author(crate_authors!())
         .about("The Thorium VM")
-        .arg(
-            Arg::with_name("ram")
-                .short("r")
-                .long("ram")
-                .value_name("ram")
-                .default_value("STACK_SIZE + 128 Bytes")
-                .help("Amount of RAM"),
+        .subcommand(SubCommand::with_name("meta")
+            .about("Metadata about VM")
+            .arg(Arg::with_name("generate-file")
+                .short("g")
+                .long("generate-file")
+                .value_name("FILE")
+                .help("Generate meta file"))
         )
-        .arg(
-            Arg::with_name("step")
-                .short("s")
-                .long("step")
-                .help("Execute instructions step by step"),
-        )
-        .arg(
-            Arg::with_name("mmap")
-                .short("m")
-                .long("mmap")
-                .help("Print memory map information before start"),
-        )
-        .arg(
-            Arg::with_name("rom")
-                .help("Sets rom to load")
-                .required(true)
-                .index(1),
-        )
-        .arg(
-            Arg::with_name("image")
-                .help("Sets rom to load")
-                .required(true)
-                .index(2),
-        )
-        .arg(
-            Arg::with_name("r0")
-                .short("0")
-                .help("Initial value of r0")
-                .default_value("0")
-                .required(false)
-                .takes_value(true)
+        .subcommand(SubCommand::with_name("run")
+            .about("Run VM")
+            .arg(
+                Arg::with_name("ram")
+                    .short("r")
+                    .long("ram")
+                    .value_name("RAM")
+                    .default_value("STACK_SIZE + 128 Bytes")
+                    .help("Amount of RAM"),
+            )
+            .arg(
+                Arg::with_name("step")
+                    .short("s")
+                    .long("step")
+                    .help("Execute instructions step by step"),
+            )
+            .arg(
+                Arg::with_name("mmap")
+                    .short("m")
+                    .long("mmap")
+                    .help("Print memory map information before start"),
+            )
+            .arg(
+                Arg::with_name("rom")
+                    .help("Sets rom to load")
+                    .required(true)
+                    .index(1),
+            )
+            .arg(
+                Arg::with_name("image")
+                    .help("Sets rom to load")
+                    .required(true)
+                    .index(2),
+            )
+            .arg(
+                Arg::with_name("r0")
+                    .short("0")
+                    .help("Initial value of r0")
+                    .default_value("0")
+                    .required(false)
+                    .takes_value(true)
+            )
         )
         .get_matches()
 }
