@@ -30,7 +30,7 @@ impl Checker {
             .flat_map(|node| match node {
                 Node::Instruction(Instruction::IR(_, r)) => self.check_register_is_valid(vec![r]),
                 Node::Instruction(Instruction::IRR(_, r1, r2)) => self.check_register_is_valid(vec![r1, r2]),
-                Node::Instruction(Instruction::IRI(_, r, _)) => self.check_register_is_valid(vec![r]),
+                Node::Instruction(Instruction::IRW(_, r, _)) => self.check_register_is_valid(vec![r]),
                 _ => vec![],
             }).collect();
 
@@ -85,7 +85,7 @@ mod tests {
 
     #[test]
     fn test_register_invalid_ri() {
-        let nodes = vec![Node::Instruction(Instruction::IRI(Op::MovRR, "r32".to_string(), 42))];
+        let nodes = vec![Node::Instruction(Instruction::IRW(Op::MovRR, "r32".to_string(), 42))];
 
         let checker = Checker::new(VM_CONFIG);
         let result = checker.check(&nodes);

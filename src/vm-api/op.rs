@@ -4,14 +4,14 @@ pub enum Op {
     Nop = 0, // 0x00
     Halt = 1, // 0x01
     Panic = 2, // 0x02
-    MovRI = 3, // 0x03
+    MovRW = 3, // 0x03
     MovRR = 4, // 0x04
     AddRR = 5, // 0x05
-    AddRI = 6, // 0x06
+    AddRW = 6, // 0x06
     SubRR = 7, // 0x07
-    SubRI = 8, // 0x08
+    SubRW = 8, // 0x08
     MulRR = 9, // 0x09
-    MulRI = 10, // 0x0a
+    MulRW = 10, // 0x0a
     Inc = 15, // 0x0f
     Dec = 16, // 0x10
     Cmp = 24, // 0x18
@@ -34,14 +34,14 @@ impl Op {
             Op::Nop => 1,
             Op::Halt => 1,
             Op::Panic => 1,
-            Op::MovRI => 6,
+            Op::MovRW => 6,
             Op::MovRR => 3,
             Op::AddRR => 3,
-            Op::AddRI => 6,
+            Op::AddRW => 6,
             Op::SubRR => 3,
-            Op::SubRI => 6,
+            Op::SubRW => 6,
             Op::MulRR => 3,
-            Op::MulRI => 6,
+            Op::MulRW => 6,
             Op::Inc => 2,
             Op::Dec => 2,
             Op::Cmp => 3,
@@ -70,14 +70,14 @@ impl From<u8> for Op {
             0 => Self::Nop,
             1 => Self::Halt,
             2 => Self::Panic,
-            3 => Self::MovRI,
+            3 => Self::MovRW,
             4 => Self::MovRR,
             5 => Self::AddRR,
-            6 => Self::AddRI,
+            6 => Self::AddRW,
             7 => Self::SubRR,
-            8 => Self::SubRI,
+            8 => Self::SubRW,
             9 => Self::MulRR,
-            10 => Self::MulRI,
+            10 => Self::MulRW,
             15 => Self::Inc,
             16 => Self::Dec,
             24 => Self::Cmp,
@@ -117,8 +117,8 @@ mod tests {
     }
 
     #[test]
-    fn test_movri() {
-        assert_eq!(Op::MovRI, Op::from(Op::MovRI.bytecode()));
+    fn test_movrw() {
+        assert_eq!(Op::MovRW, Op::from(Op::MovRW.bytecode()));
     }
 
     #[test]
@@ -132,8 +132,8 @@ mod tests {
     }
 
     #[test]
-    fn test_addri() {
-        assert_eq!(Op::AddRI, Op::from(Op::AddRI.bytecode()));
+    fn test_addrw() {
+        assert_eq!(Op::AddRW, Op::from(Op::AddRW.bytecode()));
     }
 
     #[test]
@@ -142,8 +142,8 @@ mod tests {
     }
 
     #[test]
-    fn test_subri() {
-        assert_eq!(Op::SubRI, Op::from(Op::SubRI.bytecode()));
+    fn test_subrw() {
+        assert_eq!(Op::SubRW, Op::from(Op::SubRW.bytecode()));
     }
 
     #[test]
@@ -152,8 +152,8 @@ mod tests {
     }
 
     #[test]
-    fn test_mulri() {
-        assert_eq!(Op::MulRI, Op::from(Op::MulRI.bytecode()));
+    fn test_mulrw() {
+        assert_eq!(Op::MulRW, Op::from(Op::MulRW.bytecode()));
     }
 
     #[test]

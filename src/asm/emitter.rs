@@ -34,12 +34,12 @@ impl<'t> Emitter<'t> {
                 Node::Instruction(instruction) => match instruction {
                     Instruction::I(op) => bytes.push(op.bytecode()),
                     Instruction::IB(op, imm1) => bytes.append(vec![op.bytecode(), *imm1].as_mut()),
-                    Instruction::II(op, imm4) => {
+                    Instruction::IW(op, imm4) => {
                         bytes.push(op.bytecode());
                         let b = imm4.to_be_bytes();
                         bytes.extend_from_slice(&b);
                     }
-                    Instruction::IRI(op, r, value) => {
+                    Instruction::IRW(op, r, value) => {
                         bytes.append(vec![op.bytecode(), *self.decode_register(r) as u8].as_mut());
                         let b = value.to_be_bytes();
                         bytes.extend_from_slice(&b);

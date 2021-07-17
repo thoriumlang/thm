@@ -29,7 +29,7 @@ mod tests {
         let _ = memory.set_bytes(4, &[
             Op::Call.bytecode(), 0x00, 0x00, 0x00, 0x06,
             Op::Halt.bytecode(),
-            Op::MovRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0xff,
+            Op::MovRW.bytecode(), 0x00, 0x00, 0x00, 0x00, 0xff,
             Op::Ret.bytecode(),
             Op::Panic.bytecode(),
         ]);

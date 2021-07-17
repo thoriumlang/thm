@@ -31,7 +31,7 @@ mod tests {
     fn test_sub_ri() {
         let mut memory = Memory::new(MIN_RAM_SIZE as u32, vec![]);
         let _ = memory.set_bytes(0, &[
-            Op::SubRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
+            Op::SubRW.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
         ]);
 
         let mut cpu = CPU::new();
@@ -50,7 +50,7 @@ mod tests {
     fn test_sub_ri_zero() {
         let mut memory = Memory::new(MIN_RAM_SIZE as u32, vec![]);
         let _ = memory.set_bytes(0, &[
-            Op::SubRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
+            Op::SubRW.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
         ]);
 
         let mut cpu = CPU::new();
@@ -69,7 +69,7 @@ mod tests {
     fn test_sub_ri_negative() {
         let mut memory = Memory::new(MIN_RAM_SIZE as u32, vec![]);
         let _ = memory.set_bytes(0, &[
-            Op::SubRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
+            Op::SubRW.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
         ]);
 
         let mut cpu = CPU::new();

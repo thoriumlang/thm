@@ -18,11 +18,10 @@ pub struct Label {
 
 #[derive(Debug, PartialEq)]
 pub enum Instruction {
-    // todo I should be turned into W
     I(Op),
     IB(Op, u8),
-    II(Op, u32),
-    IRI(Op, String, u32),
+    IW(Op, u32),
+    IRW(Op, String, u32),
     IR(Op, String),
     IRR(Op, String, String),
     IA(Op, String),
@@ -33,8 +32,8 @@ impl Instruction {
         return match self {
             &Instruction::I(op) => op,
             &Instruction::IB(op, _) => op,
-            &Instruction::II(op, _) => op,
-            &Instruction::IRI(op, _, _) => op,
+            &Instruction::IW(op, _) => op,
+            &Instruction::IRW(op, _, _) => op,
             &Instruction::IR(op, _) => op,
             &Instruction::IRR(op, _, _) => op,
             &Instruction::IA(op, _) => op,
@@ -87,7 +86,7 @@ impl<'t> Parser<'t> {
 
     fn parse_instruction(&mut self, op: &str, position: &Position) -> Result<Instruction> {
         return match op {
-            "ADD" => self.op_ri_rw(Op::AddRR, Op::AddRI, position),
+            "ADD" => self.op_rr_rw(Op::AddRR, Op::AddRW, position),
             "CALL" => self.op_a(Op::Call, position),
             "CMP" => self.op_rr(Op::Cmp, position),
             "DEC" => self.op_r(Op::Dec, position),
@@ -98,15 +97,15 @@ impl<'t> Parser<'t> {
             "JEQ" => self.op_a_w(Op::Jreq, position),
             "JNE" => self.op_a_w(Op::Jrne, position),
             "LOAD" => self.op_rr(Op::Load, position),
-            "MOV" => self.op_ri_rw(Op::MovRR, Op::MovRI, position),
-            "MUL" => self.op_ri_rw(Op::MulRR, Op::MulRI, position),
+            "MOV" => self.op_rr_rw(Op::MovRR, Op::MovRW, position),
+            "MUL" => self.op_rr_rw(Op::MulRR, Op::MulRW, position),
             "NOP" => self.op_void(Op::Nop, position),
             "PANIC" => self.op_void(Op::Panic, position),
             "POP" => self.op_r(Op::Pop, position),
             "PUSH" => self.op_r(Op::Push, position),
             "RET" => self.op_void(Op::Ret, position),
             "STOR" => self.op_rr(Op::Stor, position),
-            "SUB" => self.op_ri_rw(Op::SubRR, Op::SubRI, position),
+            "SUB" => self.op_rr_rw(Op::SubRR, Op::SubRW, position),
             "XBM" => self.op_b(Op::Xbm, position),
             op => Err(format!("Invalid mnemonic '{}' at {}", op, position).into())
         };
@@ -154,7 +153,7 @@ impl<'t> Parser<'t> {
         Err(format!("Expected <eol> at {}", position).into())
     }
 
-    fn op_ri_rw(&mut self, op_rr: Op, op_ri: Op, position: &Position) -> Result<Instruction> {
+    fn op_rr_rw(&mut self, op_rr: Op, op_ri: Op, position: &Position) -> Result<Instruction> {
         let r1 = match self.read_register() {
             None => return Err(format!("Expected <r> at {}", position).into()),
             Some(str) => str,
@@ -167,9 +166,9 @@ impl<'t> Parser<'t> {
         let instruction = self.read_next()
             .and_then(|token| match token {
                 Token::Identifier(_, r2) => Some(Ok(Instruction::IRR(op_rr, r1, r2))),
-                Token::Integer(_, w) => Some(Ok(Instruction::IRI(op_ri, r1, w))),
+                Token::Integer(_, w) => Some(Ok(Instruction::IRW(op_ri, r1, w))),
                 Token::Variable(_, name) => match self.variables.get(&name) {
-                    Some(Token::Integer(_, w)) => Some(Ok(Instruction::IRI(op_ri, r1, *w))),
+                    Some(Token::Integer(_, w)) => Some(Ok(Instruction::IRW(op_ri, r1, *w))),
                     _ => None
                 },
                 _ => None,
@@ -186,9 +185,9 @@ impl<'t> Parser<'t> {
         let instruction = self.read_next()
             .and_then(|token| match token {
                 Token::Address(_, addr) => Some(Ok(Instruction::IA(op, addr))),
-                Token::Integer(_, w) => Some(Ok(Instruction::II(op, w))),
+                Token::Integer(_, w) => Some(Ok(Instruction::IW(op, w))),
                 Token::Variable(_, name) => match self.variables.get(&name) {
-                    Some(Token::Integer(_, w)) => Some(Ok(Instruction::II(op, *w))),
+                    Some(Token::Integer(_, w)) => Some(Ok(Instruction::IW(op, *w))),
                     _ => None
                 },
                 _ => None,
@@ -430,7 +429,7 @@ mod tests {
                 let item = r.unwrap();
                 assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-                let expected = Node::Instruction(Instruction::IRI(op, r0.into(), w0));
+                let expected = Node::Instruction(Instruction::IRW(op, r0.into(), w0));
                 let actual = item.unwrap();
                 assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
             }
@@ -475,10 +474,10 @@ mod tests {
     }
 
     op_rw_test! {
-        mov_rw: ("MOV  r1, 42\n", Op::MovRI, "r1", 42),
-        add_rw: ("ADD  r1, 42\n", Op::AddRI, "r1", 42),
-        sub_rw: ("SUB  r1, 42\n", Op::SubRI, "r1", 42),
-        mul_rw: ("MUL  r1, 42\n", Op::MulRI, "r1", 42),
+        mov_rw: ("MOV  r1, 42\n", Op::MovRW, "r1", 42),
+        add_rw: ("ADD  r1, 42\n", Op::AddRW, "r1", 42),
+        sub_rw: ("SUB  r1, 42\n", Op::SubRW, "r1", 42),
+        mul_rw: ("MUL  r1, 42\n", Op::MulRW, "r1", 42),
     }
 
     #[test]
@@ -505,7 +504,7 @@ mod tests {
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-        let expected = Node::Instruction(Instruction::IRI(Op::MovRI, "r1".into(), 42));
+        let expected = Node::Instruction(Instruction::IRW(Op::MovRW, "r1".into(), 42));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -532,7 +531,7 @@ mod tests {
 
         let expected = vec![
             Node::Label("label".to_string()),
-            Node::Instruction(Instruction::IRI(Op::MovRI, "r1".to_string(), 0))
+            Node::Instruction(Instruction::IRW(Op::MovRW, "r1".to_string(), 0))
         ];
         let actual = r.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);

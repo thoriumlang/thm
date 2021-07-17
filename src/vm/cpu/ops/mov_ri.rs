@@ -31,7 +31,7 @@ mod tests {
     fn test_mov_ri() {
         let mut memory = Memory::new(MIN_RAM_SIZE as u32, vec![]);
         let _ = memory.set_bytes(0, &[
-            Op::MovRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
+            Op::MovRW.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
         ]);
 
         let mut cpu = CPU::new();
@@ -49,7 +49,7 @@ mod tests {
     fn test_mov_ri_zero() {
         let mut memory = Memory::new(MIN_RAM_SIZE as u32, vec![]);
         let _ = memory.set_bytes(0, &[
-            Op::MovRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x00,
+            Op::MovRW.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x00,
         ]);
 
         let mut cpu = CPU::new();

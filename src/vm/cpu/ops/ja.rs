@@ -33,9 +33,9 @@ mod tests {
         let mut memory = Memory::new(MIN_RAM_SIZE as u32, vec![]);
         let _ = memory.set_bytes(0, &[
             Op::Ja.bytecode(), 0x00, 0x01,
-            Op::MovRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
+            Op::MovRW.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
             Op::Halt.bytecode(),
-            Op::MovRI.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
+            Op::MovRW.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
             Op::Halt.bytecode()
         ]);
 
