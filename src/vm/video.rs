@@ -1,34 +1,27 @@
 use std::convert::TryInto;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use minifb::{Key, Window, WindowOptions};
 
-use vmlib::{HEIGHT, PIXEL_DEPTH, VIDEO_BUFFER_SIZE, VIDEO_START, WIDTH};
+use vmlib::{HEIGHT, PIXEL_DEPTH, VIDEO_BUFFER_0, VIDEO_BUFFER_1, VIDEO_BUFFER_SIZE, VIDEO_START, WIDTH};
 
-use crate::memory::MemoryZone;
+use crate::memory::Memory;
 
 pub struct Video {
-    meta: Arc<RwLock<MemoryZone>>,
-    buffer_0: Arc<RwLock<MemoryZone>>,
-    buffer_1: Arc<RwLock<MemoryZone>>,
+    memory: Arc<Memory>,
 }
 
 impl Video {
-    pub fn new(meta: Arc<RwLock<MemoryZone>>, buffer_0: Arc<RwLock<MemoryZone>>, buffer_1: Arc<RwLock<MemoryZone>>) -> Video {
-        {
-            let mut meta = meta.write().unwrap();
-            let _ = meta.set_bytes(VIDEO_START, &vec![0x00, 0x00, 0x00, 0x00]);
-            let _ = meta.set_bytes(VIDEO_START + 0x04, &(WIDTH as u32).to_be_bytes());
-            let _ = meta.set_bytes(VIDEO_START + 0x08, &(HEIGHT as u32).to_be_bytes());
-            let _ = meta.set_bytes(VIDEO_START + 0x0c, &(PIXEL_DEPTH as u32).to_be_bytes());
-            let _ = meta.set_bytes(VIDEO_START + 0x10, &(VIDEO_BUFFER_SIZE as u32).to_be_bytes());
-            let _ = meta.set_bytes(VIDEO_START + 0x14, &(buffer_0.read().unwrap().from() as u32).to_be_bytes());
-            let _ = meta.set_bytes(VIDEO_START + 0x18, &(buffer_1.read().unwrap().from() as u32).to_be_bytes());
-        }
+    pub fn new(memory: Arc<Memory>) -> Video {
+        let _ = memory.set_bytes(VIDEO_START as u32, &vec![0x00, 0x00, 0x00, 0x00]);
+        let _ = memory.set_bytes((VIDEO_START + 0x04) as u32, &(WIDTH as u32).to_be_bytes());
+        let _ = memory.set_bytes((VIDEO_START + 0x08) as u32, &(HEIGHT as u32).to_be_bytes());
+        let _ = memory.set_bytes((VIDEO_START + 0x0c) as u32, &(PIXEL_DEPTH as u32).to_be_bytes());
+        let _ = memory.set_bytes((VIDEO_START + 0x10) as u32, &(VIDEO_BUFFER_SIZE as u32).to_be_bytes());
+        let _ = memory.set_bytes((VIDEO_START + 0x14) as u32, &(VIDEO_BUFFER_0 as u32).to_be_bytes());
+        let _ = memory.set_bytes((VIDEO_START + 0x18) as u32, &(VIDEO_BUFFER_1 as u32).to_be_bytes());
         Video {
-            meta,
-            buffer_0,
-            buffer_1
+            memory
         }
     }
 
@@ -49,8 +42,7 @@ impl Video {
         while window.is_open() && !window.is_key_down(Key::Escape) {
             let needs_update: bool;
             {
-                let memory = self.meta.read().unwrap();
-                let buffer_index = memory.get(VIDEO_START).unwrap();
+                let buffer_index = self.memory.get(VIDEO_START as u32).unwrap();
                 needs_update = current_buffer_index != buffer_index;
                 if needs_update {
                     current_buffer_index = buffer_index;
@@ -58,16 +50,15 @@ impl Video {
             }
 
             if needs_update {
-                let source = match current_buffer_index {
-                    0 => &self.buffer_0,
-                    1 => &self.buffer_1,
+                let buffer_start = match current_buffer_index {
+                    0 => VIDEO_BUFFER_0,
+                    1 => VIDEO_BUFFER_1,
                     _ => panic!("invalid buffer index"),
-                }.read().unwrap();
+                };
                 for pixel_idx in 0..buffer.len() {
                     buffer[pixel_idx] = u32::from_be_bytes(
-                        source.get_bytes_abs(pixel_idx * 4, pixel_idx * 4 + 3)
+                        self.memory.get_bytes((buffer_start + pixel_idx * 4) as u32, 4)
                             .unwrap()
-                            .as_slice()
                             .try_into()
                             .unwrap()
                     );

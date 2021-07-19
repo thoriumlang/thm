@@ -2,7 +2,7 @@ use crate::cpu::{CPU, ops};
 use crate::memory::Memory;
 
 impl CPU {
-    pub(in super::super) fn op_add_ri(&mut self, memory: &mut Memory) -> ops::Result {
+    pub(in super::super) fn op_add_ri(&mut self, memory: &Memory) -> ops::Result {
         let r = self.fetch_register(memory, &Self::is_general_purpose_register)
             .ok_or("add_ri: cannot fetch r")?;
 
@@ -25,12 +25,12 @@ mod tests {
     use crate::cpu::Op;
 
     use super::*;
-    use std::sync::{Arc, RwLock};
+    use std::sync::Arc;
     use crate::memory::{MemoryZone, Access};
 
     #[test]
     fn test_add_ri() {
-        let mut memory = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
+        let mut memory = Memory::new(vec![Arc::new(MemoryZone::new("".into(), 0..=31, Access::RW))]).unwrap();
         let _ = memory.set_bytes(0, &[
             Op::AddRW.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
         ]);
@@ -49,7 +49,7 @@ mod tests {
 
     #[test]
     fn test_add_ri_zero() {
-        let mut memory = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
+        let mut memory = Memory::new(vec![Arc::new(MemoryZone::new("".into(), 0..=31, Access::RW))]).unwrap();
         let _ = memory.set_bytes(0, &[
             Op::AddRW.bytecode(), 0x00, 0xff, 0xff, 0xff, 0xff,
         ]);

@@ -69,7 +69,7 @@ impl CPU {
         self.flags.running = true;
     }
 
-    pub fn step(&mut self, memory: &mut Memory) -> bool {
+    pub fn step(&mut self, memory: &Memory) -> bool {
         if !self.flags.running {
             return false;
         }
@@ -181,12 +181,12 @@ impl CPU {
     #[inline]
     fn load_word(memory: &Memory, address: u32) -> Option<u32> {
         memory.get_bytes(address, 4)
-            .and_then(|bytes| bytes.as_slice().try_into().ok())
+            .and_then(|bytes| bytes.try_into().ok())
             .and_then(|bytes| Some(u32::from_be_bytes(bytes)))
     }
 
     #[inline]
-    fn store_word(memory: &mut Memory, word: u32, address: u32) -> bool {
+    fn store_word(memory: &Memory, word: u32, address: u32) -> bool {
         memory.set_bytes(address, &word.to_be_bytes())
     }
 
@@ -217,7 +217,7 @@ impl CPU {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::{Arc, RwLock};
+    use std::sync::Arc;
 
     use crate::memory::{Access, MemoryZone};
 
@@ -234,7 +234,7 @@ mod tests {
 
     #[test]
     fn test_push_pop() {
-        let mut memory = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
+        let mut memory = Memory::new(vec![Arc::new(MemoryZone::new("".into(), 0..=31, Access::RW))]).unwrap();
         let _ = memory.set_bytes(0, &[
             Op::Push.bytecode(), 0x00,
             Op::Pop.bytecode(), 0x01,

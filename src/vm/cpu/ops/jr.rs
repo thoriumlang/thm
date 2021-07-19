@@ -2,7 +2,7 @@ use crate::cpu::{CPU, ops};
 use crate::memory::Memory;
 
 impl CPU {
-    pub(in super::super) fn op_jr(&mut self, memory: &mut Memory) -> ops::Result {
+    pub(in super::super) fn op_jr(&mut self, memory: &Memory) -> ops::Result {
         let target = self.fetch_word(memory)
             .ok_or("jr: cannot fetch target")? + self.cs;
 
@@ -17,7 +17,7 @@ impl CPU {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::{Arc, RwLock};
+    use std::sync::Arc;
 
     use crate::cpu::Op;
     use crate::memory::{Access, MemoryZone};
@@ -26,7 +26,7 @@ mod tests {
 
     #[test]
     fn test_jr() {
-        let mut memory = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
+        let mut memory = Memory::new(vec![Arc::new(MemoryZone::new("".into(), 0..=31, Access::RW))]).unwrap();
         let _ = memory.set_bytes(0, &[
             Op::Jr.bytecode(), 0x00, 0x00, 0x00, 0x0c,
             Op::MovRW.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,

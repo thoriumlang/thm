@@ -2,7 +2,7 @@ use crate::cpu::{CPU, ops};
 use crate::memory::Memory;
 
 impl CPU {
-    pub(in super::super) fn op_push(&mut self, memory: &mut Memory) -> ops::Result {
+    pub(in super::super) fn op_push(&mut self, memory: &Memory) -> ops::Result {
         // we map r = 0x12345678 like to:
         // sp = 78, sp-1 = 56, sp-2 = 34 sp-3 = 12
 
@@ -24,7 +24,7 @@ impl CPU {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::{Arc, RwLock};
+    use std::sync::Arc;
 
     use crate::cpu::Op;
     use crate::memory::{Access, MemoryZone};
@@ -33,7 +33,7 @@ mod tests {
 
     #[test]
     fn test_push() {
-        let mut memory = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
+        let mut memory = Memory::new(vec![Arc::new(MemoryZone::new("".into(), 0..=31, Access::RW))]).unwrap();
         let _ = memory.set_bytes(5, &[
             Op::Push.bytecode(), 0x00,
         ]);

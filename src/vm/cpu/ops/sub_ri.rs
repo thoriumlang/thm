@@ -2,7 +2,7 @@ use crate::cpu::{CPU, ops};
 use crate::memory::Memory;
 
 impl CPU {
-    pub(in super::super) fn op_sub_ri(&mut self, memory: &mut Memory) -> ops::Result {
+    pub(in super::super) fn op_sub_ri(&mut self, memory: &Memory) -> ops::Result {
         let r = self.fetch_register(memory, &Self::is_general_purpose_register)
             .ok_or("sub:_ri: cannot fetch r")?;
 
@@ -22,7 +22,7 @@ impl CPU {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::{Arc, RwLock};
+    use std::sync::Arc;
 
     use crate::cpu::Op;
     use crate::memory::{Access, MemoryZone};
@@ -31,7 +31,7 @@ mod tests {
 
     #[test]
     fn test_sub_ri() {
-        let mut memory = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
+        let mut memory = Memory::new(vec![Arc::new(MemoryZone::new("".into(), 0..=31, Access::RW))]).unwrap();
         let _ = memory.set_bytes(0, &[
             Op::SubRW.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
         ]);
@@ -50,7 +50,7 @@ mod tests {
 
     #[test]
     fn test_sub_ri_zero() {
-        let mut memory = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
+        let mut memory = Memory::new(vec![Arc::new(MemoryZone::new("".into(), 0..=31, Access::RW))]).unwrap();
         let _ = memory.set_bytes(0, &[
             Op::SubRW.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
         ]);
@@ -69,7 +69,7 @@ mod tests {
 
     #[test]
     fn test_sub_ri_negative() {
-        let mut memory = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
+        let mut memory = Memory::new(vec![Arc::new(MemoryZone::new("".into(), 0..=31, Access::RW))]).unwrap();
         let _ = memory.set_bytes(0, &[
             Op::SubRW.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
         ]);

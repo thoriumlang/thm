@@ -48,13 +48,14 @@ fn run(opts: &ArgMatches) {
         panic!("Not enough RAM: {} < {}", ram_size, MIN_RAM_SIZE + program_bytes.len());
     }
 
-    let rom = Arc::new(RwLock::new(MemoryZone::new_with_data("ROM".into(), ROM_START, ROM_SIZE, rom_bytes, Access::R)));
-    let ram = Arc::new(RwLock::new(MemoryZone::new_with_size("RAM".into(), 0, ram_size, Access::RW)));
-    let meta = Arc::new(RwLock::new(MemoryZone::new_with_size("VMeta".into(), VIDEO_START, 1024, Access::RW)));
-    let buffer_0 = Arc::new(RwLock::new(MemoryZone::new_with_size("VBuf0".into(), VIDEO_BUFFER_0, VIDEO_BUFFER_SIZE, Access::RW)));
-    let buffer_1 = Arc::new(RwLock::new(MemoryZone::new_with_size("VBuf1".into(), VIDEO_BUFFER_1, VIDEO_BUFFER_SIZE, Access::RW)));
+    let rom = Arc::new(MemoryZone::new_with_data("ROM".into(), ROM_START, ROM_SIZE, rom_bytes, Access::R));
+    let ram = Arc::new(MemoryZone::new_with_size("RAM".into(), 0, ram_size, Access::RW));
+    // todo move creation of that to vido
+    let meta = Arc::new(MemoryZone::new_with_size("VMeta".into(), VIDEO_START, 1024, Access::RW));
+    let buffer_0 = Arc::new(MemoryZone::new_with_size("VBuf0".into(), VIDEO_BUFFER_0, VIDEO_BUFFER_SIZE, Access::RW));
+    let buffer_1 = Arc::new(MemoryZone::new_with_size("VBuf1".into(), VIDEO_BUFFER_1, VIDEO_BUFFER_SIZE, Access::RW));
 
-    let mut memory = Memory::new(vec![
+    let memory = Memory::new(vec![
         ram.clone(),
         meta.clone(),
         buffer_0.clone(),
@@ -87,7 +88,7 @@ fn run(opts: &ArgMatches) {
         println!();
     }
 
-    let memory = Arc::new(RwLock::new(memory));
+    let memory = Arc::new(memory);
     let cpu = Arc::new(RwLock::new(cpu));
     let api = RestApi::new(cpu.clone(), memory.clone());
 
@@ -98,7 +99,7 @@ fn run(opts: &ArgMatches) {
             let memory = memory.clone();
             thread::Builder::new().name("cpu".into()).spawn(move || {
                 loop {
-                    if !cpu.write().unwrap().step(&mut memory.write().unwrap()) {
+                    if !cpu.write().unwrap().step(&memory) {
                         break;
                     }
                 }
@@ -108,7 +109,7 @@ fn run(opts: &ArgMatches) {
         }
     };
 
-    let mut video = Video::new(meta.clone(), buffer_0.clone(), buffer_1.clone());
+    let mut video = Video::new(memory.clone());
     if !opts.is_present("no-screen") {
         video.start();
     }

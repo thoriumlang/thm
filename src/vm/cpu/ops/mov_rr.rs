@@ -4,7 +4,7 @@ use crate::memory::Memory;
 use super::super::vmlib::{MAX_REGISTER, REG_CS, REG_SP};
 
 impl CPU {
-    pub(in super::super) fn op_mov_rr(&mut self, memory: &mut Memory) -> ops::Result {
+    pub(in super::super) fn op_mov_rr(&mut self, memory: &Memory) -> ops::Result {
         let r0 = self.fetch_register(memory, &|r: &usize| {
             Self::is_general_purpose_register(r) || match r {
                 &REG_SP | &REG_CS => true,
@@ -55,7 +55,7 @@ impl CPU {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::{Arc, RwLock};
+    use std::sync::Arc;
 
     use crate::cpu::Op;
     use crate::memory::{Access, MemoryZone};
@@ -64,7 +64,7 @@ mod tests {
 
     #[test]
     fn test_mov_rr() {
-        let mut memory = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
+        let mut memory = Memory::new(vec![Arc::new(MemoryZone::new("".into(), 0..=31, Access::RW))]).unwrap();
         let _ = memory.set_bytes(0, &[
             Op::MovRR.bytecode(), 0x00, 0x01,
         ]);
@@ -84,7 +84,7 @@ mod tests {
 
     #[test]
     fn test_mov_zero() {
-        let mut memory = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
+        let mut memory = Memory::new(vec![Arc::new(MemoryZone::new("".into(), 0..=31, Access::RW))]).unwrap();
         let _ = memory.set_bytes(0, &[
             Op::MovRR.bytecode(), 0x00, 0x01,
         ]);

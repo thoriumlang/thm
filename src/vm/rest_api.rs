@@ -11,7 +11,6 @@ use vmlib::{MAX_REGISTER, REG_CS, REG_PC, REG_SP};
 
 use crate::cpu::CPU;
 use crate::memory::Memory;
-use std::borrow::BorrowMut;
 
 pub struct RestApi {}
 
@@ -58,7 +57,7 @@ struct StepResponse {
 }
 
 impl RestApi {
-    pub fn new(cpu: Arc<RwLock<CPU>>, memory: Arc<RwLock<Memory>>) -> JoinHandle<()> {
+    pub fn new(cpu: Arc<RwLock<CPU>>, memory: Arc<Memory>) -> JoinHandle<()> {
         return thread::Builder::new().name("api".into()).spawn(|| {
             tokio::runtime::Builder::new_multi_thread()
                 .enable_all()
@@ -130,8 +129,8 @@ impl RestApi {
             ))
         }
 
-        async fn get_memory(query: GetMemoryRequest, memory: Arc<RwLock<Memory>>) -> Result<impl warp::Reply, warp::Rejection> {
-            match memory.read().unwrap().get_bytes(query.from, query.to - query.from) {
+        async fn get_memory(query: GetMemoryRequest, memory: Arc<Memory>) -> Result<impl warp::Reply, warp::Rejection> {
+            match memory.get_bytes(query.from, query.to - query.from) {
                 None => Ok(warp::reply::with_status(
                     warp::reply::json(&ErrorResponse {
                         code: ERROR_INVALID_ADDRESS,
@@ -139,20 +138,19 @@ impl RestApi {
                     }), warp::http::StatusCode::BAD_REQUEST)),
                 Some(v) => Ok(warp::reply::with_status(
                     warp::reply::json(&GetMemoryResponse {
-                        bytes: v,
+                        bytes: Vec::from(v),
                     }),
                     warp::http::StatusCode::OK,
                 ))
             }
         }
 
-        async fn execute_step(query: StepRequest, cpu: Arc<RwLock<CPU>>, memory: Arc<RwLock<Memory>>) -> Result<impl warp::Reply, warp::Rejection> {
+        async fn execute_step(query: StepRequest, cpu: Arc<RwLock<CPU>>, memory: Arc<Memory>) -> Result<impl warp::Reply, warp::Rejection> {
             let mut cpu = cpu.write().unwrap();
-            let mut memory = memory.write().unwrap();
             let mut running = true;
 
             for _ in 0..query.count.unwrap_or(1) {
-                running = cpu.step(memory.borrow_mut());
+                running = cpu.step(&memory);
                 if !running {
                     break;
                 }

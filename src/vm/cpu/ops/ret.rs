@@ -2,7 +2,7 @@ use crate::cpu::{CPU, ops};
 use crate::memory::Memory;
 
 impl CPU {
-    pub(in super::super) fn op_ret(&mut self, memory: &mut Memory) -> ops::Result {
+    pub(in super::super) fn op_ret(&mut self, memory: &Memory) -> ops::Result {
         if self.opts.print_op {
             println!("{:03}\tRET", self.meta.steps);
         }
@@ -18,7 +18,7 @@ impl CPU {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::{Arc, RwLock};
+    use std::sync::Arc;
 
     use crate::cpu::Op;
     use crate::memory::{Access, MemoryZone};
@@ -27,7 +27,7 @@ mod tests {
 
     #[test]
     fn test_ret() {
-        let mut memory = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
+        let mut memory = Memory::new(vec![Arc::new(MemoryZone::new("".into(), 0..=31, Access::RW))]).unwrap();
         let _ = memory.set_bytes(4, &[
             Op::Call.bytecode(), 0x00, 0x00, 0x00, 0x06,
             Op::Halt.bytecode(),
