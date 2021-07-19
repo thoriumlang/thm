@@ -14,13 +14,13 @@ t_thm: thm
 
 meta.a: target/meta.a
 target/meta.a: t_thm
-	rm -r target/meta.a
+	rm -f target/meta.a
 	target/debug/thm meta -g target/meta.a
-rom: target/rom.bin
+rom: target/meta.a target/rom.bin
 target/rom.bin: target/debug/tha src/rom.a
 	target/debug/tha -i target/meta.a -i src/rom.a -o target/rom.bin
 
-examples: target/fibonacci.bin target/fibonacci_rec.bin target/fact.bin
+examples: target/meta.a target/fibonacci.bin target/fibonacci_rec.bin target/fact.bin
 target/fibonacci.bin: target/debug/tha examples/fibonacci.a
 	rm -f target/fibonacci.bin
 	target/debug/tha -i target/meta.a -i examples/fibonacci.a -o target/fibonacci.bin
