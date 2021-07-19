@@ -105,8 +105,9 @@ fn run(opts: &ArgMatches) {
         }
     };
 
+    let mut video = Video::new(memory.clone());
     if !opts.is_present("no-screen") {
-        Video::new(memory.clone());
+        video.start();
     }
     let _ = executor_thread.join();
 }

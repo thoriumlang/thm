@@ -23,6 +23,7 @@ pub enum Location {
 }
 
 #[derive(Debug, PartialEq)]
+// todo refactor me!
 pub struct Zone {
     from: u32,
     to: u32,

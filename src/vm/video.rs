@@ -6,11 +6,12 @@ use vmlib::{HEIGHT, PIXEL_DEPTH, VIDEO_BUFFER_0, VIDEO_BUFFER_1, VIDEO_BUFFER_SI
 
 use crate::memory::Memory;
 
-pub struct Video;
-
+pub struct Video {
+    memory: Arc<RwLock<Memory>>,
+}
 
 impl Video {
-    pub fn new(memory: Arc<RwLock<Memory>>) {
+    pub fn new(memory: Arc<RwLock<Memory>>) -> Video {
         {
             let mut memory = memory.write().unwrap();
             let _ = memory.set_bytes(VIDEO_START as u32, &vec![0x00, 0x00, 0x00, 0x00]);
@@ -21,7 +22,12 @@ impl Video {
             let _ = memory.set_bytes((VIDEO_START + 20) as u32, &(VIDEO_BUFFER_0 as u32).to_be_bytes());
             let _ = memory.set_bytes((VIDEO_START + 24) as u32, &(VIDEO_BUFFER_1 as u32).to_be_bytes());
         }
+        Video {
+            memory
+        }
+    }
 
+    pub fn start(&mut self) {
         let mut window = match Window::new("thm", WIDTH, HEIGHT, WindowOptions::default()) {
             Ok(win) => win,
             Err(err) => {
@@ -40,7 +46,7 @@ impl Video {
         while window.is_open() && !window.is_key_down(Key::Escape) {
             let needs_update: bool;
             {
-                let memory = memory.read().unwrap();
+                let memory = self.memory.read().unwrap();
                 let buffer_index = memory.get(VIDEO_START as u32).unwrap();
                 needs_update = current_buffer_index != buffer_index;
                 if needs_update {
