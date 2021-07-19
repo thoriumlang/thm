@@ -1,4 +1,3 @@
-use std::borrow::BorrowMut;
 use std::fs::OpenOptions;
 use std::io::{Read, Write};
 use std::str::FromStr;
@@ -80,7 +79,7 @@ fn run(opts: &ArgMatches) {
     cpu.write_register(0, opts.value_of("r0").map_or(0, |v| i32::from_str(v).unwrap_or_default()));
     cpu.start();
 
-    if opts.is_present("step") {
+    if opts.is_present("debug") {
         cpu.set_opts(cpu::Opts {
             print_op: true,
         });
@@ -92,16 +91,14 @@ fn run(opts: &ArgMatches) {
     let cpu = Arc::new(RwLock::new(cpu));
     let api = RestApi::new(cpu.clone(), memory.clone());
 
-    let executor_thread = match opts.is_present("step") {
+    let executor_thread = match opts.is_present("debug") {
         true => api,
         false => {
             let cpu = cpu.clone();
             let memory = memory.clone();
             thread::Builder::new().name("cpu".into()).spawn(move || {
                 loop {
-                    let mut cpu = cpu.write().unwrap();
-                    let mut memory = memory.write().unwrap();
-                    if !cpu.step(memory.borrow_mut()) {
+                    if !cpu.write().unwrap().step(&mut memory.write().unwrap()) {
                         break;
                     }
                 }
@@ -174,7 +171,7 @@ fn parse_opts<'a>() -> ArgMatches<'a> {
             .arg(
                 Arg::with_name("debug")
                     .short("d")
-                    .long("step")
+                    .long("debug")
                     .help("Execute instructions step by step"),
             )
             .arg(
