@@ -7,7 +7,7 @@ impl CPU {
             .ok_or("mul_ri: cannot fetch r1")?;
 
         let w = self.fetch_word(memory)
-            .ok_or("mov_ri: cannot fetch w" )? as i32;
+            .ok_or("mov_ri: cannot fetch w")? as i32;
 
         self.registers[r] *= w;
         self.update_flags(self.registers[r]);
@@ -22,14 +22,16 @@ impl CPU {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::{Arc, RwLock};
+
     use crate::cpu::Op;
+    use crate::memory::{Access, MemoryZone};
 
     use super::*;
-    use super::super::super::vmlib::MIN_RAM_SIZE;
 
     #[test]
     fn test_mul_ri() {
-        let mut memory = Memory::new(MIN_RAM_SIZE as u32, vec![]);
+        let mut memory = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
         let _ = memory.set_bytes(0, &[
             Op::MulRW.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
         ]);
@@ -48,7 +50,7 @@ mod tests {
 
     #[test]
     fn test_mul_ri_zero() {
-        let mut memory = Memory::new(MIN_RAM_SIZE as u32, vec![]);
+        let mut memory = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
         let _ = memory.set_bytes(0, &[
             Op::MulRW.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x00,
         ]);
@@ -67,7 +69,7 @@ mod tests {
 
     #[test]
     fn test_mul_ri_negative() {
-        let mut memory = Memory::new(MIN_RAM_SIZE as u32, vec![]);
+        let mut memory = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
         let _ = memory.set_bytes(0, &[
             Op::MulRW.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x01,
         ]);

@@ -22,11 +22,12 @@ mod tests {
     use crate::cpu::Op;
 
     use super::*;
-    use super::super::super::vmlib::MIN_RAM_SIZE;
+    use std::sync::{Arc, RwLock};
+    use crate::memory::{MemoryZone, Access};
 
     #[test]
     fn test_dec() {
-        let mut memory = Memory::new(MIN_RAM_SIZE as u32, vec![]);
+        let mut memory = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
         let _ = memory.set_bytes(0, &[
             Op::Dec.bytecode(), 0x00,
         ]);
@@ -47,7 +48,7 @@ mod tests {
 
     #[test]
     fn test_dec_zero() {
-        let mut memory = Memory::new(MIN_RAM_SIZE as u32, vec![]);
+        let mut memory = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
         let _ = memory.set_bytes(0, &[
             Op::Dec.bytecode(), 0x00,
         ]);
@@ -68,7 +69,7 @@ mod tests {
 
     #[test]
     fn test_dec_negative() {
-        let mut memory = Memory::new(MIN_RAM_SIZE as u32, vec![]);
+        let mut memory = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
         let _ = memory.set_bytes(0, &[
             Op::Dec.bytecode(), 0x00,
         ]);

@@ -26,11 +26,12 @@ mod tests {
     use crate::cpu::Op;
 
     use super::*;
-    use super::super::super::vmlib::MIN_RAM_SIZE;
+    use std::sync::{Arc, RwLock};
+    use crate::memory::{MemoryZone, Access};
 
     #[test]
     fn test_call() {
-        let mut memory = Memory::new(MIN_RAM_SIZE as u32, vec![]);
+        let mut memory = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
         let _ = memory.set_bytes(4, &[
             Op::Call.bytecode(), 0x00, 0x00, 0x00, 0x06,
             Op::Panic.bytecode(),

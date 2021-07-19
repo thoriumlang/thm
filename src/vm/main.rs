@@ -8,8 +8,6 @@ use std::thread;
 use clap::{App, Arg, ArgMatches, crate_authors, crate_version, SubCommand};
 
 use cpu::CPU;
-use vmlib::INTERRUPT_START;
-use vmlib::MAX_ADDRESS;
 use vmlib::MIN_RAM_SIZE;
 use vmlib::REG_SP;
 use vmlib::ROM_SIZE;
@@ -19,9 +17,10 @@ use vmlib::STACK_MAX_ADDRESS;
 use vmlib::STACK_SIZE;
 use vmlib::VIDEO_BUFFER_0;
 use vmlib::VIDEO_BUFFER_1;
+use vmlib::VIDEO_BUFFER_SIZE;
 use vmlib::VIDEO_START;
 
-use crate::memory::Memory;
+use crate::memory::{Access, Memory, MemoryZone};
 use crate::rest_api::RestApi;
 use crate::video::Video;
 
@@ -40,18 +39,30 @@ fn main() {
 }
 
 fn run(opts: &ArgMatches) {
-    let rom = load_bin(opts.value_of("rom").unwrap());
-    let program: Vec<u8> = load_bin(opts.value_of("image").unwrap());
+    let rom_bytes = load_bin(opts.value_of("rom").unwrap());
+    let program_bytes: Vec<u8> = load_bin(opts.value_of("image").unwrap());
     let ram_size = opts.value_of("ram")
         .map(|s| usize::from_str(s).unwrap_or(MIN_RAM_SIZE + 256))
         .unwrap_or(MIN_RAM_SIZE + 256);
 
-    if ram_size < MIN_RAM_SIZE + program.len() {
-        panic!("Not enough RAM: {} < {}", ram_size, MIN_RAM_SIZE + program.len());
+    if ram_size < MIN_RAM_SIZE + program_bytes.len() {
+        panic!("Not enough RAM: {} < {}", ram_size, MIN_RAM_SIZE + program_bytes.len());
     }
 
-    let mut memory = Memory::new(ram_size as u32, rom);
-    if !memory.set_bytes((STACK_MAX_ADDRESS + 1) as u32, program.as_slice()) {
+    let rom = Arc::new(RwLock::new(MemoryZone::new_with_data("ROM".into(), ROM_START, ROM_SIZE, rom_bytes, Access::R)));
+    let ram = Arc::new(RwLock::new(MemoryZone::new_with_size("RAM".into(), 0, ram_size, Access::RW)));
+    let meta = Arc::new(RwLock::new(MemoryZone::new_with_size("VMeta".into(), VIDEO_START, 1024, Access::RW)));
+    let buffer_0 = Arc::new(RwLock::new(MemoryZone::new_with_size("VBuf0".into(), VIDEO_BUFFER_0, VIDEO_BUFFER_SIZE, Access::RW)));
+    let buffer_1 = Arc::new(RwLock::new(MemoryZone::new_with_size("VBuf1".into(), VIDEO_BUFFER_1, VIDEO_BUFFER_SIZE, Access::RW)));
+
+    let mut memory = Memory::new(vec![
+        ram.clone(),
+        meta.clone(),
+        buffer_0.clone(),
+        buffer_1.clone(),
+        rom.clone(),
+    ]).unwrap();
+    if !memory.set_bytes((STACK_MAX_ADDRESS + 1) as u32, program_bytes.as_slice()) {
         panic!("Cannot copy program to ram");
     }
 
@@ -59,14 +70,9 @@ fn run(opts: &ArgMatches) {
         println!("RAM size:  \t{} Bytes", ram_size);
         println!("Stack:     \t{:#010x} - {:#010x} ({} Bytes) ({} 32-bits words)", 0, STACK_MAX_ADDRESS, STACK_SIZE, STACK_LEN);
         println!("Free:      \t{:#010x} - {:#010x} ({} Bytes)", STACK_MAX_ADDRESS + 1, ram_size - 1, ram_size - STACK_SIZE);
-        println!("Video meta \t{:#010x} - {:#010x} ({} Bytes)", VIDEO_START, VIDEO_BUFFER_0 - 1, VIDEO_BUFFER_0 - VIDEO_START);
-        println!("VBuffer0   \t{:#010x} - {:#010x} ({} Bytes)", VIDEO_BUFFER_0, VIDEO_BUFFER_1 - 1, VIDEO_BUFFER_1 - VIDEO_BUFFER_0);
-        println!("VBuffer1   \t{:#010x} - {:#010x} ({} Bytes)", VIDEO_BUFFER_1, INTERRUPT_START - 1, INTERRUPT_START - VIDEO_BUFFER_1);
-        println!("Interrupts \t{:#010x} - {:#010x} ({} Bytes)", INTERRUPT_START, ROM_START - 1, ROM_START - INTERRUPT_START);
-        println!("ROM:       \t{:#010x} - {:#010x} ({} Bytes)", ROM_START, MAX_ADDRESS, ROM_SIZE);
         memory.zones().iter().for_each(|z| println!("{}", z));
         memory.dump(0, 16);
-        memory.dump((STACK_MAX_ADDRESS as u32) + 1, ROM_START as u32);
+        memory.dump((STACK_MAX_ADDRESS as u32) + 1, ram_size as u32 - 1);
     }
 
     let mut cpu = CPU::new();
@@ -105,7 +111,7 @@ fn run(opts: &ArgMatches) {
         }
     };
 
-    let mut video = Video::new(memory.clone());
+    let mut video = Video::new(meta.clone(), buffer_0.clone(), buffer_1.clone());
     if !opts.is_present("no-screen") {
         video.start();
     }

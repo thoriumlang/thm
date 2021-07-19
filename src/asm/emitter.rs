@@ -16,7 +16,7 @@ impl<'t> Emitter<'t> {
         registers.insert("cp".to_string(), REG_PC);
         registers.insert("sp".to_string(), REG_SP);
         registers.insert("cs".to_string(), REG_CS);
-        for r in 0..32 {
+        for r in 0..=31 {
             registers.insert(format!("r{}", r).to_string(), r);
         }
         Emitter {

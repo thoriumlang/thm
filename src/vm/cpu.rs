@@ -217,8 +217,12 @@ impl CPU {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::{Arc, RwLock};
+
+    use crate::memory::{Access, MemoryZone};
+
     use super::*;
-    use super::vmlib::{MIN_RAM_SIZE, ROM_START};
+    use super::vmlib::ROM_START;
 
     #[test]
     fn test_create_cpu() {
@@ -230,7 +234,7 @@ mod tests {
 
     #[test]
     fn test_push_pop() {
-        let mut memory = Memory::new(MIN_RAM_SIZE as u32, vec![]);
+        let mut memory = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
         let _ = memory.set_bytes(0, &[
             Op::Push.bytecode(), 0x00,
             Op::Pop.bytecode(), 0x01,
@@ -240,7 +244,7 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.registers[0] = 0x01020304;
         cpu.pc = 0;
-        cpu.sp = (MIN_RAM_SIZE - 1) as u32;
+        cpu.sp = 31 as u32;
         cpu.start();
 
         while cpu.step(&mut memory) {}

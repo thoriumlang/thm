@@ -26,14 +26,16 @@ impl CPU {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::{Arc, RwLock};
+
     use crate::cpu::Op;
+    use crate::memory::{Access, MemoryZone};
 
     use super::*;
-    use super::super::super::vmlib::MIN_RAM_SIZE;
 
     #[test]
     fn test_stor() {
-        let mut memory = Memory::new(MIN_RAM_SIZE as u32, vec![]);
+        let mut memory = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
         let _ = memory.set_bytes(5, &[
             Op::Stor.bytecode(), 0x01, 0x00
         ]);

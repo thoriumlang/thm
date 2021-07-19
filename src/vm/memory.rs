@@ -1,62 +1,144 @@
+use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
+use std::ops::RangeInclusive;
+use std::sync::{Arc, RwLock, RwLockWriteGuard};
 
-use vmlib::{ROM_SIZE, ROM_START, VIDEO_START, VIDEO_END};
+pub struct MemoryZone {
+    name: String,
+    bytes: Vec<u8>,
+    access: Access,
+    range: RangeInclusive<usize>,
+}
+
+impl MemoryZone {
+    pub fn new(name: String, range: RangeInclusive<usize>, access: Access) -> MemoryZone {
+        MemoryZone {
+            name,
+            bytes: vec![0; *range.end() - *range.start() + 1],
+            access,
+            range,
+        }
+    }
+
+    pub fn new_with_size(name: String, from: usize, size: usize, access: Access) -> MemoryZone {
+        Self::new(
+            name,
+            from..=from + size - 1,
+            access,
+        )
+    }
+
+
+    pub fn new_with_data(name: String, from: usize, size: usize, bytes: Vec<u8>, access: Access) -> MemoryZone {
+        MemoryZone {
+            name,
+            bytes,
+            access,
+            range: from..=from + size - 1,
+        }
+    }
+
+    pub fn from(&self) -> usize { *self.range.start() }
+
+    pub fn access(&self) -> &Access { &self.access }
+
+    pub fn get(&self, index: usize) -> Option<u8> {
+        if index < *self.range.start() || index > *self.range.end() {
+            return None;
+        }
+        Some(self.bytes[index - *self.range.start()])
+    }
+
+    pub fn get_bytes(&self, from: usize, to: usize) -> Option<Vec<u8>> {
+        if from < *self.range.start() || to > *self.range.end() {
+            return None;
+        }
+        Some(self.bytes[(from - *self.range.start())..=(to - *self.range.start())].to_vec())
+    }
+
+    pub fn get_bytes_abs(&self, from: usize, to: usize) -> Option<Vec<u8>> {
+        self.get_bytes(*self.range.start() + from, *self.range.start() + to)
+    }
+
+    pub fn set(&mut self, address: usize, value: u8) -> bool {
+        if address < *self.range.start() || address > *self.range.end() {
+            return false;
+        }
+        self.bytes[address - *self.range.start()] = value;
+        true
+    }
+
+    pub fn set_bytes(&mut self, from: usize, bytes: &[u8]) -> bool {
+        for (i, b) in bytes.iter().enumerate() {
+            if !self.set(from + i, *b) {
+                return false;
+            }
+        }
+        true
+    }
+}
 
 /// Holds the memory maps and allow to store / load values
 pub struct Memory {
-    // a usize to make it easier to work with Vec internally
-    memory_size: usize,
-    /// RAM goes from 0x00000000 to min(MAX_ADDRESS, ROM_START)
-    ram: Vec<u8>,
-    /// ROM goes from ROM_START to MAX_ADDRESS
-    rom: Vec<u8>,
-    /// VIDEO
-    video: Vec<u8>,
+    zones: Vec<Arc<RwLock<MemoryZone>>>,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum Location {
-    UNMAPPED,
-    RAM,
-    ROM,
-    VIDEO,
+#[derive(Debug, PartialEq, Clone)]
+pub enum Access {
+    RW,
+    R,
+}
+
+impl Display for Access {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            &Access::RW => write!(f, "RW"),
+            &Access::R => write!(f, "R"),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
 // todo refactor me!
 pub struct Zone {
+    name: String,
     from: u32,
     to: u32,
-    kind: Location,
+    access: Access,
 }
 
 impl Display for Zone {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "zone {:?}\t{:#010x} - {:#010x} ({} Bytes)", self.kind, self.from, self.to, self.to - self.from + 1)
+        write!(f, "zone {}\t{}\t{:#010x} - {:#010x} ({} Bytes)", self.access, self.name, self.from, self.to, self.to - self.from + 1)
     }
 }
 
 impl Memory {
-    pub fn new(memory_size: u32, rom: Vec<u8>) -> Memory {
-        let memory_size = memory_size as usize;
+    pub fn new(zones: Vec<Arc<RwLock<MemoryZone>>>) -> std::result::Result<Memory, String> {
+        let mut sorted_zones = Vec::from(zones);
+        sorted_zones.sort_by(|z1, z2| {
+            if z1.read().unwrap().range.start() < z2.read().unwrap().range.start() {
+                return Ordering::Less;
+            } else if z1.read().unwrap().range.start() > z2.read().unwrap().range.start() {
+                return Ordering::Greater;
+            }
+            return Ordering::Equal;
+        });
 
-        let mut ram = vec![0; memory_size];
-        if memory_size >= 4 { // todo find a cleaner way... like absolute min ram size?
-            Self::write_memory_size(memory_size as u32, &mut ram);
+        for (i, zone) in sorted_zones.iter().enumerate().skip(1) {
+            let zone = zone.read().unwrap();
+            if *zone.range.start() <= *sorted_zones[i - 1].read().unwrap().range.end() {
+                return Err(format!("Zone {} overlap with previous zone {}", zone.name, sorted_zones[i - 1].read().unwrap().name).to_string());
+            }
         }
 
-        Memory {
-            memory_size,
-            ram,
-            rom,
-            video: vec![0; VIDEO_END - VIDEO_START + 1], // todo const
-        }
-    }
+        let res = Memory {
+            zones: sorted_zones,
+        };
 
-    fn write_memory_size(memory_size: u32, memory: &mut Vec<u8>) {
-        for (i, b) in memory_size.to_be_bytes().iter().enumerate() {
-            memory[i] = *b;
-        }
+        // todo set total ram size in 0x00000000
+
+        return Ok(res);
     }
 
     /// Sets the memory location to the given value
@@ -64,14 +146,13 @@ impl Memory {
     pub fn set(&mut self, address: u32, value: u8) -> bool {
         let address = address as usize;
 
-        match self.location(address) {
-            Location::RAM => {
-                self.ram[address as usize] = value;
-                true
-            }
-            Location::VIDEO => {
-                self.video[address - VIDEO_START] = value;
-                true
+        match self.zone_write(address) {
+            Some(mut z) => match z.access() {
+                Access::R => false,
+                Access::RW => {
+                    z.set(address, value);
+                    true
+                }
             }
             _ => false,
         }
@@ -90,27 +171,14 @@ impl Memory {
     /// Gets the value stored at memory location
     pub fn get(&self, address: u32) -> Option<u8> {
         let address = address as usize;
-
-        match self.location(address) { // tod   o rewrite using zones()
-            Location::RAM => Some(self.ram[address]),
-            Location::ROM => Some({
-                if self.rom.len() > address - ROM_START {
-                    self.rom[address - ROM_START]
-                } else {
-                    0
-                }
-            }),
-            Location::VIDEO => Some({
-                if self.video.len() > address - VIDEO_START {
-                    self.video[address - VIDEO_START]
-                } else {
-                    0
-                }
-            }),
+        match self.zone_write(address) {
+            Some(z) => {
+                Some(z.get(address).unwrap())
+            }
             _ => {
                 println!("Tried to read from {:#010x}", address);
                 None
-            },
+            }
         }
     }
 
@@ -126,50 +194,40 @@ impl Memory {
     }
 
     #[inline]
-    fn location(&self, address: usize) -> Location {
-        if address >= ROM_START && address < ROM_START + ROM_SIZE {
-            return Location::ROM;
+    fn zone_write(&self, address: usize) -> Option<RwLockWriteGuard<MemoryZone>> {
+        for zone in &self.zones {
+            let zone_w = zone.write().unwrap();
+            if *zone_w.range.start() <= address && *zone_w.range.end() >= address {
+                return Some(zone_w);
+            }
         }
-        if address < self.memory_size {
-            return Location::RAM;
-        }
-        if address >= VIDEO_START && address <= VIDEO_END {
-            return Location::VIDEO;
-        }
-        return Location::UNMAPPED;
+        return None;
     }
 
-    pub fn zones(&self) -> Vec<Zone> {
-        vec![
-            Zone {
-                from: 0,
-                to: (self.memory_size - 1) as u32,
-                kind: Location::RAM,
-            },
-            Zone {
-                from: ROM_START as u32,
-                to: (ROM_START + ROM_SIZE - 1) as u32,
-                kind: Location::ROM,
-            },
-            Zone {
-                from: VIDEO_START as u32,
-                to: VIDEO_END as u32,  // todo const
-                kind: Location::VIDEO,
-            }
-        ]
+    pub fn zones(&self) -> Vec<Box<Zone>> {
+        let mut zones = Vec::new();
+        for zone in &self.zones {
+            zones.push(Box::new(Zone {
+                name: String::from(&zone.read().unwrap().name),
+                from: *zone.read().unwrap().range.start() as u32,
+                to: *zone.read().unwrap().range.end() as u32,
+                access: zone.read().unwrap().access.clone(),
+            }));
+        }
+        return zones;
     }
 
     pub fn dump(&self, start: u32, end: u32) {
         println!("Dump of {:#010x} - {:#010x}", start, end);
-        for (i, b) in self.ram.iter().enumerate().skip(start as usize).take((end - start) as usize) {
-            if i % 16 == 0 {
-                print!("{:08x}  ", i as u32)
+        for address in start..=end {
+            if address % 16 == 0 {
+                print!("{:08x}  ", address as u32)
             }
-            print!("{:02x} ", b);
-            if i % 8 == 7 {
+            print!("{:02x} ", self.get(address).unwrap());
+            if address % 8 == 7 {
                 print!(" ");
             }
-            if i % 16 == 15 {
+            if address % 16 == 15 {
                 println!()
             }
         }
@@ -179,62 +237,55 @@ impl Memory {
 
 #[cfg(test)]
 mod tests {
-    use vmlib::MAX_ADDRESS;
-
     use super::*;
 
     #[test]
-    fn test_get_unmapped() {
-        let mem = Memory::new(0, vec![0; ROM_SIZE]);
-        assert_eq!(None, mem.get(0));
+    fn test_set_unmapped() {
+        let mut mem = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=0, Access::RW)))]).unwrap();
+        assert_eq!(false, mem.set(2, 1));
     }
 
     #[test]
-    fn test_set_unmapped() {
-        let mut mem = Memory::new(0, vec![0; ROM_SIZE]);
+    fn test_set_read_only() {
+        let mut mem = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::R)))]).unwrap();
         assert_eq!(false, mem.set(0, 1));
     }
 
     #[test]
-    fn test_get_ram() {
-        let mem = Memory::new(2, vec![0; ROM_SIZE]);
-        assert_eq!(Some(0), mem.get(0));
+    fn test_set_and_get() {
+        let mut mem = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
+        let _ = mem.set(0, 1);
+        assert_eq!(Some(1), mem.get(0));
         assert_eq!(Some(0), mem.get(1));
     }
 
     #[test]
-    fn test_set_ram() {
-        let mut mem = Memory::new(2, vec![0; ROM_SIZE]);
-        assert_eq!(true, mem.set(0, 1));
-        assert_eq!(true, mem.set(1, 1));
+    fn test_get_unmapped() {
+        let mem = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
+        assert_eq!(None, mem.get(32));
     }
 
     #[test]
-    fn test_get_rom() {
-        let mem = Memory::new(0, vec![1; ROM_SIZE]);
-        assert_eq!(Some(1), mem.get(ROM_START as u32), "rom[start] != 1");
-        assert_eq!(Some(1), mem.get(MAX_ADDRESS as u32), "rom[end] != 1");
+    fn test_get_default_0() {
+        let mem = Memory::new(vec![Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW)))]).unwrap();
+        assert_eq!(Some(0), mem.get(0));
     }
 
     #[test]
-    fn test_get_rom_default_0() {
-        let mem = Memory::new(0, vec![1; 2]);
-        assert_eq!(Some(1), mem.get(ROM_START as u32), "rom[start] != 1");
-        assert_eq!(Some(1), mem.get((ROM_START + 1) as u32), "rom[start+1] != 1");
-        assert_eq!(Some(0), mem.get((ROM_START + 2) as u32), "rom[start+2] != 1");
-        assert_eq!(Some(0), mem.get(MAX_ADDRESS as u32), "rom[end] != 1");
+    fn test_overlap() {
+        let mem = Memory::new(vec![
+            Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW))),
+            Arc::new(RwLock::new(MemoryZone::new("".into(), 31..=31, Access::RW))),
+        ]);
+        assert_eq!(true, mem.is_err());
     }
 
     #[test]
-    fn test_set_rom() {
-        let mut mem = Memory::new(0, vec![0; ROM_SIZE]);
-        assert_eq!(false, mem.set(ROM_START as u32, 1));
-        assert_eq!(false, mem.set((ROM_START + ROM_SIZE) as u32, 1));
-    }
-
-    #[test]
-    fn test_rom_hides_ram() {
-        let mut mem = Memory::new(MAX_ADDRESS as u32, vec![0; ROM_SIZE]);
-        assert_eq!(false, mem.set(ROM_START as u32, 1));
+    fn test_no_overlap() {
+        let mem = Memory::new(vec![
+            Arc::new(RwLock::new(MemoryZone::new("".into(), 0..=31, Access::RW))),
+            Arc::new(RwLock::new(MemoryZone::new("".into(), 32..=32, Access::RW))),
+        ]);
+        assert_eq!(true, mem.is_ok());
     }
 }
