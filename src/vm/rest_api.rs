@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use warp;
 use warp::Filter;
 
-use vmlib::{MAX_REGISTER, REG_CS, REG_PC, REG_SP};
+use vmlib::{INTERRUPTS_COUNT, MAX_REGISTER, REG_CS, REG_PC, REG_SP};
 
 use crate::cpu::CPU;
 use crate::memory::Memory;

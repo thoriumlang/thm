@@ -6,9 +6,9 @@ pub const REG_COUNT: usize = 32;
 /// Max identifier of general purpose registers
 pub const MAX_REGISTER: usize = REG_COUNT - 1;
 
-pub const REG_PC: usize = 255;
-pub const REG_SP: usize = 254;
-pub const REG_CS: usize = 253;
+pub const REG_PC: usize = MAX_REGISTER + 1;
+pub const REG_SP: usize = MAX_REGISTER + 2;
+pub const REG_CS: usize = MAX_REGISTER + 3;
 
 // fixme use CpuWord instead of u32?
 type CpuWord = u32;

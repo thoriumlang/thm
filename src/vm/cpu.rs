@@ -8,7 +8,7 @@ use vmlib::op::Op;
 
 use crate::memory::Memory;
 
-use self::vmlib::MAX_REGISTER;
+use self::vmlib::{MAX_REGISTER, REG_PC, REG_SP, REG_CS};
 
 mod ops;
 
@@ -192,18 +192,18 @@ impl CPU {
 
     pub fn read_register(&self, r: usize) -> i32 {
         match r {
-            255 => self.pc as i32,
-            254 => self.sp as i32,
-            253 => self.cs as i32,
+            REG_PC => self.pc as i32,
+            REG_SP => self.sp as i32,
+            REG_CS => self.cs as i32,
             r => self.registers[r],
         }
     }
 
     pub fn write_register(&mut self, r: usize, val: i32) {
         match r {
-            255 => self.pc = val as u32,
-            254 => self.sp = val as u32,
-            253 => self.cs = val as u32,
+            REG_PC => self.pc = val as u32,
+            REG_SP => self.sp = val as u32,
+            REG_CS => self.cs = val as u32,
             r => self.registers[r] = val,
         }
     }
