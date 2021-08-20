@@ -32,9 +32,9 @@ target/fact.bin: target/debug/tha examples/fact.a
 	target/debug/tha -i target/meta.a -i examples/fact.a -o target/fact.bin
 
 it: t_tha t_thm rom examples
-	target/debug/thm run --no-screen --mmap target/rom.bin target/fibonacci.bin     -016
-	target/debug/thm run --no-screen --mmap target/rom.bin target/fibonacci_rec.bin -016
-	target/debug/thm run --no-screen --mmap target/rom.bin target/fact.bin          -05
+	target/debug/thm run --mmap target/rom.bin target/fibonacci.bin     -016
+	target/debug/thm run --mmap target/rom.bin target/fibonacci_rec.bin -016
+	target/debug/thm run --mmap target/rom.bin target/fact.bin          -05
 
 target/screen.bin: target/debug/tha examples/screen.a
 	target/debug/tha -i target/meta.a -i examples/screen.a -o target/screen.bin

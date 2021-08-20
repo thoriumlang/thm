@@ -110,7 +110,7 @@ fn run(opts: &ArgMatches) {
     };
 
     let mut video = Video::new(memory.clone());
-    if !opts.is_present("no-screen") {
+    if opts.is_present("screen") {
         video.start();
     }
     let _ = executor_thread.join();
@@ -194,10 +194,10 @@ fn parse_opts<'a>() -> ArgMatches<'a> {
                     .index(2),
             )
             .arg(
-                Arg::with_name("no-screen")
+                Arg::with_name("screen")
                     .short("s")
-                    .long("no-screen")
-                    .help("No video")
+                    .long("screen")
+                    .help("Starts with video enabled")
             )
             .arg(
                 Arg::with_name("r0")
