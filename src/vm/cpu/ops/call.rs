@@ -28,6 +28,7 @@ mod tests {
     use super::*;
     use std::sync::Arc;
     use crate::memory::{MemoryZone, Access};
+    use crate::interrupts::PIC;
 
     #[test]
     fn test_call() {
@@ -38,8 +39,9 @@ mod tests {
             Op::MovRW.bytecode(), 0x00, 0x00, 0x00, 0x00, 0xff,
             Op::Halt.bytecode()
         ]);
+        let pic = Arc::new(PIC::new());
 
-        let mut cpu = CPU::new();
+        let mut cpu = CPU::new(pic);
         cpu.sp = 4;
         cpu.cs = cpu.sp;
         cpu.pc = cpu.cs;

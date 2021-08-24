@@ -33,6 +33,9 @@ target/fact.bin: tha examples/fact.a
 target/halt.bin: tha examples/halt.a
 	rm -f target/halt.bin
 	target/debug/tha -i target/meta.a -i examples/halt.a -o target/halt.bin
+target/loop.bin: tha examples/loop.a
+	rm -f target/loop.bin
+	target/debug/tha -i target/meta.a -i examples/loop.a -o target/loop.bin
 
 it: t_tha t_thm rom examples
 	target/debug/thm run --mmap target/rom.bin target/fibonacci.bin     -016

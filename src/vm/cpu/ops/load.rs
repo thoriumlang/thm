@@ -31,6 +31,7 @@ mod tests {
     use std::sync::Arc;
 
     use crate::cpu::Op;
+    use crate::interrupts::PIC;
     use crate::memory::{Access, MemoryZone};
 
     use super::*;
@@ -42,8 +43,9 @@ mod tests {
             0x01, 0x02, 0x03, 0x04,
             Op::Load.bytecode(), 0x00, 0x01
         ]);
+        let pic = Arc::new(PIC::new());
 
-        let mut cpu = CPU::new();
+        let mut cpu = CPU::new(pic);
         cpu.registers[0] = 0x00000000;
         cpu.registers[1] = 0x00000000;
         cpu.pc = 4;

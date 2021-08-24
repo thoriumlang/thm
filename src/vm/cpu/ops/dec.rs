@@ -24,6 +24,7 @@ mod tests {
     use super::*;
     use std::sync::Arc;
     use crate::memory::{MemoryZone, Access};
+    use crate::interrupts::PIC;
 
     #[test]
     fn test_dec() {
@@ -31,8 +32,9 @@ mod tests {
         let _ = memory.set_bytes(0, &[
             Op::Dec.bytecode(), 0x00,
         ]);
+        let pic = Arc::new(PIC::new());
 
-        let mut cpu = CPU::new();
+        let mut cpu = CPU::new(pic);
         cpu.registers[0] = 2;
         cpu.flags.zero = false;
         cpu.flags.negative = false;
@@ -52,8 +54,9 @@ mod tests {
         let _ = memory.set_bytes(0, &[
             Op::Dec.bytecode(), 0x00,
         ]);
+        let pic = Arc::new(PIC::new());
 
-        let mut cpu = CPU::new();
+        let mut cpu = CPU::new(pic);
         cpu.registers[0] = 1;
         cpu.flags.zero = false;
         cpu.flags.negative = false;
@@ -73,8 +76,9 @@ mod tests {
         let _ = memory.set_bytes(0, &[
             Op::Dec.bytecode(), 0x00,
         ]);
+        let pic = Arc::new(PIC::new());
 
-        let mut cpu = CPU::new();
+        let mut cpu = CPU::new(pic);
         cpu.registers[0] = 0;
         cpu.flags.zero = true;
         cpu.flags.negative = false;

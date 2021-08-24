@@ -32,6 +32,7 @@ mod tests {
     use crate::memory::{Access, MemoryZone};
 
     use super::*;
+    use crate::interrupts::PIC;
 
     #[test]
     fn test_stor() {
@@ -39,8 +40,9 @@ mod tests {
         let _ = memory.set_bytes(5, &[
             Op::Stor.bytecode(), 0x01, 0x00
         ]);
+        let pic = Arc::new(PIC::new());
 
-        let mut cpu = CPU::new();
+        let mut cpu = CPU::new(pic);
         cpu.registers[0] = 0x01020304;
         cpu.registers[1] = 0x00000000;
         cpu.pc = 5;

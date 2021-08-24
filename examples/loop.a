@@ -1,0 +1,17 @@
+// loops forever, incrementing r0
+
+    $int1 = 0x101c // 4124           // 0x1010 + 0x28 (@int1 in ram)
+
+    MOV  r1, $int1
+    MOV  r2, $__iv_start
+    STOR r2, r1
+
+:reset
+    MOV  r0, 0
+
+:loop
+    INC  r0
+    J    @loop
+
+:int1
+    J    @reset

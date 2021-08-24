@@ -1,14 +1,16 @@
 extern crate vmlib;
 
 use std::convert::TryInto;
+use std::sync::Arc;
 use std::time::Instant;
 
 use vmlib::{REG_COUNT, ROM_START};
 use vmlib::op::Op;
 
+use crate::interrupts::PIC;
 use crate::memory::Memory;
 
-use self::vmlib::{MAX_REGISTER, REG_PC, REG_SP, REG_CS};
+use self::vmlib::{MAX_REGISTER, REG_CS, REG_PC, REG_SP, IV_START};
 
 mod ops;
 
@@ -35,19 +37,21 @@ pub struct CPU {
     sp: u32,
     /// start of code segment
     cs: u32,
+    pic: Arc<PIC>,
     flags: Flags,
     opts: Opts,
     meta: Meta,
 }
 
 impl CPU {
-    pub fn new() -> CPU {
+    pub fn new(pic: Arc<PIC>) -> CPU {
         let now = Instant::now();
         CPU {
             registers: [0; REG_COUNT],
             pc: ROM_START as u32,
             sp: 0,
             cs: ROM_START as u32,
+            pic,
             flags: Flags {
                 running: false,
                 zero: true,
@@ -72,6 +76,16 @@ impl CPU {
     pub fn step(&mut self, memory: &Memory) -> bool {
         if !self.flags.running {
             return false;
+        }
+        match self.pic.poll() {
+            Some(1) => {}
+            Some(int) => {
+                let int_addr = Self::load_word(memory, IV_START as u32 + int as u32).unwrap();
+                println!("Received interrupt {}; handler at {:#010x}", int, int_addr);
+                self.pic.unmask(int);
+                self.pc = int_addr;
+            }
+            None => {}
         }
         match self.fetch_opcode(memory) {
             None => { let _ = self.op_panic("Cannot fetch op"); }
@@ -226,7 +240,9 @@ mod tests {
 
     #[test]
     fn test_create_cpu() {
-        let cpu = CPU::new();
+        let pic = Arc::new(PIC::new());
+
+        let cpu = CPU::new(pic);
         assert_eq!(cpu.registers[0], 0);
         assert_eq!(cpu.flags.zero, true);
         assert_eq!(cpu.pc, ROM_START as u32);
@@ -240,8 +256,9 @@ mod tests {
             Op::Pop.bytecode(), 0x01,
             Op::Halt.bytecode()
         ]);
+        let pic = Arc::new(PIC::new());
 
-        let mut cpu = CPU::new();
+        let mut cpu = CPU::new(pic);
         cpu.registers[0] = 0x01020304;
         cpu.pc = 0;
         cpu.sp = 31 as u32;

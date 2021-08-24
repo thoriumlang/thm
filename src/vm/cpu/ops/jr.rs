@@ -23,6 +23,7 @@ mod tests {
     use crate::memory::{Access, MemoryZone};
 
     use super::*;
+    use crate::interrupts::PIC;
 
     #[test]
     fn test_jr() {
@@ -34,8 +35,9 @@ mod tests {
             Op::MovRW.bytecode(), 0x00, 0x00, 0x00, 0x00, 0x02,
             Op::Halt.bytecode()
         ]);
+        let pic = Arc::new(PIC::new());
 
-        let mut cpu = CPU::new();
+        let mut cpu = CPU::new(pic);
         cpu.cs = 0;
         cpu.pc = 0;
         cpu.start();

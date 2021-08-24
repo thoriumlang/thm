@@ -8,6 +8,10 @@ use clap::{App, Arg, ArgMatches, crate_authors, crate_version, SubCommand};
 
 use cpu::CPU;
 use vmlib::MIN_RAM_SIZE;
+use vmlib::IV_START;
+use vmlib::IV_SIZE;
+use vmlib::REST_API_START;
+use vmlib::REST_API_SIZE;
 use vmlib::REG_SP;
 use vmlib::ROM_SIZE;
 use vmlib::ROM_START;
@@ -19,12 +23,16 @@ use vmlib::VIDEO_BUFFER_1;
 use vmlib::VIDEO_BUFFER_SIZE;
 use vmlib::VIDEO_START;
 
+use crate::clock::Clock;
+use crate::interrupts::PIC;
 use crate::memory::{Access, Memory, MemoryZone};
 use crate::rest_api::RestApi;
 use crate::video::Video;
 
 mod cpu;
 mod memory;
+mod interrupts;
+mod clock;
 mod rest_api;
 mod video;
 
@@ -54,6 +62,8 @@ fn run(opts: &ArgMatches) {
     let meta = Arc::new(MemoryZone::new_with_size("VMeta".into(), VIDEO_START, 1024, Access::RW));
     let buffer_0 = Arc::new(MemoryZone::new_with_size("VBuf0".into(), VIDEO_BUFFER_0, VIDEO_BUFFER_SIZE, Access::RW));
     let buffer_1 = Arc::new(MemoryZone::new_with_size("VBuf1".into(), VIDEO_BUFFER_1, VIDEO_BUFFER_SIZE, Access::RW));
+    let rest_api = Arc::new(MemoryZone::new_with_size("RestApi".into(), REST_API_START, REST_API_SIZE, Access::RW));
+    let iv =  Arc::new(MemoryZone::new_with_size("IV".into(), IV_START, IV_SIZE, Access::RW));
 
     let memory = Memory::new(vec![
         ram.clone(),
@@ -61,6 +71,8 @@ fn run(opts: &ArgMatches) {
         buffer_0.clone(),
         buffer_1.clone(),
         rom.clone(),
+        rest_api.clone(),
+        iv.clone(),
     ]).unwrap();
     if !memory.set_bytes((STACK_MAX_ADDRESS + 1) as u32, program_bytes.as_slice()) {
         panic!("Cannot copy program to ram");
@@ -75,10 +87,15 @@ fn run(opts: &ArgMatches) {
         memory.dump((STACK_MAX_ADDRESS as u32) + 1, ram_size as u32 - 1);
     }
 
-    let mut cpu = CPU::new();
+    let pic = Arc::new(PIC::new());
+
+    let clock = Arc::new(Clock::new(pic.clone()));
+
+    let mut cpu = CPU::new(pic.clone());
+    cpu.start();
     cpu.write_register(REG_SP, STACK_MAX_ADDRESS as i32);
     cpu.write_register(0, opts.value_of("r0").map_or(0, |v| i32::from_str(v).unwrap_or_default()));
-    cpu.start();
+    clock.start();
 
     if opts.is_present("debug") {
         cpu.set_opts(cpu::Opts {
@@ -90,7 +107,7 @@ fn run(opts: &ArgMatches) {
 
     let memory = Arc::new(memory);
     let cpu = Arc::new(RwLock::new(cpu));
-    let api = RestApi::new(cpu.clone(), memory.clone());
+    let api = RestApi::new(cpu.clone(), memory.clone(), pic.clone());
 
     let executor_thread = match opts.is_present("debug") {
         true => api,
@@ -127,6 +144,8 @@ fn meta(opts: &ArgMatches) {
         let mut data = String::new();
         data.push_str(format!("$__rom_start = {:#010x}\n", ROM_START).as_str());
         data.push_str(format!("$__video_start = {:#010x}\n", VIDEO_START).as_str());
+        data.push_str(format!("$__rest_api_start = {:#010x}\n", REST_API_START).as_str());
+        data.push_str(format!("$__iv_start = {:#010x}\n", IV_START).as_str());
         // data.push_str(format!("$__video_buffer_0_start = {:#010x}\n", VIDEO_BUFFER_0).as_str());
         // data.push_str(format!("$__video_buffer_1_start = {:#010x}\n", VIDEO_BUFFER_1).as_str());
         // data.push_str(format!("$__video_buffer_size = {:#010x}\n", VIDEO_BUFFER_SIZE).as_str());

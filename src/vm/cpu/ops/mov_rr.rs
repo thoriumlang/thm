@@ -61,6 +61,7 @@ mod tests {
     use crate::memory::{Access, MemoryZone};
 
     use super::*;
+    use crate::interrupts::PIC;
 
     #[test]
     fn test_mov_rr() {
@@ -68,8 +69,9 @@ mod tests {
         let _ = memory.set_bytes(0, &[
             Op::MovRR.bytecode(), 0x00, 0x01,
         ]);
+        let pic = Arc::new(PIC::new());
 
-        let mut cpu = CPU::new();
+        let mut cpu = CPU::new(pic);
         cpu.registers[1] = 1;
         cpu.pc = 0;
         cpu.start();
@@ -88,8 +90,9 @@ mod tests {
         let _ = memory.set_bytes(0, &[
             Op::MovRR.bytecode(), 0x00, 0x01,
         ]);
+        let pic = Arc::new(PIC::new());
 
-        let mut cpu = CPU::new();
+        let mut cpu = CPU::new(pic);
         cpu.registers[0] = 1;
         cpu.pc = 0;
         cpu.start();

@@ -24,6 +24,7 @@ mod tests {
     use crate::memory::{Access, MemoryZone};
 
     use super::*;
+    use crate::interrupts::PIC;
 
     #[test]
     fn test_ret() {
@@ -35,8 +36,9 @@ mod tests {
             Op::Ret.bytecode(),
             Op::Panic.bytecode(),
         ]);
+        let pic = Arc::new(PIC::new());
 
-        let mut cpu = CPU::new();
+        let mut cpu = CPU::new(pic);
 
         cpu.sp = 4;
         cpu.cs = cpu.sp;

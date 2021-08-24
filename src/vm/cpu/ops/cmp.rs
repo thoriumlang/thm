@@ -27,6 +27,7 @@ mod tests {
     use super::*;
     use std::sync::Arc;
     use crate::memory::{MemoryZone, Access};
+    use crate::interrupts::PIC;
 
     #[test]
     fn test_cmp_eq() {
@@ -34,8 +35,9 @@ mod tests {
         let _ = memory.set_bytes(0, &[
             Op::Cmp.bytecode(), 0x00, 0x01,
         ]);
+        let pic = Arc::new(PIC::new());
 
-        let mut cpu = CPU::new();
+        let mut cpu = CPU::new(pic);
         cpu.registers[0] = 1;
         cpu.registers[1] = 1;
         cpu.pc = 0;
@@ -55,8 +57,9 @@ mod tests {
         let _ = memory.set_bytes(0, &[
             Op::Cmp.bytecode(), 0x00, 0x01,
         ]);
+        let pic = Arc::new(PIC::new());
 
-        let mut cpu = CPU::new();
+        let mut cpu = CPU::new(pic);
         cpu.registers[0] = 1;
         cpu.registers[1] = 2;
         cpu.pc = 0;
@@ -76,8 +79,9 @@ mod tests {
         let _ = memory.set_bytes(0, &[
             Op::Cmp.bytecode(), 0x00, 0x01,
         ]);
+        let pic = Arc::new(PIC::new());
 
-        let mut cpu = CPU::new();
+        let mut cpu = CPU::new(pic);
         cpu.registers[0] = 2;
         cpu.registers[1] = 1;
         cpu.pc = 0;

@@ -209,6 +209,7 @@ impl Memory {
                 access: zone.access.clone(),
             }));
         }
+        zones.sort_by(|a, b| a.from.cmp(&b.from));
         return zones;
     }
 
