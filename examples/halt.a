@@ -1,0 +1,11 @@
+// halts
+
+$end = @end
+$loop = @loop
+
+:loop
+    J   $end
+    J   $loop
+
+:end
+    HALT

@@ -85,7 +85,8 @@ impl<'t> Parser<'t> {
         let token = self.lexer.next();
         match token {
             Some(Ok(Token::Integer(_, _))) => self.symbols.insert(name, token.unwrap().unwrap()),
-            _ => return Err(format!("Expected <integer> at {}", position).into()),
+            Some(Ok(Token::Address(_, _))) => self.symbols.insert(name, token.unwrap().unwrap()),
+            _ => return Err(format!("Expected <integer> or <addr> at {}", position).into()),
         };
 
         Ok(())
@@ -194,6 +195,7 @@ impl<'t> Parser<'t> {
                 Token::Address(_, addr) => Some(Ok(Instruction::IA(op, addr))),
                 Token::Integer(_, w) => Some(Ok(Instruction::IW(op, w))),
                 Token::Variable(_, name) => match self.symbols.get(&name) {
+                    Some(Token::Address(_, addr)) => Some(Ok(Instruction::IA(op, addr.into()))),
                     Some(Token::Integer(_, w)) => Some(Ok(Instruction::IW(op, *w))),
                     _ => None
                 },
