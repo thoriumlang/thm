@@ -14,14 +14,23 @@
  * limitations under the License.
  */
 
+#include "opts.h"
 #include "vmarch.h"
 #include "bus.h"
 #include "cpu.h"
 #include "memory.h"
 
-int main(int args, char **argv) {
+int main(int argc, char **argv) {
+    Options *options = opts_parse(argc, argv);
+    if (options->help_flag) {
+        opts_print_help(argv[0]);
+        return 0;
+    }
+
+    printf("ROM:   %s\nImage: %s\n", options->rom, options->image);
+
     Bus *bus = bus_create();
-    Memory *ram = memory_create(4096, MEM_MODE_RW);
+    Memory *ram = memory_create(options->ram_size, MEM_MODE_RW);
     Memory *rom = memory_create(ROM_SIZE, MEM_MODE_R);
 
     bus_memory_attach(bus, ram, 0, "RAM");
@@ -39,6 +48,7 @@ int main(int args, char **argv) {
 
     cpu_start(cpu);
 
+    opts_free(options);
     cpu_destroy(cpu);
     bus_destroy(bus);
     memory_destroy(ram);
