@@ -42,4 +42,6 @@ BusError bus_word_write(Bus *bus, addr_sz address, word_sz word);
 
 void bus_print_state(FILE *file, Bus *bus);
 
+void bus_dump(FILE *file, Bus *bus, addr_sz from, addr_sz count);
+
 #endif //C_VM_BUS_H

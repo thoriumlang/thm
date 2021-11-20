@@ -40,7 +40,7 @@ Memory *memory_create(addr_sz bytes, MemMode mode) {
 }
 
 addr_sz round_up(addr_sz bytes) {
-    return ((bytes + sizeof(word_sz) - 1) / sizeof(word_sz)) * sizeof(word_sz);;
+    return ((bytes + WORD_SIZE - 1) / WORD_SIZE) * WORD_SIZE;
 }
 
 void memory_destroy(Memory *memory) {
