@@ -24,10 +24,10 @@ typedef uint32_t word_sz;
 
 #define WORD_SIZE sizeof(word_sz)
 
+#define DEFAULT_RAM_SIZE ((addr_sz)(STACK_SIZE + 1024))
+
 #define STACK_LENGTH ((addr_sz)1024)
 #define STACK_SIZE ((addr_sz)(STACK_LENGTH * WORD_SIZE))
-
-#define DEFAULT_RAM_SIZE ((addr_sz)(STACK_SIZE + 1024))
 
 #define ROM_SIZE ((addr_sz)(32 * 1024 * 1024))
 #define ROM_ADDRESS ((addr_sz)((addr_sz) - ROM_SIZE))

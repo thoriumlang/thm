@@ -27,17 +27,21 @@ Options *opts_parse(int argc, char **argv) {
 
     struct option long_options[] = {
             {"help", no_argument, &opts->help_flag, 1},
+            {"arch", no_argument, &opts->print_arch, 1},
             {"ram",  required_argument, NULL,       'r'},
             {0, 0,                0,                0},
     };
     int c;
     int option_index = 0;
-    while ((c = getopt_long(argc, argv, "hr:", long_options, &option_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "har:", long_options, &option_index)) != -1) {
         switch (c) {
             case 0:
                 break;
             case 'h':
                 opts->help_flag = 1;
+                break;
+            case 'a':
+                opts->print_arch = 1;
                 break;
             case 'r':
                 opts->ram_size = strtol(optarg, NULL, 10);

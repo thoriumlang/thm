@@ -24,6 +24,7 @@ typedef struct {
     char *image;
     addr_sz ram_size;
     int help_flag;
+    int print_arch;
 } Options;
 
 Options *opts_parse(int argc, char **argv);

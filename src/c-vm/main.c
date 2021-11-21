@@ -20,10 +20,26 @@
 #include "cpu.h"
 #include "memory.h"
 
+void print_arch() {
+    printf("addr_size:   %lu\n", sizeof(addr_sz));
+    printf("word_size:   %lu\n", WORD_SIZE);
+    printf("stack_dept:  %i\n", STACK_LENGTH);
+    printf("stack_size:  %i\n", STACK_SIZE);
+    printf("stack_start: 0x%08x\n", 0);
+    printf("stack_end:   0x%08x\n", STACK_SIZE - 1);
+    printf("rom_size:    %i\n", ROM_SIZE);
+    printf("rom_start:   0x%08x\n", ROM_ADDRESS);
+    printf("rom_end:     0x%08x\n", ROM_ADDRESS + ROM_SIZE - 1);
+}
+
 int main(int argc, char **argv) {
     Options *options = opts_parse(argc, argv);
     if (options->help_flag) {
         opts_print_help(argv[0]);
+        return 0;
+    }
+    if (options->print_arch) {
+        print_arch();
         return 0;
     }
 
