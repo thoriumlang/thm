@@ -34,14 +34,14 @@ Bus *bus_create();
 
 void bus_destroy(Bus *bus);
 
-BusError bus_memory_attach(Bus *bus, Memory *memory, addr_sz from, char *name);
+BusError bus_memory_attach(Bus *bus, Memory *memory, addr_t from, char *name);
 
-BusError bus_word_read(Bus *bus, addr_sz address, word_sz *word);
+BusError bus_word_read(Bus *bus, addr_t address, word_t *word);
 
-BusError bus_word_write(Bus *bus, addr_sz address, word_sz word);
+BusError bus_word_write(Bus *bus, addr_t address, word_t word);
 
 void bus_print_state(FILE *file, Bus *bus);
 
-void bus_dump(FILE *file, Bus *bus, addr_sz from, addr_sz count);
+void bus_dump(FILE *file, Bus *bus, addr_t from, addr_t count);
 
 #endif //C_VM_BUS_H

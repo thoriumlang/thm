@@ -43,7 +43,7 @@ static void word_read_invalid_address(void **state) {
     Bus *bus = bus_create();
     bus_memory_attach(bus, memory_create(WORD_SIZE, MEM_MODE_RW), 0, "First");
 
-    word_sz word;
+    word_t word;
     assert_int_equal(BUS_ERR_INVALID_ADDRESS, bus_word_read(bus, WORD_SIZE, &word));
 }
 
@@ -54,7 +54,7 @@ static void word_read_simple_success(void **state) {
     Bus *bus = bus_create();
     bus_memory_attach(bus, mem, 0, "First");
 
-    word_sz word;
+    word_t word;
     assert_int_equal(BUS_ERR_OK, bus_word_read(bus, 0, &word));
     assert_int_equal(42, word);
 }
@@ -66,9 +66,9 @@ static void word_read_second_zone_success(void **state) {
     Memory *mem = memory_create(WORD_SIZE, MEM_MODE_RW);
     memory_word_set(mem, 0, 42);
 
-    bus_memory_attach(bus, mem, sizeof(word_sz), "Second");
+    bus_memory_attach(bus, mem, sizeof(word_t), "Second");
 
-    word_sz word;
+    word_t word;
     assert_int_equal(BUS_ERR_OK, bus_word_read(bus, WORD_SIZE, &word));
     assert_int_equal(42, word);
 }
@@ -86,7 +86,7 @@ static void word_write_simple_success(void **state) {
 
     assert_int_equal(BUS_ERR_OK, bus_word_write(bus, 0, 42));
 
-    word_sz word;
+    word_t word;
     assert_int_equal(BUS_ERR_OK, bus_word_read(bus, 0, &word));
     assert_int_equal(42, word);
 }
@@ -98,7 +98,7 @@ static void word_write_second_zone_success(void **state) {
 
     assert_int_equal(BUS_ERR_OK, bus_word_write(bus, WORD_SIZE, 42));
 
-    word_sz word;
+    word_t word;
     assert_int_equal(BUS_ERR_OK, bus_word_read(bus, WORD_SIZE, &word));
     assert_int_equal(42, word);
 }

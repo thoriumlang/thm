@@ -19,7 +19,7 @@
 
 #import "cpu.h"
 
-typedef void (*op_ptr)(CPU *, const word_sz *);
+typedef void (*op_ptr)(CPU *, const word_t *);
 
 extern op_ptr ops[];
 #define OPS_COUNT 33

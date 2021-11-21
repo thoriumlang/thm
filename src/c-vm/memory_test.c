@@ -22,13 +22,13 @@
 #include "memory.h"
 
 static void create_rounds_up(void **state) {
-    Memory *mem = memory_create(sizeof(word_sz) - 1, MEM_MODE_R);
-    assert_int_equal(sizeof(word_sz), memory_size_get(mem));
+    Memory *mem = memory_create(sizeof(word_t) - 1, MEM_MODE_R);
+    assert_int_equal(sizeof(word_t), memory_size_get(mem));
 }
 
 static void create_initializes_to_0(void **state) {
-    Memory *mem = memory_create(sizeof(word_sz), MEM_MODE_R);
-    word_sz word = 1;
+    Memory *mem = memory_create(sizeof(word_t), MEM_MODE_R);
+    word_t word = 1;
     memory_word_get(mem, 0, &word);
     assert_int_equal(0, word);
 }
@@ -56,14 +56,14 @@ static void set_mode(void **state) {
 
 static void get_word_success(void **state) {
     Memory *mem = memory_create(4, MEM_MODE_R);
-    word_sz word = 1;
+    word_t word = 1;
     assert_int_equal(MEM_ERR_OK, memory_word_get(mem, 0, &word));
     assert_int_equal(0, word);
 }
 
 static void get_word_not_aligned(void **state) {
     Memory *mem = memory_create(4, MEM_MODE_R);
-    word_sz word = 1;
+    word_t word = 1;
     assert_int_equal(MEM_ERR_NOT_ALIGNED, memory_word_get(mem, 1, &word));
     assert_int_equal(1, word);
     memory_destroy(mem);
@@ -71,7 +71,7 @@ static void get_word_not_aligned(void **state) {
 
 static void get_word_out_of_bounds(void **state) {
     Memory *mem = memory_create(4, MEM_MODE_R);
-    word_sz word = 1;
+    word_t word = 1;
     assert_int_equal(MEM_ERR_OUT_OF_BOUND, memory_word_get(mem, 4, &word));
     assert_int_equal(1, word);
     memory_destroy(mem);
@@ -79,7 +79,7 @@ static void get_word_out_of_bounds(void **state) {
 
 static void set_word_success(void **state) {
     Memory *mem = memory_create(4, MEM_MODE_RW);
-    word_sz word = 0;
+    word_t word = 0;
 
     assert_int_equal(MEM_ERR_OK, memory_word_set(mem, 0, 0x12345678));
     memory_word_get(mem, 0, &word);

@@ -23,7 +23,7 @@
 #include "bus.h"
 #include "ops.h"
 
-op_ptr decode(CPU *cpu, const word_sz *word);
+op_ptr decode(CPU *cpu, const word_t *word);
 
 CPU *cpu_create(Bus *bus, uint8_t reg_count) {
     CPU *cpu = malloc(sizeof(CPU));
@@ -43,7 +43,7 @@ void cpu_start(CPU *cpu) {
         printf("\nCPU Steps\n");
     }
     while (cpu->running == 1 && cpu->panic == CPU_ERR_OK) {
-        word_sz word = fetch(cpu);
+        word_t word = fetch(cpu);
         op_ptr op = decode(cpu, &word);
         if (op) {
             op(cpu, &word);
@@ -55,8 +55,8 @@ void cpu_start(CPU *cpu) {
     cpu->running = 0;
 }
 
-word_sz fetch(CPU *cpu) {
-    word_sz word;
+word_t fetch(CPU *cpu) {
+    word_t word;
     if (bus_word_read(cpu->bus, cpu->pc, &word) != BUS_ERR_OK) {
         cpu->panic = CPU_ERR_CANNOT_FETCH;
         return 0;
@@ -65,7 +65,7 @@ word_sz fetch(CPU *cpu) {
     return word;
 }
 
-op_ptr decode(CPU *cpu, const word_sz *word) {
+op_ptr decode(CPU *cpu, const word_t *word) {
     if (cpu->panic) {
         return NULL;
     }
@@ -93,7 +93,7 @@ void cpu_destroy(CPU *cpu) {
     free(cpu);
 }
 
-CpuError cpu_register_get(CPU *cpu, uint8_t reg, word_sz *word) {
+CpuError cpu_register_get(CPU *cpu, uint8_t reg, word_t *word) {
     if (reg >= cpu->register_count) {
         return CPU_ERR_INVALID_REGISTER;
     }
@@ -101,7 +101,7 @@ CpuError cpu_register_get(CPU *cpu, uint8_t reg, word_sz *word) {
     return CPU_ERR_OK;
 }
 
-CpuError cpu_register_set(CPU *cpu, uint8_t reg, word_sz value) {
+CpuError cpu_register_set(CPU *cpu, uint8_t reg, word_t value) {
     if (reg >= cpu->register_count) {
         return CPU_ERR_INVALID_REGISTER;
     }
@@ -109,7 +109,7 @@ CpuError cpu_register_set(CPU *cpu, uint8_t reg, word_sz value) {
     return CPU_ERR_OK;
 }
 
-void cpu_set_pc(CPU *cpu, addr_sz address) {
+void cpu_set_pc(CPU *cpu, addr_t address) {
     cpu->pc = address;
 }
 

@@ -19,27 +19,27 @@
 #include "memory.h"
 
 typedef struct Memory {
-    word_sz *raw;
-    addr_sz size;
+    word_t *raw;
+    addr_t size;
     MemMode mode;
 } Memory;
 
-inline addr_sz round_up(addr_sz bytes);
+inline addr_t round_up(addr_t bytes);
 
-Memory *memory_create(addr_sz bytes, MemMode mode) {
+Memory *memory_create(addr_t bytes, MemMode mode) {
     Memory *memory = malloc(sizeof(Memory));
     memory->size = round_up(bytes);
     memory->raw = malloc(memory->size);
     memory->mode = mode;
 
-    for (uint32_t i = 0; i < bytes / sizeof(addr_sz); i++) {
+    for (uint32_t i = 0; i < bytes / sizeof(addr_t); i++) {
         memory->raw[i] = 0;
     }
 
     return memory;
 }
 
-addr_sz round_up(addr_sz bytes) {
+addr_t round_up(addr_t bytes) {
     return ((bytes + WORD_SIZE - 1) / WORD_SIZE) * WORD_SIZE;
 }
 
@@ -48,11 +48,11 @@ void memory_destroy(Memory *memory) {
     free(memory);
 }
 
-addr_sz memory_size_get(Memory *memory) {
+addr_t memory_size_get(Memory *memory) {
     return memory->size;
 }
 
-addr_sz memory_max_address_get(Memory *memory) {
+addr_t memory_max_address_get(Memory *memory) {
     return memory->size - 1;
 }
 
@@ -64,25 +64,25 @@ void memory_mode_set(Memory *memory, MemMode mode) {
     memory->mode = mode;
 }
 
-MemError memory_word_get(Memory *memory, addr_sz address, word_sz *word) {
-    if (address % sizeof(word_sz) != 0) {
+MemError memory_word_get(Memory *memory, addr_t address, word_t *word) {
+    if (address % sizeof(word_t) != 0) {
         return MEM_ERR_NOT_ALIGNED;
     }
-    if (address + sizeof(word_sz) > memory->size) {
+    if (address + sizeof(word_t) > memory->size) {
         return MEM_ERR_OUT_OF_BOUND;
     }
     *word = memory->raw[address];
     return MEM_ERR_OK;
 }
 
-MemError memory_word_set(Memory *memory, addr_sz address, word_sz word) {
+MemError memory_word_set(Memory *memory, addr_t address, word_t word) {
     if (memory->mode != MEM_MODE_RW) {
         return MEM_ERR_NOT_WRITABLE;
     }
-    if (address % sizeof(word_sz) != 0) {
+    if (address % sizeof(word_t) != 0) {
         return MEM_ERR_NOT_ALIGNED;
     }
-    if (address + sizeof(word_sz) > memory->size) {
+    if (address + sizeof(word_t) > memory->size) {
         return MEM_ERR_OUT_OF_BOUND;
     }
     memory->raw[address] = word;

@@ -23,24 +23,24 @@
 #define ADDR_SIZE 4 //bytes
 
 #if WORD_SIZE == 4
-typedef uint32_t word_sz;
+typedef uint32_t word_t;
 #define WHEX  "%08x"
 #define WXHEX "0x%08x"
 #endif
 
 #if ADDR_SIZE == 4
-typedef uint32_t addr_sz;
+typedef uint32_t addr_t;
 #define AHEX  "%08x"
 #define AXHEX "0x%08x"
 #endif
 
-#define DEFAULT_RAM_SIZE ((addr_sz)(STACK_SIZE + 1024))
+#define DEFAULT_RAM_SIZE ((addr_t)(STACK_SIZE + 1024))
 #define DEFAULT_REGISTERS_COUNT 32
 
-#define STACK_LENGTH ((addr_sz)1024)
-#define STACK_SIZE ((addr_sz)(STACK_LENGTH * WORD_SIZE))
+#define STACK_LENGTH ((addr_t)1024)
+#define STACK_SIZE ((addr_t)(STACK_LENGTH * WORD_SIZE))
 
-#define ROM_SIZE ((addr_sz)(32 * 1024 * 1024))
-#define ROM_ADDRESS ((addr_sz)((addr_sz) - ROM_SIZE))
+#define ROM_SIZE ((addr_t)(32 * 1024 * 1024))
+#define ROM_ADDRESS ((addr_t)((addr_t) - ROM_SIZE))
 
 #endif //C_VM_VMARCH_H

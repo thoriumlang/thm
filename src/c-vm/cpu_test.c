@@ -24,7 +24,7 @@ static void create_initializes_cpu(void **state) {
     CPU *cpu = cpu_create(NULL, 2);
 
     for (uint8_t i = 0; i < 2; i++) {
-        word_sz word = 1;
+        word_t word = 1;
         assert_int_equal(CPU_ERR_OK, cpu_register_get(cpu, 0, &word));
         assert_int_equal(0, word);
     }
@@ -33,7 +33,7 @@ static void create_initializes_cpu(void **state) {
 static void register_get_invalid(void **state) {
     CPU *cpu = cpu_create(NULL, 0);
 
-    word_sz word = 1;
+    word_t word = 1;
     assert_int_equal(CPU_ERR_INVALID_REGISTER, cpu_register_get(cpu, 0, &word));
     assert_int_equal(1, word);
 }
@@ -49,7 +49,7 @@ static void register_set(void **state) {
 
     assert_int_equal(CPU_ERR_OK, cpu_register_set(cpu, 1, 1));
     for (uint8_t i = 0; i < 2; i++) {
-        word_sz word = 2;
+        word_t word = 2;
         assert_int_equal(CPU_ERR_OK, cpu_register_get(cpu, i, &word));
         assert_int_equal(i, word);
     }

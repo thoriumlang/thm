@@ -32,20 +32,20 @@ typedef enum {
     MEM_ERR_NOT_WRITABLE
 } MemError;
 
-Memory *memory_create(addr_sz bytes, MemMode mode);
+Memory *memory_create(addr_t bytes, MemMode mode);
 
 void memory_destroy(Memory *memory);
 
-addr_sz memory_size_get(Memory *memory);
+addr_t memory_size_get(Memory *memory);
 
-addr_sz memory_max_address_get(Memory *memory);
+addr_t memory_max_address_get(Memory *memory);
 
 MemMode memory_mode_get(Memory *memory);
 
 void memory_mode_set(Memory *memory, MemMode mode);
 
-MemError memory_word_get(Memory *memory, addr_sz address, word_sz *word);
+MemError memory_word_get(Memory *memory, addr_t address, word_t *word);
 
-MemError memory_word_set(Memory *memory, addr_sz address, word_sz word);
+MemError memory_word_set(Memory *memory, addr_t address, word_t word);
 
 #endif //C_VM_MEMORY_H

@@ -23,7 +23,7 @@
 
 typedef struct {
     Memory *memory;
-    addr_sz from;
+    addr_t from;
     char *name;
 } Zone;
 
@@ -34,13 +34,13 @@ typedef struct Bus {
 
 inline char *memory_mode_to_char(MemMode mode);
 
-inline bool in_zone(Zone *zone, addr_sz address);
+inline bool in_zone(Zone *zone, addr_t address);
 
-inline addr_sz memory_max_address(Memory *memory, addr_sz base);
+inline addr_t memory_max_address(Memory *memory, addr_t base);
 
-addr_sz translate(Zone *zone, addr_sz address);
+addr_t translate(Zone *zone, addr_t address);
 
-Zone *find_zone(Bus *bus, addr_sz address);
+Zone *find_zone(Bus *bus, addr_t address);
 
 Bus *bus_create() {
     Bus *bus = malloc(sizeof(Bus));
@@ -53,7 +53,7 @@ void bus_destroy(Bus *bus) {
     free(bus);
 }
 
-BusError bus_memory_attach(Bus *bus, Memory *memory, addr_sz from, char *name) {
+BusError bus_memory_attach(Bus *bus, Memory *memory, addr_t from, char *name) {
     for (uint8_t i = 0; i < bus->zones_count; i++) {
         if (in_zone(&bus->zones[i], from)) {
             return BUS_ERR_ZONE_OUT_OF_ORDER;
@@ -69,15 +69,15 @@ BusError bus_memory_attach(Bus *bus, Memory *memory, addr_sz from, char *name) {
     return BUS_ERR_OK;
 }
 
-bool in_zone(Zone *zone, addr_sz address) {
+bool in_zone(Zone *zone, addr_t address) {
     return zone->from <= address && memory_max_address(zone->memory, zone->from) >= address;
 }
 
-addr_sz memory_max_address(Memory *memory, addr_sz base) {
+addr_t memory_max_address(Memory *memory, addr_t base) {
     return memory_size_get(memory) + base - 1;
 }
 
-BusError bus_word_read(Bus *bus, addr_sz address, word_sz *word) {
+BusError bus_word_read(Bus *bus, addr_t address, word_t *word) {
     Zone *zone = find_zone(bus, address);
     if (zone != NULL) {
         switch (memory_word_get(zone->memory, translate(zone, address), word)) {
@@ -94,7 +94,7 @@ BusError bus_word_read(Bus *bus, addr_sz address, word_sz *word) {
     return BUS_ERR_INVALID_ADDRESS;
 }
 
-Zone *find_zone(Bus *bus, addr_sz address) {
+Zone *find_zone(Bus *bus, addr_t address) {
     for (uint8_t i = 0; i < bus->zones_count; i++) {
         Zone *zone = &bus->zones[i];
         if (in_zone(zone, address)) {
@@ -104,7 +104,7 @@ Zone *find_zone(Bus *bus, addr_sz address) {
     return NULL;
 }
 
-BusError bus_word_write(Bus *bus, addr_sz address, word_sz word) {
+BusError bus_word_write(Bus *bus, addr_t address, word_t word) {
     Zone *zone = find_zone(bus, address);
     if (zone != NULL) {
         switch (memory_word_set(zone->memory, translate(zone, address), word)) {
@@ -121,7 +121,7 @@ BusError bus_word_write(Bus *bus, addr_sz address, word_sz word) {
     return BUS_ERR_INVALID_ADDRESS;
 }
 
-addr_sz translate(Zone *zone, addr_sz address) {
+addr_t translate(Zone *zone, addr_t address) {
     return address - zone->from;
 }
 
@@ -152,11 +152,11 @@ char *memory_mode_to_char(MemMode mode) {
     }
 }
 
-void bus_dump(FILE *file, Bus *bus, addr_sz from, addr_sz count) {
+void bus_dump(FILE *file, Bus *bus, addr_t from, addr_t count) {
     fprintf(file, "\nDump of "AXHEX" - "AXHEX"\n", from, from + count - 1);
     int col = 0;
-    for (addr_sz address = from; address < from + count - 1; address += WORD_SIZE) {
-        word_sz word;
+    for (addr_t address = from; address < from + count - 1; address += WORD_SIZE) {
+        word_t word;
         if (bus_word_read(bus, address, &word) == BUS_ERR_OK) {
             switch (col % 4) {
                 // todo make it dynamic regarding to the WORD_SIZE

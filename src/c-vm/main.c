@@ -23,7 +23,7 @@
 #include "memory.h"
 
 void print_arch() {
-    printf("addr_size:   %lu\n", sizeof(addr_sz));
+    printf("addr_size:   %i\n", ADDR_SIZE);
     printf("word_size:   %i\n", WORD_SIZE);
     printf("stack_dept:  %i\n", STACK_LENGTH);
     printf("stack_size:  %i\n", STACK_SIZE);
@@ -34,7 +34,7 @@ void print_arch() {
     printf("rom_end:     "AXHEX"\n", ROM_ADDRESS + ROM_SIZE - 1);
 }
 
-int load_file(Bus *bus, char *file, addr_sz from) {
+int load_file(Bus *bus, char *file, addr_t from) {
     FILE *fptr;
 
     if ((fptr = fopen(file, "rb")) == NULL) {
@@ -42,11 +42,11 @@ int load_file(Bus *bus, char *file, addr_sz from) {
         return 0;
     }
 
-    addr_sz total_words_read = 0;
-    addr_sz words_read;
-    word_sz word;
+    addr_t total_words_read = 0;
+    addr_t words_read;
+    word_t word;
     while ((words_read = fread(&word, WORD_SIZE, 1, fptr)) > 0) {
-        addr_sz address = from + total_words_read * WORD_SIZE;
+        addr_t address = from + total_words_read * WORD_SIZE;
         switch (bus_word_write(bus, address, word)) {
             case BUS_ERR_OK:
                 break;

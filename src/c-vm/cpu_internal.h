@@ -21,16 +21,16 @@ typedef struct CPU {
     Bus *bus;
     uint64_t step;
     uint8_t register_count;
-    word_sz *registers;
-    addr_sz pc;
-    addr_sz sp;
-    addr_sz cs;
+    word_t *registers;
+    addr_t pc;
+    addr_t sp;
+    addr_t cs;
     CpuError panic;
     uint8_t running: 1;
     uint8_t debug: 1;
     uint8_t print_op: 1;
 } CPU;
 
-word_sz fetch(CPU *cpu);
+word_t fetch(CPU *cpu);
 
 #endif //C_VM_CPU_INTERNAL_H

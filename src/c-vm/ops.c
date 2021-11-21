@@ -18,25 +18,25 @@
 #import "cpu.h"
 #import "cpu_internal.h"
 
-word_sz from_big_endian(word_sz *word) {
+word_t from_big_endian(word_t *word) {
     uint8_t *bytes = (uint8_t *) word;
     return bytes[3] | bytes[2] << 8 | bytes[1] << 16 | bytes[0] << 24;
 }
 
-void op_nop(CPU *cpu, const word_sz *word) {
+void op_nop(CPU *cpu, const word_t *word) {
     if (cpu->print_op) {
         printf("  %llu\t"AXHEX"\tNOP\n", cpu->step, cpu->pc - ADDR_SIZE);
     }
 }
 
-void op_halt(CPU *cpu, const word_sz *word) {
+void op_halt(CPU *cpu, const word_t *word) {
     if (cpu->print_op) {
         printf("  %llu\t"AXHEX"\tHALT\n", cpu->step, cpu->pc - ADDR_SIZE);
     }
     cpu->running = 0;
 }
 
-void op_panic(CPU *cpu, const word_sz *word) {
+void op_panic(CPU *cpu, const word_t *word) {
     if (cpu->print_op) {
         printf("  %llu\t"AXHEX"\tPANIC\n", cpu->step, cpu->pc - ADDR_SIZE);
     }
@@ -46,7 +46,7 @@ void op_panic(CPU *cpu, const word_sz *word) {
 }
 
 // todo implement
-void op_push(CPU *cpu, const word_sz *word) {
+void op_push(CPU *cpu, const word_t *word) {
     uint8_t r = ((uint8_t *) word)[1];
     if (cpu->print_op) {
         printf("  %llu\t"AXHEX"\tPUSH r%i\n", cpu->step, cpu->pc - ADDR_SIZE, r);
@@ -54,7 +54,7 @@ void op_push(CPU *cpu, const word_sz *word) {
 }
 
 // todo implement
-void op_pop(CPU *cpu, const word_sz *word) {
+void op_pop(CPU *cpu, const word_t *word) {
     uint8_t r = ((uint8_t *) word)[1];
     if (cpu->print_op) {
         printf("  %llu\t"AXHEX"\tPOP  r%i\n", cpu->step, cpu->pc - ADDR_SIZE, r);
@@ -62,10 +62,10 @@ void op_pop(CPU *cpu, const word_sz *word) {
 }
 
 // todo implement support for special registers
-void op_mov_rw(CPU *cpu, const word_sz *word) {
+void op_mov_rw(CPU *cpu, const word_t *word) {
     uint8_t to = ((uint8_t *) word)[1];
 
-    word_sz val = fetch(cpu);
+    word_t val = fetch(cpu);
     val = from_big_endian(&val);
 
     if (cpu->print_op) {
@@ -75,7 +75,7 @@ void op_mov_rw(CPU *cpu, const word_sz *word) {
 }
 
 // todo implement support for special registers
-void op_mov_rr(CPU *cpu, const word_sz *word) {
+void op_mov_rr(CPU *cpu, const word_t *word) {
     uint8_t to = ((uint8_t *) word)[1];
     uint8_t from = ((uint8_t *) word)[2];
 
@@ -86,7 +86,7 @@ void op_mov_rr(CPU *cpu, const word_sz *word) {
 }
 
 // todo implement
-void op_cmp(CPU *cpu, const word_sz *word) {
+void op_cmp(CPU *cpu, const word_t *word) {
     uint8_t to = ((uint8_t *) word)[1];
     uint8_t from = ((uint8_t *) word)[2];
     if (cpu->print_op) {
@@ -96,8 +96,8 @@ void op_cmp(CPU *cpu, const word_sz *word) {
 
 
 // todo implement
-void op_jreq(CPU *cpu, const word_sz *word) {
-    word_sz address = fetch(cpu);
+void op_jreq(CPU *cpu, const word_t *word) {
+    word_t address = fetch(cpu);
     address = from_big_endian(&address);
 
     if (cpu->print_op) {
@@ -106,8 +106,8 @@ void op_jreq(CPU *cpu, const word_sz *word) {
 }
 
 // todo implement
-void op_jrne(CPU *cpu, const word_sz *word) {
-    word_sz address = fetch(cpu);
+void op_jrne(CPU *cpu, const word_t *word) {
+    word_t address = fetch(cpu);
     address = from_big_endian(&address);
 
     if (cpu->print_op) {
@@ -116,8 +116,8 @@ void op_jrne(CPU *cpu, const word_sz *word) {
 }
 
 // todo implement
-void op_jr(CPU *cpu, const word_sz *word) {
-    word_sz address = fetch(cpu);
+void op_jr(CPU *cpu, const word_t *word) {
+    word_t address = fetch(cpu);
     address = from_big_endian(&address);
 
     if (cpu->print_op) {
@@ -126,7 +126,7 @@ void op_jr(CPU *cpu, const word_sz *word) {
 }
 
 // todo implement
-void op_stor(CPU *cpu, const word_sz *word) {
+void op_stor(CPU *cpu, const word_t *word) {
     uint8_t to = ((uint8_t *) word)[1];
     uint8_t from = ((uint8_t *) word)[2];
 
@@ -136,7 +136,7 @@ void op_stor(CPU *cpu, const word_sz *word) {
 }
 
 // todo implement
-void op_load(CPU *cpu, const word_sz *word) {
+void op_load(CPU *cpu, const word_t *word) {
     uint8_t to = ((uint8_t *) word)[1];
     uint8_t from = ((uint8_t *) word)[2];
 
@@ -145,7 +145,7 @@ void op_load(CPU *cpu, const word_sz *word) {
     }
 }
 
-void op_add(CPU *cpu, const word_sz *word) {
+void op_add(CPU *cpu, const word_t *word) {
     uint8_t to = ((uint8_t *) word)[1];
     uint8_t from = ((uint8_t *) word)[2];
 
@@ -154,7 +154,7 @@ void op_add(CPU *cpu, const word_sz *word) {
     }
 }
 
-void op_dec(CPU *cpu, const word_sz *word) {
+void op_dec(CPU *cpu, const word_t *word) {
     uint8_t r = ((uint8_t *) word)[1];
 
     if (cpu->print_op) {
