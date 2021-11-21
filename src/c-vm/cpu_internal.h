@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Christophe Pollet
+ * Copyright 2019 Christophe Pollet
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,7 @@
  * limitations under the License.
  */
 
-#include "vmarch.h"
+#ifndef C_VM_CPU_INTERNAL_H
+#define C_VM_CPU_INTERNAL_H
 
-#if WORD_SIZE == 4
-word_sz big_endian_to_cpu(const uint8_t *be_word) {
-    return ((word_sz) be_word[3]) | (((word_sz) be_word[2]) << 8) | (((word_sz) be_word[1]) << 16) | (((word_sz) be_word[0]) << 24);
-}
-#else
-#include <stdio.h>
-#include <stdlib.h>
-
-word_sz be_to_cpu(const uint8_t *be_word) {
-    fprintf(stderr, "be_to_cpu not implemented for WORD_SIZE=%lu.\n", WORD_SIZE);
-    abort();
-}
-#endif
+#endif //C_VM_CPU_INTERNAL_H

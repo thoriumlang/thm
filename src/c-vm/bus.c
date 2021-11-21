@@ -157,38 +157,40 @@ void bus_dump(FILE *file, Bus *bus, addr_sz from, addr_sz count) {
     int col = 0;
     for (addr_sz address = from; address < from + count - 1; address += WORD_SIZE) {
         word_sz word;
-        bus_word_read(bus, address, &word);
-        switch (col % 4) {
-            case 0:
-                fprintf(file, "  "AHEX"  %02x %02x %02x %02x", address,
-                        (word >> 24) & 0x000000ff,
-                        (word >> 16) & 0x000000ff,
-                        (word >> 8) & 0x000000ff,
-                        word & 0x000000ff);
-                break;
-            case 1:
-                fprintf(file, " %02x %02x %02x %02x",
-                        (word >> 24) & 0x000000ff,
-                        (word >> 16) & 0x000000ff,
-                        (word >> 8) & 0x000000ff,
-                        word & 0x000000ff);
-                break;
-            case 2:
-                fprintf(file, "  %02x %02x %02x %02x",
-                        (word >> 24) & 0x000000ff,
-                        (word >> 16) & 0x000000ff,
-                        (word >> 8) & 0x000000ff,
-                        word & 0x000000ff);
-                break;
-            case 3:
-                fprintf(file, " %02x %02x %02x %02x\n",
-                        (word >> 24) & 0x000000ff,
-                        (word >> 16) & 0x000000ff,
-                        (word >> 8) & 0x000000ff,
-                        word & 0x000000ff);
-                break;
+        if (bus_word_read(bus, address, &word) == BUS_ERR_OK) {
+            switch (col % 4) {
+                // todo make it dynamic regarding to the WORD_SIZE
+                case 0:
+                    fprintf(file, "  "AHEX"  %02x %02x %02x %02x", address,
+                            word & 0x000000ff,
+                            (word >> 8) & 0x000000ff,
+                            (word >> 16) & 0x000000ff,
+                            (word >> 24) & 0x000000ff);
+                    break;
+                case 1:
+                    fprintf(file, " %02x %02x %02x %02x",
+                            word & 0x000000ff,
+                            (word >> 8) & 0x000000ff,
+                            (word >> 16) & 0x000000ff,
+                            (word >> 24) & 0x000000ff);
+                    break;
+                case 2:
+                    fprintf(file, "  %02x %02x %02x %02x",
+                            word & 0x000000ff,
+                            (word >> 8) & 0x000000ff,
+                            (word >> 16) & 0x000000ff,
+                            (word >> 24) & 0x000000ff);
+                    break;
+                case 3:
+                    fprintf(file, " %02x %02x %02x %02x\n",
+                            word & 0x000000ff,
+                            (word >> 8) & 0x000000ff,
+                            (word >> 16) & 0x000000ff,
+                            (word >> 24) & 0x000000ff);
+                    break;
+            }
+            col++;
         }
-        col++;
     }
     if (col % 4 != 0) {
         printf("\n");
