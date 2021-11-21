@@ -14,34 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef C_VM_VMARCH_H
-#define C_VM_VMARCH_H
-
-#include <stdint.h>
-
-#define WORD_SIZE 4 // bytes
-#define ADDR_SIZE 4 //bytes
+#include "vmarch.h"
 
 #if WORD_SIZE == 4
-typedef uint32_t word_sz;
-#define WHEX  "%08x"
-#define WXHEX "0x%08x"
+word_sz big_endian_to_cpu(const uint8_t *be_word) {
+    return ((word_sz) be_word[3]) | (((word_sz) be_word[2]) << 8) | (((word_sz) be_word[1]) << 16) | (((word_sz) be_word[0]) << 24);
+}
+#else
+#include <stdio.h>
+#include <stdlib.h>
+
+word_sz be_to_cpu(const uint8_t *be_word) {
+    fprintf(stderr, "be_to_cpu not implemented for WORD_SIZE=%lu.\n", WORD_SIZE);
+    abort();
+}
 #endif
-
-#if ADDR_SIZE == 4
-typedef uint32_t addr_sz;
-#define AHEX  "%08x"
-#define AXHEX "0x%08x"
-#endif
-
-word_sz big_endian_to_cpu(const uint8_t *be_word);
-
-#define DEFAULT_RAM_SIZE ((addr_sz)(STACK_SIZE + 1024))
-
-#define STACK_LENGTH ((addr_sz)1024)
-#define STACK_SIZE ((addr_sz)(STACK_LENGTH * WORD_SIZE))
-
-#define ROM_SIZE ((addr_sz)(32 * 1024 * 1024))
-#define ROM_ADDRESS ((addr_sz)((addr_sz) - ROM_SIZE))
-
-#endif //C_VM_VMARCH_H

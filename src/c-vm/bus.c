@@ -129,7 +129,7 @@ void bus_print_state(FILE *file, Bus *bus) {
     fprintf(file, "\nBus state\n");
     for (int z = 0; z < bus->zones_count; z++) {
         Memory *memory = bus->zones[z].memory;
-        fprintf(file, "  %s zone %02u (%s): 0x%08x - 0x%08x (%u bytes)\n",
+        fprintf(file, "  %s zone %02u (%s): "AXHEX" - "AXHEX" (%u bytes)\n",
                 memory_mode_to_char(memory_mode_get(memory)),
                 z,
                 bus->zones[z].name,
@@ -153,14 +153,14 @@ char *memory_mode_to_char(MemMode mode) {
 }
 
 void bus_dump(FILE *file, Bus *bus, addr_sz from, addr_sz count) {
-    fprintf(file, "\nDump of 0x%08x - 0x%08x\n", from, from + count - 1);
+    fprintf(file, "\nDump of "AXHEX" - "AXHEX"\n", from, from + count - 1);
     int col = 0;
     for (addr_sz address = from; address < from + count - 1; address += WORD_SIZE) {
         word_sz word;
         bus_word_read(bus, address, &word);
         switch (col % 4) {
             case 0:
-                fprintf(file, "  %08x  %02x %02x %02x %02x", address,
+                fprintf(file, "  "AHEX"  %02x %02x %02x %02x", address,
                         (word >> 24) & 0x000000ff,
                         (word >> 16) & 0x000000ff,
                         (word >> 8) & 0x000000ff,

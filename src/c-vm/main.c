@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdlib.h>
 #include "opts.h"
 #include "vmarch.h"
 #include "bus.h"
@@ -22,14 +23,47 @@
 
 void print_arch() {
     printf("addr_size:   %lu\n", sizeof(addr_sz));
-    printf("word_size:   %lu\n", WORD_SIZE);
+    printf("word_size:   %i\n", WORD_SIZE);
     printf("stack_dept:  %i\n", STACK_LENGTH);
     printf("stack_size:  %i\n", STACK_SIZE);
-    printf("stack_start: 0x%08x\n", 0);
-    printf("stack_end:   0x%08x\n", STACK_SIZE - 1);
+    printf("stack_start: "AXHEX"\n", 0);
+    printf("stack_end:   "AXHEX"\n", STACK_SIZE - 1);
     printf("rom_size:    %i\n", ROM_SIZE);
-    printf("rom_start:   0x%08x\n", ROM_ADDRESS);
-    printf("rom_end:     0x%08x\n", ROM_ADDRESS + ROM_SIZE - 1);
+    printf("rom_start:   "AXHEX"\n", ROM_ADDRESS);
+    printf("rom_end:     "AXHEX"\n", ROM_ADDRESS + ROM_SIZE - 1);
+}
+
+int load_file(Bus *bus, char *file, addr_sz from) {
+    FILE *fptr;
+
+    if ((fptr = fopen(file, "rb")) == NULL) {
+        fprintf(stderr, "Cannot open %s\n", file);
+        return 0;
+    }
+
+    addr_sz total_words_read = 0;
+    addr_sz words_read;
+    word_sz word;
+    while ((words_read = fread(&word, WORD_SIZE, 1, fptr)) > 0) {
+        addr_sz address = from + total_words_read * WORD_SIZE;
+        switch (bus_word_write(bus, address, big_endian_to_cpu((uint8_t *) &word))) {
+            case BUS_ERR_OK:
+                break;
+            case BUS_ERR_INVALID_ADDRESS:
+                fprintf(stderr, "Invalid address: "AXHEX"\n", address);
+                return 0;
+            case BUS_ERR_ILLEGAL_ACCESS:
+                fprintf(stderr, "Cannot write to "AXHEX"\nn", address);
+                return 0;
+            default:
+                abort();
+        }
+        total_words_read += words_read;
+    }
+    fclose(fptr);
+    printf("Loaded %i bytes from %s to "AXHEX"\n", total_words_read * WORD_SIZE, file, from);
+
+    return 1;
 }
 
 int main(int argc, char **argv) {
@@ -43,14 +77,16 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    printf("ROM:   %s\nImage: %s\n", options->rom, options->image);
-
     Bus *bus = bus_create();
     Memory *ram = memory_create(options->ram_size, MEM_MODE_RW);
     Memory *rom = memory_create(ROM_SIZE, MEM_MODE_R);
 
     bus_memory_attach(bus, ram, 0, "RAM");
     bus_memory_attach(bus, rom, ROM_ADDRESS, "ROM");
+
+    if (!load_file(bus, options->image, STACK_SIZE)) {
+        return 1;
+    }
 
     CPU *cpu = cpu_create(bus, 32);
 

@@ -76,9 +76,9 @@ static void set_word_success(void **state) {
     Memory *mem = memory_create(4, MEM_MODE_RW);
     word_sz word = 0;
 
-    assert_int_equal(MEM_ERR_OK, memory_word_set(mem, 0, 1));
+    assert_int_equal(MEM_ERR_OK, memory_word_set(mem, 0, 0x12345678));
     memory_word_get(mem, 0, &word);
-    assert_int_equal(1, word);
+    assert_int_equal(0x12345678, word);
 }
 
 static void set_word_not_writable(void **state) {

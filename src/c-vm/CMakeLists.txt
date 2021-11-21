@@ -3,7 +3,8 @@ project(c_vm C)
 
 set(CMAKE_C_STANDARD 11)
 add_executable(c_vm
-        main.c vmarch.h
+        main.c
+        vmarch.c vmarch.h
         opts.c opts.h
         bus.c bus.h
         cpu.c cpu.h
