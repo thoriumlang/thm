@@ -45,20 +45,32 @@ void op_panic(CPU *cpu, const word_t *word) {
     }
 }
 
-// todo implement
 void op_push(CPU *cpu, const word_t *word) {
     uint8_t r = ((uint8_t *) word)[1];
     if (cpu->print_op) {
         printf("  %llu\t"AXHEX"\tPUSH r%i\n", cpu->step, cpu->pc - ADDR_SIZE, r);
     }
+    word_t value;
+    if ((cpu->panic = cpu_register_get(cpu, r, &value)) == CPU_ERR_OK) {
+        cpu->sp -= WORD_SIZE;
+        if (bus_word_write(cpu->bus, cpu->sp, value) != BUS_ERR_OK) {
+            cpu->panic = CPU_ERR_CANNOT_WRITE_MEMORY;
+        }
+    }
 }
 
-// todo implement
 void op_pop(CPU *cpu, const word_t *word) {
     uint8_t r = ((uint8_t *) word)[1];
     if (cpu->print_op) {
         printf("  %llu\t"AXHEX"\tPOP  r%i\n", cpu->step, cpu->pc - ADDR_SIZE, r);
     }
+    word_t value;
+    if (bus_word_read(cpu->bus, cpu->sp, &value) != BUS_ERR_OK) {
+        cpu->panic = CPU_ERR_CANNOT_READ_MEMORY;
+        return;
+    }
+    cpu->sp += WORD_SIZE;
+    cpu->panic = cpu_register_set(cpu, r, value);
 }
 
 // todo implement support for special registers
@@ -82,40 +94,57 @@ void op_mov_rr(CPU *cpu, const word_t *word) {
     if (cpu->print_op) {
         printf("  %llu\t"AXHEX"\tMOV  r%i, r%i\n", cpu->step, cpu->pc - ADDR_SIZE, to, from);
     }
+
     cpu->registers[to] = cpu->registers[from];
 }
 
-// todo implement
 void op_cmp(CPU *cpu, const word_t *word) {
-    uint8_t to = ((uint8_t *) word)[1];
-    uint8_t from = ((uint8_t *) word)[2];
+    uint8_t a = ((uint8_t *) word)[1];
+    uint8_t b = ((uint8_t *) word)[2];
+
     if (cpu->print_op) {
-        printf("  %llu\t"AXHEX"\tCMP  r%i, r%i\n", cpu->step, cpu->pc - ADDR_SIZE, to, from);
+        printf("  %llu\t"AXHEX"\tCMP  r%i, r%i\n", cpu->step, cpu->pc - ADDR_SIZE, a, b);
     }
+
+    word_t a_val, b_val;
+    if ((cpu->panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
+        return;
+    }
+    if ((cpu->panic = cpu_register_get(cpu, b, &b_val)) != CPU_ERR_OK) {
+        return;
+    }
+    update_flags(cpu, (sword_t) a_val - (sword_t) b_val);
 }
 
 
-// todo implement
 void op_jreq(CPU *cpu, const word_t *word) {
+    // todo optimize this
     word_t address = fetch(cpu);
     address = from_big_endian(&address);
 
     if (cpu->print_op) {
         printf("  %llu\t"AXHEX"\tJEQ  "AXHEX"\n", cpu->step, cpu->pc - 2 * ADDR_SIZE, address);
     }
+
+    if (cpu->zero) {
+        cpu->pc = cpu->cs + address;
+    }
 }
 
-// todo implement
 void op_jrne(CPU *cpu, const word_t *word) {
+    // todo optimize this
     word_t address = fetch(cpu);
     address = from_big_endian(&address);
 
     if (cpu->print_op) {
         printf("  %llu\t"AXHEX"\tJNE  "AXHEX"\n", cpu->step, cpu->pc - 2 * ADDR_SIZE, address);
     }
+
+    if (!cpu->zero) {
+        cpu->pc = cpu->cs + address;
+    }
 }
 
-// todo implement
 void op_jr(CPU *cpu, const word_t *word) {
     word_t address = fetch(cpu);
     address = from_big_endian(&address);
@@ -123,6 +152,8 @@ void op_jr(CPU *cpu, const word_t *word) {
     if (cpu->print_op) {
         printf("  %llu\t"AXHEX"\tJ    "AXHEX"\n", cpu->step, cpu->pc - 2 * ADDR_SIZE, address);
     }
+
+    cpu->pc = cpu->cs + address;
 }
 
 // todo implement
@@ -146,12 +177,21 @@ void op_load(CPU *cpu, const word_t *word) {
 }
 
 void op_add(CPU *cpu, const word_t *word) {
-    uint8_t to = ((uint8_t *) word)[1];
-    uint8_t from = ((uint8_t *) word)[2];
+    uint8_t a = ((uint8_t *) word)[1];
+    uint8_t b = ((uint8_t *) word)[2];
 
     if (cpu->print_op) {
-        printf("  %llu\t"AXHEX"\tADD  r%i, r%i\n", cpu->step, cpu->pc - ADDR_SIZE, to, from);
+        printf("  %llu\t"AXHEX"\tADD  r%i, r%i\n", cpu->step, cpu->pc - ADDR_SIZE, a, b);
     }
+
+    word_t a_val, b_val;
+    if ((cpu->panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
+        return;
+    }
+    if ((cpu->panic = cpu_register_get(cpu, b, &b_val)) != CPU_ERR_OK) {
+        return;
+    }
+    cpu->panic = cpu_register_set(cpu, a, (word_t) ((sword_t) a_val + (sword_t) b_val)); // todo implement overflow/underflow
 }
 
 void op_dec(CPU *cpu, const word_t *word) {
@@ -160,6 +200,12 @@ void op_dec(CPU *cpu, const word_t *word) {
     if (cpu->print_op) {
         printf("  %llu\t"AXHEX"\tDEC  r%i\n", cpu->step, cpu->pc - ADDR_SIZE, r);
     }
+
+    word_t r_val;
+    if ((cpu->panic = cpu_register_get(cpu, r, &r_val)) != CPU_ERR_OK) {
+        return;
+    }
+    cpu->panic = cpu_register_set(cpu, r, (word_t) ((sword_t) r_val - 1)); // todo implement underflow
 }
 
 op_ptr ops[OPS_COUNT] = {

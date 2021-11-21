@@ -24,6 +24,7 @@
 
 #if WORD_SIZE == 4
 typedef uint32_t word_t;
+typedef int32_t sword_t;
 #define WHEX  "%08x"
 #define WXHEX "0x%08x"
 #endif
