@@ -23,6 +23,7 @@ typedef struct {
     char *rom;
     char *image;
     addr_sz ram_size;
+    addr_sz pc;
     int registers;
     int help_flag;
     int print_arch;

@@ -85,6 +85,10 @@ CpuError cpu_register_set(CPU *cpu, uint8_t reg, word_sz value) {
     return CPU_ERR_OK;
 }
 
+void cpu_set_pc(CPU *cpu, addr_sz address) {
+    cpu->pc = address;
+}
+
 void cpu_print_op_enable(CPU *cpu) {
     cpu->print_op = 1;
 }

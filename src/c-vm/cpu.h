@@ -42,6 +42,8 @@ CpuError cpu_register_get(CPU *cpu, uint8_t reg, word_sz *word);
 
 CpuError cpu_register_set(CPU *cpu, uint8_t reg, word_sz value);
 
+void cpu_set_pc(CPU *cpu, addr_sz address);
+
 void cpu_print_op_enable(CPU *cpu);
 
 void cpu_print_op_disable(CPU *cpu);

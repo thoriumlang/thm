@@ -99,6 +99,7 @@ int main(int argc, char **argv) {
     CPU *cpu = cpu_create(bus, options->registers);
     cpu_print_op_enable(cpu);
     cpu_step_enable(cpu);
+    cpu_set_pc(cpu, options->pc);
     for (int i = 0; i < options->registers; i++) {
         cpu_register_set(cpu, i, i);
     }
