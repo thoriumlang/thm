@@ -88,7 +88,7 @@ BusError bus_word_read(Bus *bus, addr_sz address, word_sz *word) {
             case MEM_ERR_NOT_WRITABLE:
                 return BUS_ERR_ILLEGAL_ACCESS;
             case MEM_ERR_OUT_OF_BOUND:
-                assert(false);
+                abort();
         }
     }
     return BUS_ERR_INVALID_ADDRESS;
@@ -115,7 +115,7 @@ BusError bus_word_write(Bus *bus, addr_sz address, word_sz word) {
             case MEM_ERR_NOT_WRITABLE:
                 return BUS_ERR_ILLEGAL_ACCESS;
             case MEM_ERR_OUT_OF_BOUND:
-                assert(false);
+                abort();
         }
     }
     return BUS_ERR_INVALID_ADDRESS;

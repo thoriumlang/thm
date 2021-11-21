@@ -60,6 +60,10 @@ MemMode memory_mode_get(Memory *memory) {
     return memory->mode;
 }
 
+void memory_mode_set(Memory *memory, MemMode mode) {
+    memory->mode = mode;
+}
+
 MemError memory_word_get(Memory *memory, addr_sz address, word_sz *word) {
     if (address % sizeof(word_sz) != 0) {
         return MEM_ERR_NOT_ALIGNED;

@@ -45,8 +45,13 @@ static void get_max_address(void **state) {
 
 static void get_mode(void **state) {
     Memory *mem = memory_create(4, MEM_MODE_R);
-    assert_int_equal(4, memory_size_get(mem));
-    assert_int_equal(MEM_MODE_R, MEM_MODE_R);
+    assert_int_equal(MEM_MODE_R, memory_mode_get(mem));
+}
+
+static void set_mode(void **state) {
+    Memory *mem = memory_create(4, MEM_MODE_R);
+    memory_mode_set(mem, MEM_MODE_RW);
+    assert_int_equal(MEM_MODE_RW, memory_mode_get(mem));
 }
 
 static void get_word_success(void **state) {
@@ -107,6 +112,7 @@ int main() {
                     cmocka_unit_test(get_size),
                     cmocka_unit_test(get_max_address),
                     cmocka_unit_test(get_mode),
+                    cmocka_unit_test(set_mode),
                     cmocka_unit_test(get_word_success),
                     cmocka_unit_test(get_word_not_aligned),
                     cmocka_unit_test(get_word_out_of_bounds),

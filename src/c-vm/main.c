@@ -15,6 +15,7 @@
  */
 
 #include <stdlib.h>
+#include <assert.h>
 #include "opts.h"
 #include "vmarch.h"
 #include "bus.h"
@@ -87,20 +88,29 @@ int main(int argc, char **argv) {
     if (!load_file(bus, options->image, STACK_SIZE)) {
         return 1;
     }
+    if (options->rom != NULL) {
+        memory_mode_set(rom, MEM_MODE_RW);
+        if (!load_file(bus, options->rom, ROM_ADDRESS)) {
+            return 1;
+        }
+        memory_mode_set(rom, MEM_MODE_R);
+    }
 
     CPU *cpu = cpu_create(bus, 32);
-
+    cpu_print_op_enable(cpu);
+    cpu_step_enable(cpu);
     for (int i = 0; i < 32; i++) {
         cpu_register_set(cpu, i, i);
     }
+
+    assert(memory_mode_get(rom) == MEM_MODE_R);
+
     cpu_print_state(stdout, cpu);
     bus_print_state(stdout, bus);
     bus_dump(stdout, bus, 0, 16);
     bus_dump(stdout, bus, STACK_SIZE, 128);
     bus_dump(stdout, bus, ROM_ADDRESS, 128);
 
-    cpu_print_op_enable(cpu);
-    cpu_step_enable(cpu);
     cpu_start(cpu);
 
     opts_free(options);

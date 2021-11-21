@@ -42,6 +42,8 @@ addr_sz memory_max_address_get(Memory *memory);
 
 MemMode memory_mode_get(Memory *memory);
 
+void memory_mode_set(Memory *memory, MemMode mode);
+
 MemError memory_word_get(Memory *memory, addr_sz address, word_sz *word);
 
 MemError memory_word_set(Memory *memory, addr_sz address, word_sz word);

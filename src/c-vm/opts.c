@@ -29,11 +29,12 @@ Options *opts_parse(int argc, char **argv) {
             {"help", no_argument, &opts->help_flag, 1},
             {"arch", no_argument, &opts->print_arch, 1},
             {"ram",  required_argument, NULL,       'r'},
+            {"rom",  required_argument, NULL,       'R'},
             {0, 0,                0,                0},
     };
     int c;
     int option_index = 0;
-    while ((c = getopt_long(argc, argv, "har:", long_options, &option_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "har:R:", long_options, &option_index)) != -1) {
         switch (c) {
             case 0:
                 break;
@@ -46,14 +47,14 @@ Options *opts_parse(int argc, char **argv) {
             case 'r':
                 opts->ram_size = strtol(optarg, NULL, 10);
                 break;
+            case 'R':
+                opts->rom = optarg;
+                break;
             default:
                 abort();
         }
     }
 
-    if (argc > optind) {
-        opts->rom = argv[optind++];
-    }
     if (argc > optind) {
         opts->image = argv[optind++];
     }
@@ -67,8 +68,10 @@ void opts_free(Options *opts) {
 
 void opts_print_help(char *prog_name) {
     printf("USAGE:\n    %s [OPTIONS] <rom> <image>\n\n", prog_name);
-    printf("OPTIONS:\n"
-           "    -h, --help                   Prints help information\n");
+    printf("OPTIONS:\n");
+    printf("    -h, --help                   Prints help information\n");
+    printf("    -a, --arch                   Prints arch and exit\n");
     printf("    -r, --ram <RAM>              Amount of ram; default to %ul Bytes\n", DEFAULT_RAM_SIZE);
+    printf("    -R, --rom <PATH>             Path to rom to load\n");
     printf("\n");
 }
