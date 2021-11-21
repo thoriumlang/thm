@@ -101,11 +101,15 @@ void cpu_step_disable(CPU *cpu) {
     cpu->step = 0;
 }
 
+int min(int a, int b) {
+    return (a < b) ? a : b;
+}
+
 void cpu_print_state(FILE *file, CPU *cpu) {
     fprintf(file, "\nCPU state\n");
     for (int r = 0; r < cpu->register_count; r++) {
         if (r % 4 == 0) {
-            fprintf(file, "  r%02u - r%02u   ", r, r + 3);
+            fprintf(file, "  r%03u - r%03u   ", r, min(r + 3, cpu->register_count - 1));
         }
         fprintf(file, "  "WHEX, cpu->registers[r]);
         if (r % 4 != 3) {
@@ -115,8 +119,11 @@ void cpu_print_state(FILE *file, CPU *cpu) {
             fprintf(file, "\n");
         }
     }
-    fprintf(file, "                pc            sp            cs\n");
-    fprintf(file, "                "WHEX"      "WHEX"      "WHEX"\n", cpu->pc, cpu->sp, cpu->cs);
+    if (cpu->register_count % 4 != 0) {
+        fprintf(file, "\n");
+    }
+    fprintf(file, "                  pc            sp            cs\n");
+    fprintf(file, "                  "WHEX"      "WHEX"      "WHEX"\n", cpu->pc, cpu->sp, cpu->cs);
     fprintf(file, "  running:%s     print_op:%s    step:%s\n",
             cpu->running == (uint32_t) 1 ? "y" : "n",
             cpu->print_op == (uint32_t) 1 ? "y" : "n",

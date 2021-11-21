@@ -96,10 +96,10 @@ int main(int argc, char **argv) {
         memory_mode_set(rom, MEM_MODE_R);
     }
 
-    CPU *cpu = cpu_create(bus, 32);
+    CPU *cpu = cpu_create(bus, options->registers);
     cpu_print_op_enable(cpu);
     cpu_step_enable(cpu);
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < options->registers; i++) {
         cpu_register_set(cpu, i, i);
     }
 

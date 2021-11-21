@@ -37,6 +37,7 @@ typedef uint32_t addr_sz;
 word_sz big_endian_to_cpu(const uint8_t *be_word);
 
 #define DEFAULT_RAM_SIZE ((addr_sz)(STACK_SIZE + 1024))
+#define DEFAULT_REGISTERS_COUNT 32
 
 #define STACK_LENGTH ((addr_sz)1024)
 #define STACK_SIZE ((addr_sz)(STACK_LENGTH * WORD_SIZE))

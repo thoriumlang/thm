@@ -24,17 +24,19 @@ Options *opts_parse(int argc, char **argv) {
     Options *opts = malloc(sizeof(Options));
 
     opts->ram_size = DEFAULT_RAM_SIZE;
+    opts->registers = DEFAULT_REGISTERS_COUNT;
 
     struct option long_options[] = {
             {"help", no_argument, &opts->help_flag, 1},
             {"arch", no_argument, &opts->print_arch, 1},
             {"ram",  required_argument, NULL,       'r'},
-            {"rom",  required_argument, NULL,       'R'},
+            {"registers",  required_argument, NULL,       'R'},
+            {"rom",  required_argument, NULL,       'M'},
             {0, 0,                0,                0},
     };
     int c;
     int option_index = 0;
-    while ((c = getopt_long(argc, argv, "har:R:", long_options, &option_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "har:R:M:", long_options, &option_index)) != -1) {
         switch (c) {
             case 0:
                 break;
@@ -48,6 +50,9 @@ Options *opts_parse(int argc, char **argv) {
                 opts->ram_size = strtol(optarg, NULL, 10);
                 break;
             case 'R':
+                opts->registers = (int) strtol(optarg, NULL, 10);
+                break;
+            case 'M':
                 opts->rom = optarg;
                 break;
             default:
@@ -72,6 +77,7 @@ void opts_print_help(char *prog_name) {
     printf("    -h, --help                   Prints help information\n");
     printf("    -a, --arch                   Prints arch and exit\n");
     printf("    -r, --ram <RAM>              Amount of ram; default to %ul Bytes\n", DEFAULT_RAM_SIZE);
-    printf("    -R, --rom <PATH>             Path to rom to load\n");
+    printf("    -r, --registers <VAL>        Amount of registers; default to %i, max. 255\n", DEFAULT_REGISTERS_COUNT);
+    printf("    -M, --rom <PATH>             Path to rom to load\n");
     printf("\n");
 }
