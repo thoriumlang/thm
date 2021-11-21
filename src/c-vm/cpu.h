@@ -22,7 +22,10 @@
 #include "bus.h"
 
 typedef enum {
-    CPU_ERR_OK = 1,
+    CPU_ERR_OK = 0,
+    CPU_ERR_PANIC,
+    CPU_ERR_CANNOT_FETCH,
+    CPU_ERR_UNKNOWN_OPCODE,
     CPU_ERR_INVALID_REGISTER
 } CpuError;
 
@@ -48,9 +51,9 @@ void cpu_print_op_enable(CPU *cpu);
 
 void cpu_print_op_disable(CPU *cpu);
 
-void cpu_step_enable(CPU *cpu);
+void cpu_debug_enable(CPU *cpu);
 
-void cpu_step_disable(CPU *cpu);
+void cpu_debug_disable(CPU *cpu);
 
 void cpu_print_state(FILE *file, CPU *cpu);
 

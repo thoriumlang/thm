@@ -47,7 +47,7 @@ int load_file(Bus *bus, char *file, addr_sz from) {
     word_sz word;
     while ((words_read = fread(&word, WORD_SIZE, 1, fptr)) > 0) {
         addr_sz address = from + total_words_read * WORD_SIZE;
-        switch (bus_word_write(bus, address, big_endian_to_cpu((uint8_t *) &word))) {
+        switch (bus_word_write(bus, address, word)) {
             case BUS_ERR_OK:
                 break;
             case BUS_ERR_INVALID_ADDRESS:
@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
 
     CPU *cpu = cpu_create(bus, options->registers);
     cpu_print_op_enable(cpu);
-    cpu_step_enable(cpu);
+    cpu_debug_enable(cpu);
     cpu_set_pc(cpu, options->pc);
     for (int i = 0; i < options->registers; i++) {
         cpu_register_set(cpu, i, i);
@@ -113,6 +113,8 @@ int main(int argc, char **argv) {
     bus_dump(stdout, bus, ROM_ADDRESS, 128);
 
     cpu_start(cpu);
+
+    cpu_print_state(stdout, cpu);
 
     opts_free(options);
     cpu_destroy(cpu);

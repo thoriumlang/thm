@@ -17,4 +17,20 @@
 #ifndef C_VM_CPU_INTERNAL_H
 #define C_VM_CPU_INTERNAL_H
 
+typedef struct CPU {
+    Bus *bus;
+    uint64_t step;
+    uint8_t register_count;
+    word_sz *registers;
+    addr_sz pc;
+    addr_sz sp;
+    addr_sz cs;
+    CpuError panic;
+    uint8_t running: 1;
+    uint8_t debug: 1;
+    uint8_t print_op: 1;
+} CPU;
+
+word_sz fetch(CPU *cpu);
+
 #endif //C_VM_CPU_INTERNAL_H

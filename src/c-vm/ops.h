@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Christophe Pollet
+ * Copyright 2021 Christophe Pollet
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,4 +17,13 @@
 #ifndef C_VM_OPS_H
 #define C_VM_OPS_H
 
+#import "cpu.h"
+
+typedef void (*op_ptr)(CPU *, const word_sz *);
+
+extern op_ptr ops[];
+#define OPS_COUNT 33
+
 #endif //C_VM_OPS_H
+
+
