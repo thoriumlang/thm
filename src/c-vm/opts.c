@@ -82,7 +82,7 @@ void opts_free(Options *opts) {
 }
 
 void opts_print_help(char *prog_name) {
-    printf("USAGE:\n    %s [OPTIONS] <rom> <image>\n\n", prog_name);
+    printf("USAGE:\n    %s [OPTIONS] <image>\n\n", prog_name);
     printf("OPTIONS:\n");
     printf("    -h, --help                   Prints help information\n");
     printf("    -a, --arch                   Prints arch and exit\n");
