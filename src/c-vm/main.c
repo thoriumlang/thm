@@ -21,20 +21,72 @@
 #include "bus.h"
 #include "cpu.h"
 #include "memory.h"
+#include "json.h"
 
 void print_arch() {
-    printf("addr_size:   %i\n", ADDR_SIZE);
-    printf("word_size:   %i\n", WORD_SIZE);
-    printf("stack_dept:  %i\n", STACK_LENGTH);
-    printf("stack_size:  %i\n", STACK_SIZE);
-    printf("stack_start: "AXHEX"\n", 0);
-    printf("stack_end:   "AXHEX"\n", STACK_SIZE - 1);
-    printf("rom_size:    %i\n", ROM_SIZE);
-    printf("rom_start:   "AXHEX"\n", ROM_ADDRESS);
-    printf("rom_end:     "AXHEX"\n", ROM_ADDRESS + ROM_SIZE - 1);
+    printf("Architecture\n");
+    printf("  addr_size:   %i\n", ADDR_SIZE);
+    printf("  word_size:   %i\n", WORD_SIZE);
+    printf("  stack_dept:  %i\n", STACK_LENGTH);
+    printf("  stack_size:  %i\n", STACK_SIZE);
+    printf("  stack_start: "AXHEX"\n", 0);
+    printf("  stack_end:   "AXHEX"\n", STACK_SIZE - 1);
+    printf("  rom_size:    %i\n", ROM_SIZE);
+    printf("  rom_start:   "AXHEX"\n", ROM_ADDRESS);
+    printf("  rom_end:     "AXHEX"\n", ROM_ADDRESS + ROM_SIZE - 1);
+}
+
+void print_json(CPU *cpu, Bus *bus) {
+    char hex[32];
+    JsonElement *arch = json_object();
+    json_object_put(arch, "addr_size", json_number(ADDR_SIZE));
+    json_object_put(arch, "word_size", json_number(WORD_SIZE));
+    json_object_put(arch, "stack_depth", json_number(STACK_LENGTH));
+    json_object_put(arch, "stack_size", json_number(STACK_SIZE));
+    json_object_put(arch, "stack_start", json_number(0));
+    sprintf(hex, AXHEX, 0);
+    json_object_put(arch, "stack_start_hex", json_string(hex));
+    json_object_put(arch, "stack_end", json_number(STACK_SIZE - 1));
+    sprintf(hex, AXHEX, STACK_SIZE - 1);
+    json_object_put(arch, "stack_end_hex", json_string(hex));
+    json_object_put(arch, "code_start", json_number(STACK_SIZE));
+    sprintf(hex, AXHEX, STACK_SIZE);
+    json_object_put(arch, "code_start_hex", json_string(hex));
+    json_object_put(arch, "rom_size", json_number(ROM_SIZE));
+    json_object_put(arch, "rom_start", json_number(ROM_ADDRESS));
+    sprintf(hex, AXHEX, ROM_ADDRESS);
+    json_object_put(arch, "rom_start", json_string(hex));
+    json_object_put(arch, "rom_end", json_number(ROM_ADDRESS + ROM_SIZE - 1));
+    sprintf(hex, AXHEX, ROM_ADDRESS + ROM_SIZE - 1);
+    json_object_put(arch, "rom_end", json_string(hex));
+
+    JsonElement *root = json_object();
+    json_object_put(root, "arch", arch);
+    json_object_put(root, "cpu", cpu_state_to_json(cpu));
+    json_object_put(root, "bus", bus_state_to_json(bus));
+
+    char *json = json_serialize(root);
+    fprintf(stdout, "%s\n", json);
+    free(json);
 }
 
 int load_file(Bus *bus, char *file, addr_t from) {
+    const uint8_t NOP[] = {0x01, 0x00, 0x00, 0x00};
+    if (file == NULL) {
+        switch (bus_word_write(bus, from, *NOP)) {
+            case BUS_ERR_OK:
+                break;
+            case BUS_ERR_INVALID_ADDRESS:
+                fprintf(stderr, "Invalid address: "AXHEX"\n", from);
+                return 0;
+            case BUS_ERR_ILLEGAL_ACCESS:
+                fprintf(stderr, "Cannot write to "AXHEX"\nn", from);
+                return 0;
+            default:
+                abort();
+        }
+        return 1;
+    }
     FILE *fptr;
 
     if ((fptr = fopen(file, "rb")) == NULL) {
@@ -62,7 +114,6 @@ int load_file(Bus *bus, char *file, addr_t from) {
         total_words_read += words_read;
     }
     fclose(fptr);
-    printf("Loaded %i bytes from %s to "AXHEX"\n", total_words_read * WORD_SIZE, file, from);
 
     return 1;
 }
@@ -75,7 +126,6 @@ int main(int argc, char **argv) {
     }
     if (options->print_arch) {
         print_arch();
-        return 0;
     }
 
     Bus *bus = bus_create();
@@ -97,22 +147,30 @@ int main(int argc, char **argv) {
     }
 
     CPU *cpu = cpu_create(bus, options->registers);
-    cpu_print_op_enable(cpu);
-    cpu_debug_enable(cpu);
-    cpu_set_pc(cpu, options->pc);
-    cpu_set_cs(cpu, options->pc); // FIXME
+    cpu_print_op_enable(cpu, options->print_steps);
+    // cpu_debug_enable(cpu, false);
+    cpu_pc_set(cpu, options->pc);
+    cpu_cs_set(cpu, options->pc); // FIXME
 
     assert(memory_mode_get(rom) == MEM_MODE_R);
 
-    cpu_print_state(stdout, cpu);
-    bus_print_state(stdout, bus);
-    bus_dump(stdout, bus, 0, 16);
-    bus_dump(stdout, bus, STACK_SIZE, 128);
-    bus_dump(stdout, bus, ROM_ADDRESS, 128);
+    if (options->print_dump) {
+        cpu_state_print(cpu, stdout);
+        bus_state_print(bus, stdout);
+        bus_dump(bus, 0, 16, stdout);
+        bus_dump(bus, STACK_SIZE, 128, stdout);
+        bus_dump(bus, ROM_ADDRESS, 128, stdout);
+    }
 
     cpu_start(cpu);
 
-    cpu_print_state(stdout, cpu);
+    if (options->print_dump) {
+        cpu_state_print(cpu, stdout);
+    }
+
+    if (options->print_json) {
+        print_json(cpu, bus);
+    }
 
     opts_free(options);
     cpu_destroy(cpu);

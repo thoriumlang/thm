@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include "vmarch.h"
 #include "memory.h"
+#include "json.h"
 
 typedef struct Bus Bus;
 
@@ -40,8 +41,10 @@ BusError bus_word_read(Bus *bus, addr_t address, word_t *word);
 
 BusError bus_word_write(Bus *bus, addr_t address, word_t word);
 
-void bus_print_state(FILE *file, Bus *bus);
+void bus_state_print(Bus *bus, FILE *file);
 
-void bus_dump(FILE *file, Bus *bus, addr_t from, addr_t count);
+JsonElement *bus_state_to_json(Bus *bus);
+
+void bus_dump(Bus *bus, addr_t from, addr_t count, FILE *file);
 
 #endif //C_VM_BUS_H

@@ -18,6 +18,7 @@
 #define C_VM_CPU_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "vmarch.h"
 #include "bus.h"
 
@@ -30,6 +31,12 @@ typedef enum {
     CPU_ERR_UNIMPLEMENTED_OPCODE,
     CPU_ERR_INVALID_REGISTER
 } CpuError;
+
+typedef enum {
+    CPU_FLAG_ZERO,
+    CPU_FLAG_NEGATIVE,
+    CPU_FLAG_PANIC
+} CpuFlag;
 
 typedef struct CPU CPU;
 
@@ -47,18 +54,24 @@ CpuError cpu_register_get(CPU *cpu, uint8_t reg, word_t *word);
 
 CpuError cpu_register_set(CPU *cpu, uint8_t reg, word_t value);
 
-void cpu_set_pc(CPU *cpu, addr_t address);
+void cpu_pc_set(CPU *cpu, addr_t address);
 
-void cpu_set_cs(CPU *cpu, addr_t address);
+addr_t cpu_pc_get(CPU *cpu);
 
-void cpu_print_op_enable(CPU *cpu);
+void cpu_cs_set(CPU *cpu, addr_t address);
 
-void cpu_print_op_disable(CPU *cpu);
+addr_t cpu_cs_get(CPU *cpu);
 
-void cpu_debug_enable(CPU *cpu);
+addr_t cpu_sp_get(CPU *cpu);
 
-void cpu_debug_disable(CPU *cpu);
+int cpu_flag_get(CPU *cpu, CpuFlag flag);
 
-void cpu_print_state(FILE *file, CPU *cpu);
+void cpu_print_op_enable(CPU *cpu, bool enable);
+
+void cpu_debug_enable(CPU *cpu, bool enable);
+
+void cpu_state_print(CPU *cpu, FILE *file);
+
+JsonElement *cpu_state_to_json(CPU *cpu);
 
 #endif // C_VM_CPU_H

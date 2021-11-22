@@ -125,36 +125,55 @@ void update_flags(CPU *cpu, sword_t value) {
     cpu->negative = ((sword_t) value < 0) ? 1 : 0;
 }
 
-void cpu_set_pc(CPU *cpu, addr_t address) {
+void cpu_pc_set(CPU *cpu, addr_t address) {
     cpu->pc = address;
 }
 
-void cpu_set_cs(CPU *cpu, addr_t address) {
+addr_t cpu_pc_get(CPU *cpu) {
+    return cpu->pc;
+}
+
+void cpu_cs_set(CPU *cpu, addr_t address) {
     cpu->cs = address;
 }
 
-void cpu_print_op_enable(CPU *cpu) {
-    cpu->print_op = 1;
+addr_t cpu_cs_get(CPU *cpu) {
+    return cpu->cs;
 }
 
-void cpu_print_op_disable(CPU *cpu) {
-    cpu->print_op = 0;
+addr_t cpu_sp_get(CPU *cpu) {
+    return cpu->sp;
 }
 
-void cpu_debug_enable(CPU *cpu) {
+int cpu_flag_get(CPU *cpu, CpuFlag flag) {
+    switch (flag) {
+        case CPU_FLAG_ZERO:
+            return cpu->zero;
+        case CPU_FLAG_NEGATIVE:
+            return cpu->negative;
+        case CPU_FLAG_PANIC:
+            return cpu->panic;
+        default:
+            abort();
+    }
+}
+
+void cpu_print_op_enable(CPU *cpu, bool enable) {
+    cpu->print_op = enable;
+}
+
+
+void cpu_debug_enable(CPU *cpu, bool enable) {
     cpu->debug = 1;
 }
 
-void cpu_debug_disable(CPU *cpu) {
-    cpu->debug = 0;
-}
 
 int min(int a, int b) {
     return (a < b) ? a : b;
 }
 
-void cpu_print_state(FILE *file, CPU *cpu) {
-    // fprintf(file, "\nCPU state\n");
+void cpu_state_print(CPU *cpu, FILE *file) {
+    fprintf(file, "\nCPU state\n");
     for (int r = 0; r < cpu->register_count; r++) {
         if (r % 4 == 0) {
             fprintf(file, "  r%03u - r%03u   ", r, min(r + 3, cpu->register_count - 1));
@@ -176,7 +195,7 @@ void cpu_print_state(FILE *file, CPU *cpu) {
     fprintf(file, "  running:%s       print_op:%s    debug:%s       panic:%i\n",
             cpu->running == (uint32_t) 1 ? "y" : "n",
             cpu->print_op == (uint32_t) 1 ? "y" : "n",
-            cpu->debug == (uint32_t) 1 ? "y" : "n",
+            cpu->debug ? "y" : "n",
             cpu->panic
     );
 
@@ -202,4 +221,30 @@ void cpu_print_state(FILE *file, CPU *cpu) {
                 abort();
         }
     }
+}
+
+JsonElement *cpu_state_to_json(CPU *cpu) {
+    JsonElement *registers = json_object();
+    json_object_put(registers, "pc", json_number(cpu_pc_get(cpu)));
+    json_object_put(registers, "sp", json_number(cpu_sp_get(cpu)));
+    json_object_put(registers, "cs", json_number(cpu_cs_get(cpu)));
+
+    word_t word;
+    JsonElement *general_registers = json_array();
+    for (int r = 0; r < cpu->register_count; r++) {
+        cpu_register_get(cpu, r, &word);
+        json_array_append(general_registers, json_number((double) word));
+    }
+    json_object_put(registers, "general", general_registers);
+
+    JsonElement *flags = json_object();
+    json_object_put(flags, "zero", json_bool(cpu_flag_get(cpu, CPU_FLAG_ZERO)));
+    json_object_put(flags, "negative", json_bool(cpu_flag_get(cpu, CPU_FLAG_NEGATIVE)));
+    json_object_put(flags, "panic", json_number(cpu_flag_get(cpu, CPU_FLAG_PANIC)));
+
+    JsonElement *root = json_object();
+    json_object_put(root, "registers", registers);
+    json_object_put(root, "flags", flags);
+
+    return root;
 }

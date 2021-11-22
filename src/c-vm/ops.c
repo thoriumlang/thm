@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
+#include "vmarch.h"
 #include "ops.h"
 #include "cpu.h"
 #include "cpu_internal.h"
-
-word_t from_big_endian(word_t *word) {
-    uint8_t *bytes = (uint8_t *) word;
-    return bytes[3] | bytes[2] << 8 | bytes[1] << 16 | bytes[0] << 24;
-}
 
 void op_nop(CPU *cpu, const word_t *word) {
     if (cpu->print_op) {

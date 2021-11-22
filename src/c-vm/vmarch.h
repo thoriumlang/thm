@@ -20,7 +20,7 @@
 #include <stdint.h>
 
 #define WORD_SIZE 4 // bytes
-#define ADDR_SIZE 4 //bytes
+#define ADDR_SIZE 4 // bytes
 
 #if WORD_SIZE == 4
 typedef uint32_t word_t;
@@ -35,13 +35,15 @@ typedef uint32_t addr_t;
 #define AXHEX "0x%08x"
 #endif
 
-#define DEFAULT_RAM_SIZE ((addr_t)(STACK_SIZE + 1024))
-#define DEFAULT_REGISTERS_COUNT 32
-
 #define STACK_LENGTH ((addr_t)1024)
 #define STACK_SIZE ((addr_t)(STACK_LENGTH * WORD_SIZE))
 
+#define DEFAULT_RAM_SIZE ((addr_t)(STACK_SIZE + 1024))
+#define DEFAULT_REGISTERS_COUNT 32
+
 #define ROM_SIZE ((addr_t)(32 * 1024 * 1024))
 #define ROM_ADDRESS ((addr_t)((addr_t) - ROM_SIZE))
+
+word_t from_big_endian(word_t *word);
 
 #endif //C_VM_VMARCH_H

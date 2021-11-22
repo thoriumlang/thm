@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Christophe Pollet
+ * Copyright 2019 Christophe Pollet
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,29 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef C_VM_OPTS_H
-#define C_VM_OPTS_H
-
 #include "vmarch.h"
 
-typedef struct {
-    char *rom;
-    char *image;
-    addr_t ram_size;
-    addr_t pc;
-    int registers;
-    int help_flag;
-    int print_steps;
-    int print_arch;
-    int print_dump;
-    int print_json;
-} Options;
-
-Options *opts_parse(int argc, char **argv);
-
-void opts_free(Options *opts);
-
-void opts_print_help(char *prog_name);
-
-
-#endif //C_VM_OPTS_H
+word_t from_big_endian(word_t *word) {
+    uint8_t *bytes = (uint8_t *) word;
+    return bytes[3] | bytes[2] << 8 | bytes[1] << 16 | bytes[0] << 24;
+}

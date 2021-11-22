@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Christophe Pollet
+ * Copyright 2019 Christophe Pollet
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,29 +14,29 @@
  * limitations under the License.
  */
 
-#ifndef C_VM_OPTS_H
-#define C_VM_OPTS_H
+#ifndef C_VM_JSON_H
+#define C_VM_JSON_H
 
-#include "vmarch.h"
+#include "stdbool.h"
 
-typedef struct {
-    char *rom;
-    char *image;
-    addr_t ram_size;
-    addr_t pc;
-    int registers;
-    int help_flag;
-    int print_steps;
-    int print_arch;
-    int print_dump;
-    int print_json;
-} Options;
+typedef struct JsonElement JsonElement;
 
-Options *opts_parse(int argc, char **argv);
+void json_destroy(JsonElement *json_element);
 
-void opts_free(Options *opts);
+JsonElement *json_object();
 
-void opts_print_help(char *prog_name);
+void json_object_put(JsonElement *object, char *key, JsonElement *element);
 
+JsonElement *json_array();
 
-#endif //C_VM_OPTS_H
+void json_array_append(JsonElement *array, JsonElement *element);
+
+JsonElement *json_string(char *value);
+
+JsonElement *json_number(double value);
+
+JsonElement *json_bool(bool value);
+
+char *json_serialize(JsonElement *element);
+
+#endif //C_VM_JSON_H

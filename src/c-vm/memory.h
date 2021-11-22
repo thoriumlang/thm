@@ -25,6 +25,7 @@ typedef struct Memory Memory;
 typedef enum {
     MEM_MODE_R, MEM_MODE_RW
 } MemMode;
+
 typedef enum {
     MEM_ERR_OK = 1,
     MEM_ERR_OUT_OF_BOUND,

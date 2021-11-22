@@ -29,17 +29,20 @@ Options *opts_parse(int argc, char **argv) {
     opts->pc = STACK_SIZE;
 
     struct option long_options[] = {
-            {"help",      no_argument, &opts->help_flag,  1},
-            {"arch",      no_argument, &opts->print_arch, 1},
-            {"ram",       required_argument, NULL,        'r'},
-            {"registers", required_argument, NULL,        'R'},
-            {"rom",       required_argument, NULL,        'M'},
-            {"pc",        required_argument, NULL,        0},
-            {0, 0,                     0,                 0},
+            {"help",        no_argument, &opts->help_flag,   1},
+            {"print-arch",  no_argument, &opts->print_arch,  1},
+            {"print-dump",  no_argument, &opts->print_dump,  1},
+            {"print-steps", no_argument, &opts->print_steps, 1},
+            {"print-json",  no_argument, &opts->print_json,  1},
+            {"ram",         required_argument, NULL,         'r'},
+            {"registers",   required_argument, NULL,         'R'},
+            {"rom",         required_argument, NULL,         'M'},
+            {"pc",          required_argument, NULL,         0},
+            {0, 0,                       0,                  0},
     };
     int c;
     int option_index = 0;
-    while ((c = getopt_long(argc, argv, "har:R:M:", long_options, &option_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "hr:R:M:", long_options, &option_index)) != -1) {
         switch (c) {
             case 0:
                 // if the option sets a flag, we don't have anything to do
@@ -85,7 +88,10 @@ void opts_print_help(char *prog_name) {
     printf("USAGE:\n    %s [OPTIONS] <image>\n\n", prog_name);
     printf("OPTIONS:\n");
     printf("    -h, --help                   Prints help information\n");
-    printf("    -a, --arch                   Prints arch and exit\n");
+    printf("        --print-arch             Prints arch when starting\n");
+    printf("        --print-dump             Prints when dump before and after execution\n");
+    printf("        --print-steps            Prints steps\n");
+    printf("        --print-json             Prints json after execution\n");
     printf("    -r, --ram <RAM>              Amount of ram; default to %ul Bytes\n", DEFAULT_RAM_SIZE);
     printf("    -r, --registers <VAL>        Amount of registers; default to %i, max. 255\n", DEFAULT_REGISTERS_COUNT);
     printf("    -M, --rom <PATH>             Path to rom to load\n");

@@ -125,7 +125,7 @@ addr_t translate(Zone *zone, addr_t address) {
     return address - zone->from;
 }
 
-void bus_print_state(FILE *file, Bus *bus) {
+void bus_state_print(Bus *bus, FILE *file) {
     fprintf(file, "\nBus state\n");
     for (int z = 0; z < bus->zones_count; z++) {
         Memory *memory = bus->zones[z].memory;
@@ -140,6 +140,26 @@ void bus_print_state(FILE *file, Bus *bus) {
     }
 }
 
+JsonElement *bus_state_to_json(Bus *bus) {
+    JsonElement *root = json_array();
+    for (int z = 0; z < bus->zones_count; z++) {
+        char hex[32];
+        Memory *memory = bus->zones[z].memory;
+        JsonElement *zone = json_object();
+        json_object_put(zone, "name", json_string(bus->zones[z].name));
+        json_object_put(zone, "mode", json_string(memory_mode_to_char(memory_mode_get(memory))));
+        json_object_put(zone, "from", json_number(bus->zones[z].from));
+        sprintf(hex, AXHEX, bus->zones[z].from);
+        json_object_put(zone, "from_hex", json_string(hex));
+        json_object_put(zone, "to", json_number(bus->zones[z].from + memory_size_get(memory) - 1));
+        sprintf(hex, AXHEX, bus->zones[z].from + memory_size_get(memory) - 1);
+        json_object_put(zone, "to_hex", json_string(hex));
+        json_object_put(zone, "size", json_number(memory_size_get(bus->zones[z].memory)));
+        json_array_append(root, zone);
+    }
+    return root;
+}
+
 char *memory_mode_to_char(MemMode mode) {
     switch (mode) {
         case MEM_MODE_R:
@@ -152,7 +172,7 @@ char *memory_mode_to_char(MemMode mode) {
     }
 }
 
-void bus_dump(FILE *file, Bus *bus, addr_t from, addr_t count) {
+void bus_dump(Bus *bus, addr_t from, addr_t count, FILE *file) {
     fprintf(file, "\nDump of "AXHEX" - "AXHEX"\n", from, from + count - 1);
     int col = 0;
     for (addr_t address = from; address < from + count - 1; address += WORD_SIZE) {
