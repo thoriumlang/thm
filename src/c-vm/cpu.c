@@ -26,7 +26,7 @@
 op_ptr decode(CPU *cpu, const word_t *word);
 
 CPU *cpu_create(Bus *bus, uint8_t reg_count) {
-    printf("sizeof(CPU)=%lu", sizeof(CPU));
+    // printf("sizeof(CPU)=%lu", sizeof(CPU));
     CPU *cpu = malloc(sizeof(CPU));
     cpu->bus = bus;
     cpu->register_count = reg_count;
