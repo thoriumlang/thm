@@ -15,8 +15,8 @@
  */
 
 #include "ops.h"
-#import "cpu.h"
-#import "cpu_internal.h"
+#include "cpu.h"
+#include "cpu_internal.h"
 
 word_t from_big_endian(word_t *word) {
     uint8_t *bytes = (uint8_t *) word;
@@ -25,20 +25,20 @@ word_t from_big_endian(word_t *word) {
 
 void op_nop(CPU *cpu, const word_t *word) {
     if (cpu->print_op) {
-        printf("  %llu\t"AXHEX"\tNOP\n", cpu->step, cpu->pc - ADDR_SIZE);
+        printf("  %lu\t"AXHEX"\tNOP\n", cpu->step, cpu->pc - ADDR_SIZE);
     }
 }
 
 void op_halt(CPU *cpu, const word_t *word) {
     if (cpu->print_op) {
-        printf("  %llu\t"AXHEX"\tHALT\n", cpu->step, cpu->pc - ADDR_SIZE);
+        printf("  %lu\t"AXHEX"\tHALT\n", cpu->step, cpu->pc - ADDR_SIZE);
     }
     cpu->running = 0;
 }
 
 void op_panic(CPU *cpu, const word_t *word) {
     if (cpu->print_op) {
-        printf("  %llu\t"AXHEX"\tPANIC\n", cpu->step, cpu->pc - ADDR_SIZE);
+        printf("  %lu\t"AXHEX"\tPANIC\n", cpu->step, cpu->pc - ADDR_SIZE);
     }
     if (!cpu->panic) {
         cpu->panic = CPU_ERR_PANIC;
@@ -48,7 +48,7 @@ void op_panic(CPU *cpu, const word_t *word) {
 void op_push(CPU *cpu, const word_t *word) {
     uint8_t r = ((uint8_t *) word)[1];
     if (cpu->print_op) {
-        printf("  %llu\t"AXHEX"\tPUSH r%i\n", cpu->step, cpu->pc - ADDR_SIZE, r);
+        printf("  %lu\t"AXHEX"\tPUSH r%i\n", cpu->step, cpu->pc - ADDR_SIZE, r);
     }
     word_t value;
     if ((cpu->panic = cpu_register_get(cpu, r, &value)) == CPU_ERR_OK) {
@@ -62,7 +62,7 @@ void op_push(CPU *cpu, const word_t *word) {
 void op_pop(CPU *cpu, const word_t *word) {
     uint8_t r = ((uint8_t *) word)[1];
     if (cpu->print_op) {
-        printf("  %llu\t"AXHEX"\tPOP  r%i\n", cpu->step, cpu->pc - ADDR_SIZE, r);
+        printf("  %lu\t"AXHEX"\tPOP  r%i\n", cpu->step, cpu->pc - ADDR_SIZE, r);
     }
     word_t value;
     if (bus_word_read(cpu->bus, cpu->sp, &value) != BUS_ERR_OK) {
@@ -81,7 +81,7 @@ void op_mov_rw(CPU *cpu, const word_t *word) {
     val = from_big_endian(&val);
 
     if (cpu->print_op) {
-        printf("  %llu\t"AXHEX"\tMOV  r%i, %i\n", cpu->step, cpu->pc - 2 * ADDR_SIZE, to, val);
+        printf("  %lu\t"AXHEX"\tMOV  r%i, %i\n", cpu->step, cpu->pc - 2 * ADDR_SIZE, to, val);
     }
     cpu->registers[to] = val;
 }
@@ -92,7 +92,7 @@ void op_mov_rr(CPU *cpu, const word_t *word) {
     uint8_t from = ((uint8_t *) word)[2];
 
     if (cpu->print_op) {
-        printf("  %llu\t"AXHEX"\tMOV  r%i, r%i\n", cpu->step, cpu->pc - ADDR_SIZE, to, from);
+        printf("  %lu\t"AXHEX"\tMOV  r%i, r%i\n", cpu->step, cpu->pc - ADDR_SIZE, to, from);
     }
 
     cpu->registers[to] = cpu->registers[from];
@@ -103,7 +103,7 @@ void op_cmp(CPU *cpu, const word_t *word) {
     uint8_t b = ((uint8_t *) word)[2];
 
     if (cpu->print_op) {
-        printf("  %llu\t"AXHEX"\tCMP  r%i, r%i\n", cpu->step, cpu->pc - ADDR_SIZE, a, b);
+        printf("  %lu\t"AXHEX"\tCMP  r%i, r%i\n", cpu->step, cpu->pc - ADDR_SIZE, a, b);
     }
 
     word_t a_val, b_val;
@@ -123,7 +123,7 @@ void op_jreq(CPU *cpu, const word_t *word) {
     address = from_big_endian(&address);
 
     if (cpu->print_op) {
-        printf("  %llu\t"AXHEX"\tJEQ  "AXHEX"\n", cpu->step, cpu->pc - 2 * ADDR_SIZE, address);
+        printf("  %lu\t"AXHEX"\tJEQ  "AXHEX"\n", cpu->step, cpu->pc - 2 * ADDR_SIZE, address);
     }
 
     if (cpu->zero) {
@@ -137,7 +137,7 @@ void op_jrne(CPU *cpu, const word_t *word) {
     address = from_big_endian(&address);
 
     if (cpu->print_op) {
-        printf("  %llu\t"AXHEX"\tJNE  "AXHEX"\n", cpu->step, cpu->pc - 2 * ADDR_SIZE, address);
+        printf("  %lu\t"AXHEX"\tJNE  "AXHEX"\n", cpu->step, cpu->pc - 2 * ADDR_SIZE, address);
     }
 
     if (!cpu->zero) {
@@ -150,7 +150,7 @@ void op_jr(CPU *cpu, const word_t *word) {
     address = from_big_endian(&address);
 
     if (cpu->print_op) {
-        printf("  %llu\t"AXHEX"\tJ    "AXHEX"\n", cpu->step, cpu->pc - 2 * ADDR_SIZE, address);
+        printf("  %lu\t"AXHEX"\tJ    "AXHEX"\n", cpu->step, cpu->pc - 2 * ADDR_SIZE, address);
     }
 
     cpu->pc = cpu->cs + address;
@@ -162,7 +162,7 @@ void op_stor(CPU *cpu, const word_t *word) {
     uint8_t from = ((uint8_t *) word)[2];
 
     if (cpu->print_op) {
-        printf("  %llu\t"AXHEX"\tSTOR r%i, r%i\n", cpu->step, cpu->pc - ADDR_SIZE, to, from);
+        printf("  %lu\t"AXHEX"\tSTOR r%i, r%i\n", cpu->step, cpu->pc - ADDR_SIZE, to, from);
     }
 }
 
@@ -172,7 +172,7 @@ void op_load(CPU *cpu, const word_t *word) {
     uint8_t from = ((uint8_t *) word)[2];
 
     if (cpu->print_op) {
-        printf("  %llu\t"AXHEX"\tLOAD r%i, r%i\n", cpu->step, cpu->pc - ADDR_SIZE, to, from);
+        printf("  %lu\t"AXHEX"\tLOAD r%i, r%i\n", cpu->step, cpu->pc - ADDR_SIZE, to, from);
     }
 }
 
@@ -181,7 +181,7 @@ void op_add(CPU *cpu, const word_t *word) {
     uint8_t b = ((uint8_t *) word)[2];
 
     if (cpu->print_op) {
-        printf("  %llu\t"AXHEX"\tADD  r%i, r%i\n", cpu->step, cpu->pc - ADDR_SIZE, a, b);
+        printf("  %lu\t"AXHEX"\tADD  r%i, r%i\n", cpu->step, cpu->pc - ADDR_SIZE, a, b);
     }
 
     word_t a_val, b_val;
@@ -198,7 +198,7 @@ void op_dec(CPU *cpu, const word_t *word) {
     uint8_t r = ((uint8_t *) word)[1];
 
     if (cpu->print_op) {
-        printf("  %llu\t"AXHEX"\tDEC  r%i\n", cpu->step, cpu->pc - ADDR_SIZE, r);
+        printf("  %lu\t"AXHEX"\tDEC  r%i\n", cpu->step, cpu->pc - ADDR_SIZE, r);
     }
 
     word_t r_val;

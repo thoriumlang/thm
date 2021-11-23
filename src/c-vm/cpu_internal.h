@@ -19,7 +19,7 @@
 
 typedef struct CPU {
     Bus *bus;
-    uint64_t step;
+    unsigned long step;
     word_t *registers;
     addr_t pc;
     addr_t sp;

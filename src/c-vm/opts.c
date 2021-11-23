@@ -16,7 +16,7 @@
 
 #include <stdlib.h>
 #include <getopt.h>
-#include <printf.h>
+#include <stdio.h>
 #include <string.h>
 #include "opts.h"
 #include "vmarch.h"

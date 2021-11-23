@@ -17,7 +17,7 @@
 #ifndef C_VM_OPS_H
 #define C_VM_OPS_H
 
-#import "cpu.h"
+#include "cpu.h"
 
 typedef void (*op_ptr)(CPU *, const word_t *);
 
