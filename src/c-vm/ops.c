@@ -112,33 +112,48 @@ void op_cmp(CPU *cpu, const word_t *word) {
     cpu_flags_update(cpu, (sword_t) a_val - (sword_t) b_val);
 }
 
-
 void op_jreq(CPU *cpu, const word_t *word) {
-    // todo optimize this
-    word_t address = cpu_fetch(cpu);
-    address = from_big_endian(&address);
+    addr_t address = 0;
+    addr_t pc = cpu->pc;
+    if (cpu->flags.zero == 1 || cpu->debug.print_op) {
+        address = cpu_fetch(cpu);
+        address = from_big_endian(&address);
 
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tJEQ  "AXHEX"\n", cpu->debug.step, cpu->pc - 2 * ADDR_SIZE, address);
+        if (cpu->debug.print_op) {
+            printf("  %lu\t"AXHEX"\tJEQ  "AXHEX"\t\t// z=%i -> %s\n",
+                   cpu->debug.step,
+                   cpu->pc - 2 * ADDR_SIZE,
+                   address,
+                   cpu->flags.zero,
+                   cpu->flags.zero == 0 ? "no jump" : "jump"
+            );
+        }
     }
 
-    if (cpu->flags.zero) {
-        cpu->pc = cpu->cs + address;
-    }
+    cpu->pc = (cpu->flags.zero == 1) * (cpu->cs + address) // if equals, jump
+              + (cpu->flags.zero == 0) * (pc + ADDR_SIZE); // otherwise, move to next opcode
 }
 
 void op_jrne(CPU *cpu, const word_t *word) {
-    // todo optimize this
-    word_t address = cpu_fetch(cpu);
-    address = from_big_endian(&address);
+    addr_t address = 0;
+    addr_t pc = cpu->pc;
+    if (cpu->flags.zero == 0 || cpu->debug.print_op) {
+        address = cpu_fetch(cpu);
+        address = from_big_endian(&address);
 
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tJNE  "AXHEX"\n", cpu->debug.step, cpu->pc - 2 * ADDR_SIZE, address);
+        if (cpu->debug.print_op) {
+            printf("  %lu\t"AXHEX"\tJNE  "AXHEX"\t\t// z=%i -> %s\n",
+                   cpu->debug.step,
+                   cpu->pc - 2 * ADDR_SIZE,
+                   address,
+                   cpu->flags.zero,
+                   cpu->flags.zero == 0 ? "jump" : "no jump"
+            );
+        }
     }
 
-    if (!cpu->flags.zero) {
-        cpu->pc = cpu->cs + address;
-    }
+    cpu->pc = (cpu->flags.zero == 0) * (cpu->cs + address) // if not equals, jump
+              + (cpu->flags.zero == 1) * (pc + ADDR_SIZE); // otherwise, move to next word
 }
 
 void op_jr(CPU *cpu, const word_t *word) {
