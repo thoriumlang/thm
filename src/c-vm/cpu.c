@@ -23,7 +23,7 @@
 #include "bus.h"
 #include "ops.h"
 
-op_ptr decode(CPU *cpu, const word_t *word);
+op_ptr cpu_decode(CPU *cpu, const word_t *word);
 
 CPU *cpu_create(Bus *bus, uint8_t reg_count) {
     // printf("sizeof(CPU)=%lu", sizeof(CPU));
@@ -31,7 +31,7 @@ CPU *cpu_create(Bus *bus, uint8_t reg_count) {
     cpu->bus = bus;
     cpu->register_count = reg_count;
     cpu->registers = malloc(sizeof(*cpu->registers) * reg_count);
-    cpu->step = 0;
+    cpu->debug.step = 0;
 
     cpu_reset(cpu);
 
@@ -39,53 +39,53 @@ CPU *cpu_create(Bus *bus, uint8_t reg_count) {
 }
 
 void cpu_start(CPU *cpu) {
-    cpu->running = 1;
-    cpu->panic = CPU_ERR_OK;
-    if (cpu->print_op) {
+    cpu->state.running = 1;
+    cpu->state.panic = CPU_ERR_OK;
+    if (cpu->debug.print_op) {
         printf("\nCPU Steps\n");
     }
-    while (cpu->running == 1 && cpu->panic == CPU_ERR_OK) {
-        word_t word = fetch(cpu);
-        if (!cpu->panic) {
-            op_ptr op = decode(cpu, &word);
-            if (!cpu->panic) {
+    while (cpu->state.running == 1 && cpu->state.panic == CPU_ERR_OK) {
+        word_t word = cpu_fetch(cpu);
+        if (!cpu->state.panic) {
+            op_ptr op = cpu_decode(cpu, &word);
+            if (!cpu->state.panic) {
                 if (op) {
                     op(cpu, &word);
-                    cpu->step++;
+                    cpu->debug.step++;
                 } else {
-                    cpu->panic = CPU_ERR_UNIMPLEMENTED_OPCODE;
+                    cpu->state.panic = CPU_ERR_UNIMPLEMENTED_OPCODE;
                 }
             }
         }
     }
-    cpu->running = 0;
+    cpu->state.running = 0;
 }
 
 
-word_t fetch(CPU *cpu) {
+word_t cpu_fetch(CPU *cpu) {
     word_t word;
     if (bus_word_read(cpu->bus, cpu->pc, &word) != BUS_ERR_OK) {
-        cpu->panic = CPU_ERR_CANNOT_READ_MEMORY;
+        cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
         return 0;
     }
     cpu->pc += ADDR_SIZE;
     return word;
 }
 
-op_ptr decode(CPU *cpu, const word_t *word) {
-    if (cpu->panic) {
+op_ptr cpu_decode(CPU *cpu, const word_t *word) {
+    if (cpu->state.panic) {
         return NULL;
     }
     uint8_t op = ((uint8_t *) word)[0];
     if (op >= OPS_COUNT) {
-        cpu->panic = CPU_ERR_UNKNOWN_OPCODE;
+        cpu->state.panic = CPU_ERR_UNKNOWN_OPCODE;
         return NULL;
     }
     return ops[op];
 }
 
 void cpu_stop(CPU *cpu) {
-    cpu->running = 0;
+    cpu->state.running = 0;
 }
 
 void cpu_reset(CPU *cpu) {
@@ -95,7 +95,7 @@ void cpu_reset(CPU *cpu) {
     cpu->pc = 0;
     cpu->cs = 0;
     cpu->sp = STACK_SIZE;
-    cpu->print_op = 0;
+    cpu->debug.print_op = 0;
 }
 
 void cpu_destroy(CPU *cpu) {
@@ -116,13 +116,8 @@ CpuError cpu_register_set(CPU *cpu, uint8_t reg, word_t value) {
         return CPU_ERR_INVALID_REGISTER;
     }
     cpu->registers[reg] = value;
-    update_flags(cpu, (sword_t) value);
+    cpu_flags_update(cpu, (sword_t) value);
     return CPU_ERR_OK;
-}
-
-void update_flags(CPU *cpu, sword_t value) {
-    cpu->zero = (value == 0) ? 1 : 0;
-    cpu->negative = ((sword_t) value < 0) ? 1 : 0;
 }
 
 void cpu_pc_set(CPU *cpu, addr_t address) {
@@ -145,28 +140,14 @@ addr_t cpu_sp_get(CPU *cpu) {
     return cpu->sp;
 }
 
-int cpu_flag_get(CPU *cpu, CpuFlag flag) {
-    switch (flag) {
-        case CPU_FLAG_ZERO:
-            return cpu->zero;
-        case CPU_FLAG_NEGATIVE:
-            return cpu->negative;
-        case CPU_FLAG_PANIC:
-            return cpu->panic;
-        default:
-            abort();
-    }
+void cpu_flags_update(CPU *cpu, sword_t value) {
+    cpu->flags.zero = (value == 0) ? 1 : 0;
+    cpu->flags.negative = ((sword_t) value < 0) ? 1 : 0;
 }
 
 void cpu_print_op_enable(CPU *cpu, bool enable) {
-    cpu->print_op = enable;
+    cpu->debug.print_op = enable;
 }
-
-
-void cpu_debug_enable(CPU *cpu, bool enable) {
-    cpu->debug = 1;
-}
-
 
 int min(int a, int b) {
     return (a < b) ? a : b;
@@ -191,17 +172,16 @@ void cpu_state_print(CPU *cpu, FILE *file) {
     }
     fprintf(file, "                  pc            sp            cs\n");
     fprintf(file, "                  "WHEX"      "WHEX"      "WHEX"\n", cpu->pc, cpu->sp, cpu->cs);
-    fprintf(file, "                  z=%i  n=%i\n", cpu->zero, cpu->negative);
-    fprintf(file, "  running:%s       print_op:%s    debug:%s       panic:%i\n",
-            cpu->running == (uint32_t) 1 ? "y" : "n",
-            cpu->print_op == (uint32_t) 1 ? "y" : "n",
-            cpu->debug ? "y" : "n",
-            cpu->panic
+    fprintf(file, "                  z=%i  n=%i\n", cpu->flags.zero, cpu->flags.negative);
+    fprintf(file, "  running:%s       print_op:%s    panic:%i\n",
+            cpu->state.running == (uint32_t) 1 ? "y" : "n",
+            cpu->debug.print_op == (uint32_t) 1 ? "y" : "n",
+            cpu->state.panic
     );
 
-    if (cpu->panic) {
-        fprintf(file, "\npanic:%i: ", cpu->panic);
-        switch (cpu->panic) {
+    if (cpu->state.panic) {
+        fprintf(file, "\npanic:%i: ", cpu->state.panic);
+        switch (cpu->state.panic) {
             case CPU_ERR_PANIC:
                 fprintf(file, "PANIC\n");
                 break;
@@ -238,13 +218,17 @@ JsonElement *cpu_state_to_json(CPU *cpu) {
     json_object_put(registers, "general", general_registers);
 
     JsonElement *flags = json_object();
-    json_object_put(flags, "zero", json_bool(cpu_flag_get(cpu, CPU_FLAG_ZERO)));
-    json_object_put(flags, "negative", json_bool(cpu_flag_get(cpu, CPU_FLAG_NEGATIVE)));
-    json_object_put(flags, "panic", json_number(cpu_flag_get(cpu, CPU_FLAG_PANIC)));
+    json_object_put(flags, "zero", json_bool(cpu->flags.zero));
+    json_object_put(flags, "negative", json_bool(cpu->flags.negative));
+
+    JsonElement *state = json_object();
+    json_object_put(state, "panic", json_number(cpu->state.panic));
+    json_object_put(state, "running", json_bool(cpu->state.running));
 
     JsonElement *root = json_object();
     json_object_put(root, "registers", registers);
     json_object_put(root, "flags", flags);
+    json_object_put(root, "state", state);
 
     return root;
 }

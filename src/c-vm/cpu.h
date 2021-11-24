@@ -32,12 +32,6 @@ typedef enum {
     CPU_ERR_INVALID_REGISTER
 } CpuError;
 
-typedef enum {
-    CPU_FLAG_ZERO,
-    CPU_FLAG_NEGATIVE,
-    CPU_FLAG_PANIC
-} CpuFlag;
-
 typedef struct CPU CPU;
 
 CPU *cpu_create(Bus *bus, uint8_t reg_count);
@@ -63,8 +57,6 @@ void cpu_cs_set(CPU *cpu, addr_t address);
 addr_t cpu_cs_get(CPU *cpu);
 
 addr_t cpu_sp_get(CPU *cpu);
-
-int cpu_flag_get(CPU *cpu, CpuFlag flag);
 
 void cpu_print_op_enable(CPU *cpu, bool enable);
 

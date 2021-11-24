@@ -19,22 +19,27 @@
 
 typedef struct CPU {
     Bus *bus;
-    unsigned long step;
     word_t *registers;
+    uint8_t register_count;
     addr_t pc;
     addr_t sp;
     addr_t cs;
-    CpuError panic;
-    uint8_t register_count;
-    uint8_t zero: 1;
-    uint8_t negative: 1;
-    uint8_t running: 1;
-    uint8_t debug: 1;
-    uint8_t print_op: 1;
+    struct {
+        uint8_t zero: 1;
+        uint8_t negative: 1;
+    } flags;
+    struct {
+        uint8_t running: 1;
+        CpuError panic;
+    } state;
+    struct {
+        uint8_t print_op: 1;
+        unsigned long step;
+    } debug;
 } CPU;
 
-word_t fetch(CPU *cpu);
+word_t cpu_fetch(CPU *cpu);
 
-void update_flags(CPU *cpu, sword_t value);
+void cpu_flags_update(CPU *cpu, sword_t value);
 
 #endif //C_VM_CPU_INTERNAL_H

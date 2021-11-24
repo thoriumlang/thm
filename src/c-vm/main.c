@@ -162,6 +162,7 @@ int main(int argc, char **argv) {
         bus_dump(bus, ROM_ADDRESS, 128, stdout);
     }
 
+    cpu_register_set(cpu, 0, 16);
     cpu_start(cpu);
 
     if (options->print_dump) {
