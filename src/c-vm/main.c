@@ -151,6 +151,9 @@ int main(int argc, char **argv) {
     // cpu_debug_enable(cpu, false);
     cpu_pc_set(cpu, options->pc);
     cpu_cs_set(cpu, options->pc); // FIXME
+    for (int i = 0; i < options->registers; i++) {
+        cpu_register_set(cpu, i, (word_t) options->register_values[i]);
+    }
 
     assert(memory_mode_get(rom) == MEM_MODE_R);
 
@@ -162,7 +165,6 @@ int main(int argc, char **argv) {
         bus_dump(bus, ROM_ADDRESS, 128, stdout);
     }
 
-    cpu_register_set(cpu, 0, 16);
     cpu_start(cpu);
 
     if (options->print_dump) {

@@ -25,6 +25,7 @@ typedef struct {
     addr_t ram_size;
     addr_t pc;
     int registers;
+    int *register_values;
     int help_flag;
     int print_steps;
     int print_arch;
