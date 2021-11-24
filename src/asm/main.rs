@@ -57,6 +57,7 @@ fn main() {
     OpenOptions::new()
         .create(true)
         .write(true)
+        .truncate(true)
         .open(output)
         .unwrap()
         .write_all(code.as_slice())

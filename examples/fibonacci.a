@@ -17,7 +17,7 @@
     CMP  r0, r4
     JNE  @loop
 
-    // if n == 1, we have the result in r2, just need to move it
+    // if n == 1, we have the result in r4, just need to move it
     MOV  r3, r4
     J    @end
 

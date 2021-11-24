@@ -32,24 +32,24 @@ impl<'t> Emitter<'t> {
         for node in self.nodes {
             match node {
                 Node::Instruction(instruction) => match instruction {
-                    Instruction::I(op) => bytes.push(op.bytecode()),
-                    Instruction::IB(op, imm1) => bytes.append(vec![op.bytecode(), *imm1].as_mut()),
+                    Instruction::I(op) => bytes.append(vec![op.bytecode(), 0, 0, 0].as_mut()),
+                    Instruction::IB(op, imm1) => bytes.append(vec![op.bytecode(), *imm1, 0, 0].as_mut()),
                     Instruction::IW(op, imm4) => {
-                        bytes.push(op.bytecode());
+                        bytes.append(vec![op.bytecode(), 0, 0, 0].as_mut());
                         let b = imm4.to_be_bytes();
                         bytes.extend_from_slice(&b);
                     }
                     Instruction::IRW(op, r, value) => {
-                        bytes.append(vec![op.bytecode(), *self.decode_register(r) as u8].as_mut());
+                        bytes.append(vec![op.bytecode(), *self.decode_register(r) as u8, 0, 0].as_mut());
                         let b = value.to_be_bytes();
                         bytes.extend_from_slice(&b);
                     }
-                    Instruction::IR(op, r) => bytes.append(vec![op.bytecode(), *self.decode_register(r) as u8].as_mut()),
+                    Instruction::IR(op, r) => bytes.append(vec![op.bytecode(), *self.decode_register(r) as u8, 0, 0].as_mut()),
                     Instruction::IRR(op, r1, r2) => bytes.append(vec![
-                        op.bytecode(), *self.decode_register(r1) as u8, *self.decode_register(r2) as u8
+                        op.bytecode(), *self.decode_register(r1) as u8, *self.decode_register(r2) as u8, 0,
                     ].as_mut()),
                     Instruction::IA(op, addr) => {
-                        bytes.push(op.bytecode());
+                        bytes.append(vec![op.bytecode(), 0, 0, 0].as_mut());
                         let b = self.decode_address(addr).to_be_bytes();
                         bytes.extend_from_slice(&b);
                     }
@@ -89,6 +89,6 @@ mod tests {
 
         let bytes = Emitter::new(&nodes, &addresses).emit();
 
-        assert_eq!(5, bytes.len());
+        assert_eq!(8, bytes.len());
     }
 }

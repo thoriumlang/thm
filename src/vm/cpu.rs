@@ -142,8 +142,8 @@ impl CPU {
     }
 
     #[inline]
-    fn decode_opcode(opcode: u8) -> Op {
-        Op::from(opcode)
+    fn decode_opcode(opcode: u32) -> Op {
+        Op::from(opcode.to_be_bytes()[0])
     }
 
     #[inline]

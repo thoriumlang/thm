@@ -68,7 +68,7 @@ mod tests {
         assert_eq!(true, addresses.get(&"label1".to_string()).is_some());
         assert_eq!(0, *addresses.get(&"label1".to_string()).unwrap());
         assert_eq!(true, addresses.get(&"label2".to_string()).is_some());
-        assert_eq!(5, *addresses.get(&"label2".to_string()).unwrap());
+        assert_eq!(8, *addresses.get(&"label2".to_string()).unwrap());
     }
 
     #[test]
