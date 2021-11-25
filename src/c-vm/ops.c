@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdlib.h>
 #include "vmarch.h"
 #include "ops.h"
 #include "cpu.h"
@@ -207,7 +208,7 @@ void op_load(CPU *cpu, const word_t *word) {
     cpu->state.panic = cpu_register_set(cpu, to, val);
 }
 
-void op_add(CPU *cpu, const word_t *word) {
+void op_add_rr(CPU *cpu, const word_t *word) {
     uint8_t a = ((uint8_t *) word)[1];
     uint8_t b = ((uint8_t *) word)[2];
 
@@ -226,6 +227,46 @@ void op_add(CPU *cpu, const word_t *word) {
     cpu->state.panic = cpu_register_set(cpu, a, (word_t) ((sword_t) a_val + (sword_t) b_val));
 }
 
+void op_sub_rw(CPU *cpu, const word_t *word) {
+    uint8_t a = ((uint8_t *) word)[1];
+    word_t a_val;
+    if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
+        return;
+    }
+
+    word_t value = cpu_fetch(cpu);
+    if(cpu->state.panic != CPU_ERR_OK) {
+        return;
+    }
+    value = from_big_endian(&value);
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tSUB  r%i, "WXHEX"\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, value);
+    }
+
+    // todo implement overflow/underflow
+    cpu->state.panic = cpu_register_set(cpu, a, (word_t) ((sword_t) a_val - (sword_t) value));
+}
+
+void op_mul_rr(CPU *cpu, const word_t *word) {
+    uint8_t a = ((uint8_t *) word)[1];
+    uint8_t b = ((uint8_t *) word)[2];
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tMUL  r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b);
+    }
+
+    word_t a_val, b_val;
+    if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
+        return;
+    }
+    if ((cpu->state.panic = cpu_register_get(cpu, b, &b_val)) != CPU_ERR_OK) {
+        return;
+    }
+    // todo implement overflow/underflow
+    cpu->state.panic = cpu_register_set(cpu, a, (word_t) ((sword_t) a_val * (sword_t) b_val));
+}
+
 void op_dec(CPU *cpu, const word_t *word) {
     uint8_t r = ((uint8_t *) word)[1];
 
@@ -237,7 +278,62 @@ void op_dec(CPU *cpu, const word_t *word) {
     if ((cpu->state.panic = cpu_register_get(cpu, r, &r_val)) != CPU_ERR_OK) {
         return;
     }
-    cpu->state.panic = cpu_register_set(cpu, r, (word_t) ((sword_t) r_val - 1)); // todo implement underflow
+    // todo implement underflow
+    cpu->state.panic = cpu_register_set(cpu, r, (word_t) ((sword_t) r_val - 1));
+}
+
+void op_inc(CPU *cpu, const word_t *word) {
+    uint8_t r = ((uint8_t *) word)[1];
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tINC  r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, r);
+    }
+
+    word_t r_val;
+    if ((cpu->state.panic = cpu_register_get(cpu, r, &r_val)) != CPU_ERR_OK) {
+        return;
+    }
+    // todo implement underflow
+    cpu->state.panic = cpu_register_set(cpu, r, (word_t) ((sword_t) r_val + 1));
+}
+
+void op_call(CPU *cpu, const word_t *word) {
+    addr_t address = (addr_t) cpu_fetch(cpu);
+    if (cpu->state.panic != CPU_ERR_OK) {
+        return;
+    }
+    address = from_big_endian(&address);
+
+    cpu->sp -= WORD_SIZE;
+    if (bus_word_write(cpu->bus, cpu->sp, cpu->pc) != BUS_ERR_OK) {
+        cpu->state.panic = CPU_ERR_CANNOT_WRITE_MEMORY;
+        return;
+    }
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tCALL "AXHEX"\n", cpu->debug.step, cpu->pc - 2 * ADDR_SIZE, address);
+    }
+    cpu->pc = cpu->cs + address;
+}
+
+void op_ret(CPU *cpu, const word_t *word) {
+    word_t address;
+    if (bus_word_read(cpu->bus, cpu->sp, &address) != BUS_ERR_OK) {
+        cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
+        return;
+    }
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tRET\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
+    }
+
+    cpu->sp += WORD_SIZE;
+    cpu->pc = (addr_t) address;
+}
+
+void op_not_implemented(CPU *cpu, const word_t *word) {
+    printf("not implemented: 0x%02x\n", ((uint8_t *) word)[0]);
+    abort();
 }
 
 op_ptr ops[OPS_COUNT] = {
@@ -246,34 +342,36 @@ op_ptr ops[OPS_COUNT] = {
         &op_panic,
         &op_mov_rw,
         &op_mov_rr,
-        &op_add,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
+        &op_add_rr,
+        &op_not_implemented,
+        &op_not_implemented,
+        &op_sub_rw,
+        &op_mul_rr,
+        &op_not_implemented,
+        &op_not_implemented,
+        &op_not_implemented,
+        &op_not_implemented,
+        &op_not_implemented,
+        &op_inc,
         &op_dec,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
+        &op_not_implemented,
+        &op_not_implemented,
+        &op_not_implemented,
+        &op_not_implemented,
+        &op_not_implemented,
+        &op_not_implemented,
+        &op_not_implemented,
         &op_cmp,
         &op_push,
         &op_pop,
-        NULL,
+        &op_not_implemented,
         &op_jreq,
         &op_jrne,
         &op_jr,
         &op_stor,
-        &op_load
+        &op_load,
+        &op_call,
+        &op_ret,
 };
 
 

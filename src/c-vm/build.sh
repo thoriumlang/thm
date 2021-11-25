@@ -8,7 +8,7 @@ COLOR_RED='\033[0;31m'
 COLOR_BLUE='\033[0;34m'
 COLOR_YELLOW='\033[0;33m'
 
-
+FAIL=0
 function _test {
     echo -ne " * $1($2):  "
 
@@ -17,6 +17,7 @@ function _test {
     if [ "$result" == "$3" ]; then
       echo -e "${COLOR_GREEN}Success$COLOR_NC"
     else
+      FAIL=1
       failure=1
       echo -e "${COLOR_RED}Failure$COLOR_NC expected $COLOR_YELLOW$3$COLOR_NC got $COLOR_YELLOW$result$COLOR_NC"
     fi
@@ -31,4 +32,8 @@ cmake --build cmake-build-debug \
   && _test programs/fibonacci.bin 0:0 0 ".cpu.registers.general[3]" \
   && _test programs/fibonacci.bin 0:1 1 ".cpu.registers.general[3]" \
   && _test programs/fibonacci.bin 0:16 987 ".cpu.registers.general[3]" \
-  && _test programs/store_load.bin 1:12 12 ".cpu.registers.general[2]"
+  && _test programs/fibonacci_rec.bin 0:16 987 ".cpu.registers.general[3]" \
+  && _test programs/store_load.bin 1:12 12 ".cpu.registers.general[2]" \
+  && _test programs/fact.bin 0:5 120 ".cpu.registers.general[3]"
+
+exit $FAIL

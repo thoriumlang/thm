@@ -22,7 +22,7 @@
 typedef void (*op_ptr)(CPU *, const word_t *);
 
 extern op_ptr ops[];
-#define OPS_COUNT 33
+#define OPS_COUNT 35
 
 #endif //C_VM_OPS_H
 
