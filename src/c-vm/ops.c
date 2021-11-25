@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+/*
+ * perf. improvement ideas:
+ *  - https://stackoverflow.com/questions/30130930/is-there-a-compiler-hint-for-gcc-to-force-branch-prediction-to-always-go-a-certa
+ *  - disable print_op with compile-time macro
+ */
+
 #include <stdlib.h>
 #include "vmarch.h"
 #include "ops.h"
@@ -44,9 +50,11 @@ void op_panic(CPU *cpu, const word_t *word) {
 
 void op_push(CPU *cpu, const word_t *word) {
     uint8_t r = ((uint8_t *) word)[1];
+
     if (cpu->debug.print_op) {
         printf("  %lu\t"AXHEX"\tPUSH r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, r);
     }
+
     word_t value;
     if ((cpu->state.panic = cpu_register_get(cpu, r, &value)) == CPU_ERR_OK) {
         cpu->sp -= WORD_SIZE;
@@ -58,9 +66,11 @@ void op_push(CPU *cpu, const word_t *word) {
 
 void op_pop(CPU *cpu, const word_t *word) {
     uint8_t r = ((uint8_t *) word)[1];
+
     if (cpu->debug.print_op) {
         printf("  %lu\t"AXHEX"\tPOP  r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, r);
     }
+
     word_t value;
     if (bus_word_read(cpu->bus, cpu->sp, &value) != BUS_ERR_OK) {
         cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
@@ -75,12 +85,15 @@ void op_mov_rw(CPU *cpu, const word_t *word) {
     uint8_t to = ((uint8_t *) word)[1];
 
     word_t val = cpu_fetch(cpu);
+    if (cpu->state.panic != CPU_ERR_OK) {
+        return;
+    }
     val = from_big_endian(&val);
 
     if (cpu->debug.print_op) {
         printf("  %lu\t"AXHEX"\tMOV  r%i, %i\n", cpu->debug.step, cpu->pc - 2 * ADDR_SIZE, to, val);
     }
-    cpu->registers[to] = val;
+    cpu->state.panic = cpu_register_set(cpu, to, val);
 }
 
 // todo implement support for special registers
@@ -92,7 +105,11 @@ void op_mov_rr(CPU *cpu, const word_t *word) {
         printf("  %lu\t"AXHEX"\tMOV  r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, to, from);
     }
 
-    cpu->registers[to] = cpu->registers[from];
+    word_t value;
+    if ((cpu->state.panic = cpu_register_get(cpu, from, &value)) != CPU_ERR_OK) {
+        return;
+    }
+    cpu->state.panic = cpu_register_set(cpu, to, value);
 }
 
 void op_cmp(CPU *cpu, const word_t *word) {
@@ -103,10 +120,11 @@ void op_cmp(CPU *cpu, const word_t *word) {
         printf("  %lu\t"AXHEX"\tCMP  r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b);
     }
 
-    word_t a_val, b_val;
+    word_t a_val;
     if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
         return;
     }
+    word_t b_val;
     if ((cpu->state.panic = cpu_register_get(cpu, b, &b_val)) != CPU_ERR_OK) {
         return;
     }
@@ -118,6 +136,9 @@ void op_jreq(CPU *cpu, const word_t *word) {
     addr_t pc = cpu->pc;
     if (cpu->flags.zero == 1 || cpu->debug.print_op) {
         address = cpu_fetch(cpu);
+        if (cpu->state.panic != CPU_ERR_OK) {
+            return;
+        }
         address = from_big_endian(&address);
 
         if (cpu->debug.print_op) {
@@ -140,6 +161,9 @@ void op_jrne(CPU *cpu, const word_t *word) {
     addr_t pc = cpu->pc;
     if (cpu->flags.zero == 0 || cpu->debug.print_op) {
         address = cpu_fetch(cpu);
+        if (cpu->state.panic != CPU_ERR_OK) {
+            return;
+        }
         address = from_big_endian(&address);
 
         if (cpu->debug.print_op) {
@@ -159,6 +183,9 @@ void op_jrne(CPU *cpu, const word_t *word) {
 
 void op_jr(CPU *cpu, const word_t *word) {
     word_t address = cpu_fetch(cpu);
+    if (cpu->state.panic != CPU_ERR_OK) {
+        return;
+    }
     address = from_big_endian(&address);
 
     if (cpu->debug.print_op) {
@@ -185,7 +212,9 @@ void op_stor(CPU *cpu, const word_t *word) {
         return;
     }
 
-    bus_word_write(cpu->bus, (addr_t) address, val);
+    if (bus_word_write(cpu->bus, (addr_t) address, val) != BUS_ERR_OK) {
+        cpu->state.panic = CPU_ERR_CANNOT_WRITE_MEMORY;
+    }
 }
 
 void op_load(CPU *cpu, const word_t *word) {
@@ -216,10 +245,11 @@ void op_add_rr(CPU *cpu, const word_t *word) {
         printf("  %lu\t"AXHEX"\tADD  r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b);
     }
 
-    word_t a_val, b_val;
+    word_t a_val;
     if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
         return;
     }
+    word_t b_val;
     if ((cpu->state.panic = cpu_register_get(cpu, b, &b_val)) != CPU_ERR_OK) {
         return;
     }
@@ -229,19 +259,19 @@ void op_add_rr(CPU *cpu, const word_t *word) {
 
 void op_sub_rw(CPU *cpu, const word_t *word) {
     uint8_t a = ((uint8_t *) word)[1];
-    word_t a_val;
-    if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
-        return;
-    }
-
     word_t value = cpu_fetch(cpu);
-    if(cpu->state.panic != CPU_ERR_OK) {
+    if (cpu->state.panic != CPU_ERR_OK) {
         return;
     }
     value = from_big_endian(&value);
 
     if (cpu->debug.print_op) {
         printf("  %lu\t"AXHEX"\tSUB  r%i, "WXHEX"\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, value);
+    }
+
+    word_t a_val;
+    if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
+        return;
     }
 
     // todo implement overflow/underflow
@@ -256,10 +286,11 @@ void op_mul_rr(CPU *cpu, const word_t *word) {
         printf("  %lu\t"AXHEX"\tMUL  r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b);
     }
 
-    word_t a_val, b_val;
+    word_t a_val;
     if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
         return;
     }
+    word_t b_val;
     if ((cpu->state.panic = cpu_register_get(cpu, b, &b_val)) != CPU_ERR_OK) {
         return;
     }
@@ -304,31 +335,28 @@ void op_call(CPU *cpu, const word_t *word) {
     }
     address = from_big_endian(&address);
 
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tCALL "AXHEX"\n", cpu->debug.step, cpu->pc - 2 * ADDR_SIZE, address);
+    }
+
     cpu->sp -= WORD_SIZE;
     if (bus_word_write(cpu->bus, cpu->sp, cpu->pc) != BUS_ERR_OK) {
         cpu->state.panic = CPU_ERR_CANNOT_WRITE_MEMORY;
         return;
     }
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tCALL "AXHEX"\n", cpu->debug.step, cpu->pc - 2 * ADDR_SIZE, address);
-    }
     cpu->pc = cpu->cs + address;
 }
 
 void op_ret(CPU *cpu, const word_t *word) {
-    word_t address;
-    if (bus_word_read(cpu->bus, cpu->sp, &address) != BUS_ERR_OK) {
-        cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
-        return;
-    }
-
     if (cpu->debug.print_op) {
         printf("  %lu\t"AXHEX"\tRET\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
     }
 
+    if (bus_word_read(cpu->bus, cpu->sp, &cpu->pc) != BUS_ERR_OK) {
+        cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
+        return;
+    }
     cpu->sp += WORD_SIZE;
-    cpu->pc = (addr_t) address;
 }
 
 void op_not_implemented(CPU *cpu, const word_t *word) {
