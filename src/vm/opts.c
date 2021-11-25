@@ -119,6 +119,15 @@ Options *opts_parse(int argc, char **argv) {
  * @param str the string to parse; the format is reg:val[,...]
  * @return the array containing the register values (0 for unspecified registers)
  */
+
+typedef struct {
+    int line;
+    void* data;
+} exception;
+static exception e;
+#define throw(_label, _data) ( { e.line = __LINE__; e.data = (_data); goto _label; } )
+#define catch
+
 int *parse_register_values(int registers, char *str) {
     int *parsed_values = calloc(registers, sizeof(int));
     if (str == NULL) return parsed_values;
@@ -130,37 +139,37 @@ int *parse_register_values(int registers, char *str) {
         switch (mode) {
             case 0: // we are parsing a register
                 if (c == ':') {
-                    if (reg >= registers) goto register_error;
+                    if (reg >= registers) throw(register_error, NULL);
                     if (str[i + 1] == 0) goto parse_error;
                     mode = 1;
                     continue;
-                } else if (!isdigit(c)) goto parse_error;
+                } else if (!isdigit(c)) throw(parse_error, NULL);
                 reg = reg * 10 + c - '0';
                 break;
             case 1: // we are parsing a value
                 if (c == ',') {
-                    if (str[i + 1] == 0) goto parse_error;
+                    if (str[i + 1] == 0) throw(parse_error, NULL);
                     mode = 0;
                     reg = 0;
                     continue;
-                } else if (!isdigit(c)) goto parse_error;
+                } else if (!isdigit(c)) throw(parse_error, NULL);
                 parsed_values[reg] = parsed_values[reg] * 10 + c - '0';
                 break;
             default:
                 abort();
         }
     }
-    if (mode != 1) goto parse_error;
+    if (mode != 1) throw(parse_error, NULL);
 
     return parsed_values;
 
-    parse_error:
-    fprintf(stderr, "Cannot parse `%s` as a valid --register-values <VAL>\n", str);
+    catch parse_error:
+    fprintf(stderr, "%i: Cannot parse `%s` as a valid --register-values <VAL>\n", e.line, str);
     memset(parsed_values, 0, registers * sizeof(int));
     return parsed_values;
 
-    register_error:
-    fprintf(stderr, "Register `%i` is not a valid register for --register-values <VAL>\n", reg);
+    catch register_error:
+    fprintf(stderr, "%i: Register `%i` is not a valid register for --register-values <VAL>\n", e.line, reg);
     memset(parsed_values, 0, registers * sizeof(int));
     return parsed_values;
 }
