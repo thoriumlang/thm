@@ -38,6 +38,7 @@ Options *opts_parse(int argc, char **argv) {
     opts->print_arch = 0;
     opts->print_dump = 0;
     opts->print_json = 0;
+    opts->video = 0;
 
     char *register_values = NULL;
 
@@ -49,6 +50,7 @@ Options *opts_parse(int argc, char **argv) {
             {"print-json",      no_argument, &opts->print_json,  1},
             {"registers",       required_argument, NULL,         'r'},
             {"register-values", required_argument, NULL,         0},
+            {"video",           no_argument, &opts->video,       1},
             {"ram",             required_argument, NULL,         'R'},
             {"rom",             required_argument, NULL,         'M'},
             {"pc",              required_argument, NULL,         0},
@@ -166,5 +168,6 @@ void opts_print_help(char *prog_name) {
     printf("    -R, --ram <RAM>              Amount of ram; default to %ul Bytes\n", DEFAULT_RAM_SIZE);
     printf("    -M, --rom <PATH>             Path to rom to load\n");
     printf("        --pc <ADDRESS>           Initial address of PC; defaults to "AXHEX"\n", STACK_SIZE);
+    printf("        --video                  Enable video\n");
     printf("\n");
 }

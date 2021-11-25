@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Christophe Pollet
+ * Copyright 2019 Christophe Pollet
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,31 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef C_VM_OPTS_H
-#define C_VM_OPTS_H
+#ifndef C_VM_VIDEO_H
+#define C_VM_VIDEO_H
 
-#include "vmarch.h"
+typedef struct Video Video;
 
-typedef struct {
-    char *rom;
-    char *image;
-    addr_t ram_size;
-    addr_t pc;
-    int registers;
-    int *register_values;
-    int help_flag;
-    int print_steps;
-    int print_arch;
-    int print_dump;
-    int print_json;
-    int video;
-} Options;
+Video *video_create(bool enable);
 
-Options *opts_parse(int argc, char **argv);
+void video_loop(Video *this);
 
-void opts_free(Options *opts);
+void video_pause(Video *this);
 
-void opts_print_help(char *prog_name);
+void video_stop(Video *this);
 
+void video_destroy(Video *self);
 
-#endif //C_VM_OPTS_H
+#endif //C_VM_VIDEO_H

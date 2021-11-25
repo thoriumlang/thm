@@ -2,17 +2,30 @@ cmake_minimum_required(VERSION 3.20)
 project(c_vm C)
 
 include(cmake/FetchCCANJson.cmake)
+include(cmake/FetchMiniFB.cmake)
+
+# set(CMAKE_VERBOSE_MAKEFILE on)
+
 set(CMAKE_C_STANDARD 11)
 add_executable(c_vm
         main.c
-        vmarch.c vmarch.h
         opts.c opts.h
+        vmarch.c vmarch.h
         bus.c bus.h
         cpu.c cpu.h
         ops.c ops.h
-        json.c json.h ${CCAN_JSON}
-        memory.c memory.h)
+        memory.c memory.h
+        video.c video.h
+        json.c json.h ${CCAN_JSON})
+target_link_libraries(c_vm PRIVATE minifb)
 
+if(UNIX)
+    if (NOT APPLE)
+        target_link_libraries(c_vm PRIVATE pthread)
+    endif()
+endif()
+
+# tests
 include(cmake/FetchCMocka.cmake)
 
 add_executable(memory_test memory_test.c memory.c)

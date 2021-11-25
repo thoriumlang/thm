@@ -44,6 +44,9 @@ typedef uint32_t addr_t;
 #define ROM_SIZE ((addr_t)(32 * 1024 * 1024))
 #define ROM_ADDRESS ((addr_t)((addr_t) - ROM_SIZE))
 
+#define VIDEO_SCREEN_WIDTH 320
+#define VIDEO_SCREEN_HEIGHT 200
+
 word_t from_big_endian(word_t *word);
 
 #endif //C_VM_VMARCH_H

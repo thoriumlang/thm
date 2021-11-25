@@ -367,11 +367,6 @@ void op_ret(CPU *cpu, const word_t *word) {
     cpu->sp += WORD_SIZE;
 }
 
-void op_not_implemented(CPU *cpu, const word_t *word) {
-    printf("not implemented: 0x%02x\n", ((uint8_t *) word)[0]);
-    abort();
-}
-
 op_ptr ops[OPS_COUNT] = {
         &op_nop,
         &op_halt,
@@ -379,28 +374,28 @@ op_ptr ops[OPS_COUNT] = {
         &op_mov_rw,
         &op_mov_rr,
         &op_add_rr,
-        &op_not_implemented,
-        &op_not_implemented,
+        NULL,
+        NULL,
         &op_sub_rw,
         &op_mul_rr,
-        &op_not_implemented,
-        &op_not_implemented,
-        &op_not_implemented,
-        &op_not_implemented,
-        &op_not_implemented,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
         &op_inc,
         &op_dec,
-        &op_not_implemented,
-        &op_not_implemented,
-        &op_not_implemented,
-        &op_not_implemented,
-        &op_not_implemented,
-        &op_not_implemented,
-        &op_not_implemented,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
         &op_cmp,
         &op_push,
         &op_pop,
-        &op_not_implemented,
+        NULL,
         &op_jreq,
         &op_jrne,
         &op_jr,

@@ -52,6 +52,7 @@ void cpu_start(CPU *cpu) {
                     op(cpu, &word);
                     cpu->debug.step++;
                 } else {
+                    printf("Not implemented: 0x%02x\n", ((uint8_t *) &word)[0]);
                     cpu->state.panic = CPU_ERR_UNIMPLEMENTED_OPCODE;
                 }
             }

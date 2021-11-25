@@ -15,12 +15,21 @@
  */
 
 #include <stdlib.h>
+#include <pthread.h>
 #include "opts.h"
 #include "vmarch.h"
 #include "bus.h"
 #include "cpu.h"
 #include "memory.h"
 #include "json.h"
+#include "video.h"
+
+typedef struct VmThreadParam {
+    Options *options;
+    Video *video;
+} VmThreadParam;
+
+void *cpu_loop(void *ptr);
 
 void print_arch() {
     printf("Architecture\n");
@@ -127,6 +136,26 @@ int main(int argc, char **argv) {
         print_arch();
     }
 
+    Video *video = video_create(options->video);
+
+    VmThreadParam p;
+    p.options = options;
+    p.video = video;
+
+    pthread_t cpu_thread;
+    pthread_create(&cpu_thread, NULL, cpu_loop, &p);
+
+    video_loop(video);              // blocking
+    pthread_join(cpu_thread, NULL); // blocking
+
+    opts_free(options);
+    video_destroy(video);
+}
+
+void *cpu_loop(void *ptr) {
+    VmThreadParam *p = (VmThreadParam *) ptr;
+    Options *options = p->options;
+
     Bus *bus = bus_create();
     Memory *ram = memory_create(options->ram_size, MEM_MODE_RW);
     Memory *rom = memory_create(ROM_SIZE, MEM_MODE_R);
@@ -136,12 +165,12 @@ int main(int argc, char **argv) {
     bus_memory_attach(bus, rom, ROM_ADDRESS, "ROM");
 
     if (!load_file(bus, options->image, STACK_SIZE)) {
-        return 1;
+        return NULL; // fixme
     }
     if (options->rom != NULL) {
         memory_mode_set(rom, MEM_MODE_RW);
         if (!load_file(bus, options->rom, ROM_ADDRESS)) {
-            return 1;
+            return NULL; // fixme
         }
         memory_mode_set(rom, MEM_MODE_R);
     }
@@ -164,16 +193,20 @@ int main(int argc, char **argv) {
 
     cpu_start(cpu);
 
-    if (options->print_dump) {
+    if (p->options->print_dump) {
         cpu_state_print(cpu, stdout);
     }
 
-    if (options->print_json) {
+    if (p->options->print_json) {
         print_json(cpu, bus);
     }
 
-    opts_free(options);
+    video_pause(p->video);
+
     cpu_destroy(cpu);
     bus_destroy(bus);
     memory_destroy(ram);
+    memory_destroy(rom);
+
+    return NULL;
 }

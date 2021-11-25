@@ -33,7 +33,7 @@ Memory *memory_create(addr_t bytes, MemMode mode) {
     memory->raw = malloc(memory->size);
     memory->mode = mode;
 
-    for (uint32_t i = 0; i < bytes / sizeof(addr_t); i++) {
+    for (addr_t i = 0; i < bytes / sizeof(addr_t); i++) {
         memory->raw[i] = 0;
     }
 
