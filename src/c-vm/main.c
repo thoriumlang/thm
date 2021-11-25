@@ -15,7 +15,6 @@
  */
 
 #include <stdlib.h>
-#include <assert.h>
 #include "opts.h"
 #include "vmarch.h"
 #include "bus.h"
@@ -131,6 +130,7 @@ int main(int argc, char **argv) {
     Bus *bus = bus_create();
     Memory *ram = memory_create(options->ram_size, MEM_MODE_RW);
     Memory *rom = memory_create(ROM_SIZE, MEM_MODE_R);
+    CPU *cpu = cpu_create(bus, options->registers);
 
     bus_memory_attach(bus, ram, 0, "RAM");
     bus_memory_attach(bus, rom, ROM_ADDRESS, "ROM");
@@ -146,7 +146,6 @@ int main(int argc, char **argv) {
         memory_mode_set(rom, MEM_MODE_R);
     }
 
-    CPU *cpu = cpu_create(bus, options->registers);
     cpu_print_op_enable(cpu, options->print_steps);
     // cpu_debug_enable(cpu, false);
     cpu_pc_set(cpu, options->pc);
@@ -154,8 +153,6 @@ int main(int argc, char **argv) {
     for (int i = 0; i < options->registers; i++) {
         cpu_register_set(cpu, i, (word_t) options->register_values[i]);
     }
-
-    assert(memory_mode_get(rom) == MEM_MODE_R);
 
     if (options->print_dump) {
         cpu_state_print(cpu, stdout);

@@ -27,9 +27,18 @@ int *parse_register_values(int registers, char *str);
 Options *opts_parse(int argc, char **argv) {
     Options *opts = malloc(sizeof(Options));
 
+    opts->rom = NULL;
+    opts->image = NULL;
     opts->ram_size = DEFAULT_RAM_SIZE;
-    opts->registers = DEFAULT_REGISTERS_COUNT;
     opts->pc = STACK_SIZE;
+    opts->registers = DEFAULT_REGISTERS_COUNT;
+    opts->register_values = NULL;
+    opts->help_flag = 0;
+    opts->print_steps = 0;
+    opts->print_arch = 0;
+    opts->print_dump = 0;
+    opts->print_json = 0;
+
     char *register_values = NULL;
 
     struct option long_options[] = {
@@ -50,11 +59,9 @@ Options *opts_parse(int argc, char **argv) {
     while ((c = getopt_long(argc, argv, "hr:R:M:", long_options, &option_index)) != -1) {
         switch (c) {
             case 0:
-                // if the option sets a flag, we don't have anything to do
                 if (long_options[option_index].flag != 0) {
-                    break;
-                }
-                if (strcmp(long_options[option_index].name, "pc") == 0) {
+                    // if the option sets a flag, we don't have anything to do
+                } else if (strcmp(long_options[option_index].name, "pc") == 0) {
                     opts->pc = strtol(optarg, NULL, 10);
                 } else if (strcmp(long_options[option_index].name, "register-values") == 0) {
                     register_values = optarg;
@@ -120,7 +127,7 @@ int *parse_register_values(int registers, char *str) {
                     reg = 0;
                     continue;
                 } else if (!isdigit(c)) goto parse_error;
-                parsed_values[reg] = parsed_values[reg]  * 10 + c - '0';
+                parsed_values[reg] = parsed_values[reg] * 10 + c - '0';
                 break;
             default:
                 abort();

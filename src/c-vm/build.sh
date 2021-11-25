@@ -23,7 +23,7 @@ function _test {
     fi
 
     if [[ $DEBUG -eq 1 || $failure -eq 1 ]]; then
-      echo -e "     ${COLOR_BLUE}cmake-build-debug/c_vm --print-json --register-values $2 $1 | jq -r $4$COLOR_NC"
+      echo -e "     ${COLOR_BLUE}cmake-build-debug/c_vm --print-json --register-values $2 $1 | jq -r '$4$COLOR_NC'"
     fi
 }
 

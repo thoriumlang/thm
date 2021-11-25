@@ -29,9 +29,8 @@ CPU *cpu_create(Bus *bus, uint8_t reg_count) {
     // printf("sizeof(CPU)=%lu", sizeof(CPU));
     CPU *cpu = malloc(sizeof(CPU));
     cpu->bus = bus;
-    cpu->register_count = reg_count;
     cpu->registers = malloc(sizeof(*cpu->registers) * reg_count);
-    cpu->debug.step = 0;
+    cpu->register_count = reg_count;
 
     cpu_reset(cpu);
 
@@ -93,9 +92,14 @@ void cpu_reset(CPU *cpu) {
         cpu->registers[r] = 0;
     }
     cpu->pc = 0;
-    cpu->cs = 0;
     cpu->sp = STACK_SIZE;
+    cpu->cs = 0;
+    cpu->flags.zero = 0;
+    cpu->flags.negative = 0;
+    cpu->state.running = 0;
+    cpu->state.panic = 0;
     cpu->debug.print_op = 0;
+    cpu->debug.step = 0;
 }
 
 void cpu_destroy(CPU *cpu) {
