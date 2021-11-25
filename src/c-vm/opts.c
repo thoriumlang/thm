@@ -97,7 +97,7 @@ Options *opts_parse(int argc, char **argv) {
  */
 int *parse_register_values(int registers, char *str) {
     int *parsed_values = calloc(registers, sizeof(int));
-    if (str == NULL) goto parse_error;
+    if (str == NULL) return parsed_values;
 
     int mode = 0;
     int reg = 0;
