@@ -105,8 +105,14 @@ Zone *find_zone(Bus *bus, addr_t address) {
 }
 
 BusError bus_word_write(Bus *bus, addr_t address, word_t word) {
+#ifdef WITH_MEMORY_LOG_MESSAGE
+    printf("BUS Write to "AXHEX"\n", address);
+#endif
     Zone *zone = find_zone(bus, address);
     if (zone != NULL) {
+#ifdef WITH_MEMORY_LOG_MESSAGE
+        printf("  Zone: %s\n", zone->name);
+#endif
         switch (memory_word_set(zone->memory, translate(zone, address), word)) {
             case MEM_ERR_OK:
                 return BUS_ERR_OK;

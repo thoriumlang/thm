@@ -15,6 +15,7 @@
  */
 
 #include <stdlib.h>
+#include <printf.h>
 #include "vmarch.h"
 #include "memory.h"
 
@@ -65,26 +66,29 @@ void memory_mode_set(Memory *memory, MemMode mode) {
 }
 
 MemError memory_word_get(Memory *memory, addr_t address, word_t *word) {
-    if (address % sizeof(word_t) != 0) {
+    if (address % WORD_SIZE != 0) {
         return MEM_ERR_NOT_ALIGNED;
     }
-    if (address + sizeof(word_t) > memory->size) {
+    if (address + WORD_SIZE > memory->size) {
         return MEM_ERR_OUT_OF_BOUND;
     }
-    *word = memory->raw[address];
+    *word = memory->raw[address / WORD_SIZE];
     return MEM_ERR_OK;
 }
 
 MemError memory_word_set(Memory *memory, addr_t address, word_t word) {
+#ifdef WITH_MEMORY_LOG_MESSAGE
+    printf("MEM Write to %i (size: %i)\n", address, memory->size);
+#endif
     if (memory->mode != MEM_MODE_RW) {
         return MEM_ERR_NOT_WRITABLE;
     }
-    if (address % sizeof(word_t) != 0) {
+    if (address % WORD_SIZE != 0) {
         return MEM_ERR_NOT_ALIGNED;
     }
-    if (address + sizeof(word_t) > memory->size) {
+    if (address + WORD_SIZE > memory->size) {
         return MEM_ERR_OUT_OF_BOUND;
     }
-    memory->raw[address] = word;
+    memory->raw[address / WORD_SIZE] = word;
     return MEM_ERR_OK;
 }
