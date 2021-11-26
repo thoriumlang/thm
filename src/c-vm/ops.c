@@ -142,7 +142,7 @@ void op_jreq(CPU *cpu, const word_t *word) {
         address = from_big_endian(&address);
 
         if (cpu->debug.print_op) {
-            printf("  %lu\t"AXHEX"\tJEQ  "AXHEX"\t\t// z=%i -> %s\n",
+            printf("  %lu\t"AXHEX"\tJEQ  "AXHEX"\t\tz=%i -> %s\n",
                    cpu->debug.step,
                    cpu->pc - 2 * ADDR_SIZE,
                    address,
@@ -167,7 +167,7 @@ void op_jrne(CPU *cpu, const word_t *word) {
         address = from_big_endian(&address);
 
         if (cpu->debug.print_op) {
-            printf("  %lu\t"AXHEX"\tJNE  "AXHEX"\t\t// z=%i -> %s\n",
+            printf("  %lu\t"AXHEX"\tJNE  "AXHEX"\t\tz=%i -> %s\n",
                    cpu->debug.step,
                    cpu->pc - 2 * ADDR_SIZE,
                    address,
@@ -200,7 +200,7 @@ void op_stor(CPU *cpu, const word_t *word) {
     uint8_t from = ((uint8_t *) word)[2];
 
     if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tSTOR r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, to, from);
+        printf("  %lu\t"AXHEX"\tSTOR r%i, r%i\t\t", cpu->debug.step, cpu->pc - ADDR_SIZE, to, from);
     }
 
     word_t address;
@@ -212,6 +212,9 @@ void op_stor(CPU *cpu, const word_t *word) {
         return;
     }
 
+    if (cpu->debug.print_op) {
+        printf("r%i="AXHEX"\tr%i="AXHEX"\n", from, val, to, address);
+    }
     if (bus_word_write(cpu->bus, (addr_t) address, val) != BUS_ERR_OK) {
         cpu->state.panic = CPU_ERR_CANNOT_WRITE_MEMORY;
     }
@@ -222,13 +225,18 @@ void op_load(CPU *cpu, const word_t *word) {
     uint8_t from = ((uint8_t *) word)[2];
 
     if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tLOAD r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, to, from);
+        printf("  %lu\t"AXHEX"\tLOAD r%i, r%i\t\t", cpu->debug.step, cpu->pc - ADDR_SIZE, to, from);
     }
 
     word_t address;
-    if ((cpu->state.panic = cpu_register_get(cpu, to, &address)) != CPU_ERR_OK) {
+    if ((cpu->state.panic = cpu_register_get(cpu, from, &address)) != CPU_ERR_OK) {
         return;
     }
+
+    if (cpu->debug.print_op) {
+        printf("r%i="AXHEX"\n", from, address);
+    }
+
     word_t val;
     if ((bus_word_read(cpu->bus, (addr_t) address, &val)) != BUS_ERR_OK) {
         cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
