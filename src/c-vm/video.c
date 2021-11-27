@@ -21,21 +21,41 @@
 #include <time.h>
 #include "vmarch.h"
 #include "video.h"
+#include "memory.h"
 
 typedef struct Video {
     struct mfb_window *window;
     bool enabled;
+    VideoMemory *memory;
+    uint32_t *buffer;
 } Video;
 
 Video *video_create(bool enable) {
     Video *this = malloc(sizeof(Video));
     this->window = 0x0;
     this->enabled = enable;
+
+    this->memory = malloc(sizeof(VideoMemory));
+    this->memory->metadata = memory_create(VIDEO_META_SIZE, MEM_MODE_RW);
+
+    if (this->enabled) {
+        this->memory->buffer[0] = memory_create(VIDEO_SCREEN_WIDTH * VIDEO_SCREEN_HEIGHT * 4, MEM_MODE_RW);
+        this->memory->buffer[1] = memory_create(VIDEO_SCREEN_WIDTH * VIDEO_SCREEN_HEIGHT * 4, MEM_MODE_RW);
+        this->buffer = memory_raw_get(this->memory->buffer[0]);
+    } else {
+        this->memory->buffer[0] = NULL;
+        this->memory->buffer[1] = NULL;
+        this->buffer = NULL;
+    }
     return this;
 }
 
+VideoMemory *video_memory_get(Video *this) {
+    return this->memory;
+}
+
 void video_loop(Video *this) {
-    if (this->enabled) {
+    if (this->enabled && this->buffer) {
         this->window = mfb_open("thm", VIDEO_SCREEN_WIDTH * VIDEO_SCREEN_SCALE,
                                 VIDEO_SCREEN_HEIGHT * VIDEO_SCREEN_SCALE);
     }
@@ -50,8 +70,6 @@ void video_loop(Video *this) {
     mfb_set_target_fps(VIDEO_SCREEN_FPS);
 
     uint32_t i, noise, carry, seed = 0xbeef;
-    uint32_t *g_buffer = (uint32_t *) malloc(VIDEO_SCREEN_WIDTH * VIDEO_SCREEN_HEIGHT * 4);
-
     mfb_update_state state;
 
     time_t start;
@@ -68,10 +86,9 @@ void video_loop(Video *this) {
             seed >>= 1;
             seed |= (carry << 30);
             noise &= 0xFF;
-            g_buffer[i] = MFB_RGB(noise, noise, noise);
+            this->buffer[i] = MFB_RGB(noise, noise, noise);
         }
-
-        state = mfb_update_ex(this->window, g_buffer, VIDEO_SCREEN_WIDTH, VIDEO_SCREEN_HEIGHT);
+        state = mfb_update_ex(this->window, this->buffer, VIDEO_SCREEN_WIDTH, VIDEO_SCREEN_HEIGHT);
         if (state != STATE_OK) {
             this->window = 0x0;
             break;
@@ -101,5 +118,13 @@ void video_destroy(Video *this) {
         }
         usleep(5000);
     }
+    memory_destroy(this->memory->metadata);
+    if (this->memory->buffer[0]) {
+        memory_destroy(this->memory->buffer[0]);
+    }
+    if (this->memory->buffer[1]) {
+        memory_destroy(this->memory->buffer[1]);
+    }
+    free(this->memory);
     free(this);
 }

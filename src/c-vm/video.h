@@ -17,9 +17,18 @@
 #ifndef C_VM_VIDEO_H
 #define C_VM_VIDEO_H
 
+#include "memory.h"
+
+typedef struct VideoMemory {
+    Memory *metadata;
+    Memory *buffer[2];
+} VideoMemory;
+
 typedef struct Video Video;
 
 Video *video_create(bool enable);
+
+VideoMemory *video_memory_get(Video *this);
 
 void video_loop(Video *this);
 

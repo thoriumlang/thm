@@ -55,6 +55,14 @@ int main(int argc, char **argv) {
 
     CPU *cpu = cpu_create(bus, options->registers);
     Video *video = video_create(options->video != OPT_VIDEO_MODE_NONE);
+    VideoMemory *memory = video_memory_get(video);
+    bus_memory_attach(bus, memory->metadata, VIDEO_META_ADDRESS, "VMeta");
+    if (memory->buffer[0]) {
+        bus_memory_attach(bus, memory->buffer[0], VIDEO_BUFFER_1_ADDRESS, "VBuf1");
+    }
+    if (memory->buffer[1]) {
+        bus_memory_attach(bus, memory->buffer[1], VIDEO_BUFFER_2_ADDRESS, "VBuf2");
+    }
 
     if (!load_file(bus, options->image, STACK_SIZE)) {
         return 1;

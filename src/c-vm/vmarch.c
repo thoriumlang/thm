@@ -20,15 +20,22 @@
 
 void arch_print() {
     printf("Architecture\n");
-    printf("  addr_size:   %i\n", ADDR_SIZE);
-    printf("  word_size:   %i\n", WORD_SIZE);
-    printf("  stack_dept:  %i\n", STACK_LENGTH);
-    printf("  stack_size:  %i\n", STACK_SIZE);
-    printf("  stack_start: "AXHEX"\n", 0);
-    printf("  stack_end:   "AXHEX"\n", STACK_SIZE - 1);
-    printf("  rom_size:    %i\n", ROM_SIZE);
-    printf("  rom_start:   "AXHEX"\n", ROM_ADDRESS);
-    printf("  rom_end:     "AXHEX"\n", ROM_ADDRESS + ROM_SIZE - 1);
+    printf("  addr_size:      %i\n", ADDR_SIZE);
+    printf("  word_size:      %i\n", WORD_SIZE);
+    printf("  stack_dept:     %i\n", STACK_LENGTH);
+    printf("  stack_size:     %i\n", STACK_SIZE);
+    printf("  stack_start:    "AXHEX"\n", 0);
+    printf("  stack_end:      "AXHEX"\n", STACK_SIZE - 1);
+    printf("  vmeta_start:    "AXHEX"\n", VIDEO_META_ADDRESS);
+    printf("  vmeta_end:      "AXHEX"\n", VIDEO_META_ADDRESS + VIDEO_META_SIZE - 1);
+    printf("  vbuffer_size:   %i\n", VIDEO_BUFFER_SIZE);
+    printf("  vbuf1_start:    "AXHEX"\n", VIDEO_BUFFER_1_ADDRESS);
+    printf("  vbuf1_end:      "AXHEX"\n", VIDEO_BUFFER_1_ADDRESS + VIDEO_BUFFER_SIZE - 1);
+    printf("  vbuf2_start:    "AXHEX"\n", VIDEO_BUFFER_2_ADDRESS);
+    printf("  vbuf2_end:      "AXHEX"\n", VIDEO_BUFFER_2_ADDRESS + VIDEO_BUFFER_SIZE - 1);
+    printf("  rom_size:       %i\n", ROM_SIZE);
+    printf("  rom_start:      "AXHEX"\n", ROM_ADDRESS);
+    printf("  rom_end:        "AXHEX"\n", ROM_ADDRESS + ROM_SIZE - 1);
 }
 
 JsonElement * arch_json_get(){
