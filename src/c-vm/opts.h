@@ -31,6 +31,7 @@ typedef struct {
     int registers;
     int *register_values;
     int help_flag;
+    int gen_header;
     int print_steps;
     int print_arch;
     int print_dump;

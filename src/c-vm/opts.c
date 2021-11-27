@@ -34,6 +34,7 @@ Options *opts_parse(int argc, char **argv) {
     opts->registers = DEFAULT_REGISTERS_COUNT;
     opts->register_values = NULL;
     opts->help_flag = 0;
+    opts->gen_header = 0;
     opts->print_steps = 0;
     opts->print_arch = 0;
     opts->print_dump = 0;
@@ -45,6 +46,7 @@ Options *opts_parse(int argc, char **argv) {
     struct option long_options[] = {
             {"help",            no_argument, &opts->help_flag,   1},
             {"print-arch",      no_argument, &opts->print_arch,  1},
+            {"gen-header",      no_argument, &opts->gen_header,  1},
             {"print-dump",      no_argument, &opts->print_dump,  1},
             {"print-steps",     no_argument, &opts->print_steps, 1},
             {"print-json",      no_argument, &opts->print_json,  1},
@@ -58,7 +60,7 @@ Options *opts_parse(int argc, char **argv) {
     };
     int c;
     int option_index = 0;
-    while ((c = getopt_long(argc, argv, "hr:R:M:v:", long_options, &option_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "hHr:R:M:v:", long_options, &option_index)) != -1) {
         switch (c) {
             case 0:
                 if (long_options[option_index].flag != 0) {
@@ -71,6 +73,9 @@ Options *opts_parse(int argc, char **argv) {
                 break;
             case 'h':
                 opts->help_flag = 1;
+                break;
+            case 'H':
+                opts->gen_header = 1;
                 break;
             case 'a':
                 opts->print_arch = 1;
@@ -168,6 +173,7 @@ void opts_print_help(char *prog_name) {
     printf("USAGE:\n    %s [OPTIONS] <image>\n\n", prog_name);
     printf("OPTIONS:\n");
     printf("    -h, --help                   Prints help information\n");
+    printf("    -H  --gen-header             Prints header on stdout\n");
     printf("        --print-arch             Prints arch when starting\n");
     printf("        --print-dump             Prints when dump before and after execution\n");
     printf("        --print-steps            Prints steps\n");

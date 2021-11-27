@@ -43,6 +43,9 @@ int main(int argc, char **argv) {
         opts_print_help(argv[0]);
         return 0;
     }
+    if (options->gen_header) {
+        arch_print_header();
+    }
     if (options->print_arch) {
         arch_print();
     }

@@ -38,7 +38,15 @@ void arch_print() {
     printf("  rom_end:        "AXHEX"\n", ROM_ADDRESS + ROM_SIZE - 1);
 }
 
-JsonElement * arch_json_get(){
+void arch_print_header() {
+    printf("$__rom_start = "AXHEX"\n", ROM_ADDRESS);
+    printf("$__video_meta = "AXHEX"\n", VIDEO_META_ADDRESS);
+    printf("$__video_buffer1 = "AXHEX"\n", VIDEO_BUFFER_1_ADDRESS);
+    printf("$__video_buffer2 = "AXHEX"\n", VIDEO_BUFFER_2_ADDRESS);
+    printf("$__video_buffer_size = %i\n", VIDEO_BUFFER_SIZE);
+}
+
+JsonElement *arch_json_get() {
     char hex[32];
     JsonElement *arch = json_object();
     json_object_put(arch, "addr_size", json_number(ADDR_SIZE));
@@ -64,7 +72,7 @@ JsonElement * arch_json_get(){
     return arch;
 }
 
-word_t from_big_endian(word_t *word) {
-    uint8_t *bytes = (uint8_t *) word;
+word_t from_big_endian(word_t word) {
+    uint8_t *bytes = (uint8_t *) &word;
     return bytes[3] | bytes[2] << 8 | bytes[1] << 16 | bytes[0] << 24;
 }

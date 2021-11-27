@@ -93,6 +93,6 @@ MemError memory_word_set(Memory *memory, addr_t address, word_t word) {
     return MEM_ERR_OK;
 }
 
-void *memory_raw_get(Memory *memory) {
+inline void *memory_raw_get(Memory *memory) {
     return memory->raw;
 }

@@ -88,7 +88,7 @@ void op_mov_rw(CPU *cpu, const word_t *word) {
     if (cpu->state.panic != CPU_ERR_OK) {
         return;
     }
-    val = from_big_endian(&val);
+    val = from_big_endian(val);
 
     if (cpu->debug.print_op) {
         printf("  %lu\t"AXHEX"\tMOV  r%i, %i\n", cpu->debug.step, cpu->pc - 2 * ADDR_SIZE, to, val);
@@ -139,7 +139,7 @@ void op_jreq(CPU *cpu, const word_t *word) {
         if (cpu->state.panic != CPU_ERR_OK) {
             return;
         }
-        address = from_big_endian(&address);
+        address = from_big_endian(address);
 
         if (cpu->debug.print_op) {
             printf("  %lu\t"AXHEX"\tJEQ  "AXHEX"\t\tz=%i -> %s\n",
@@ -164,7 +164,7 @@ void op_jrne(CPU *cpu, const word_t *word) {
         if (cpu->state.panic != CPU_ERR_OK) {
             return;
         }
-        address = from_big_endian(&address);
+        address = from_big_endian(address);
 
         if (cpu->debug.print_op) {
             printf("  %lu\t"AXHEX"\tJNE  "AXHEX"\t\tz=%i -> %s\n",
@@ -186,7 +186,7 @@ void op_jr(CPU *cpu, const word_t *word) {
     if (cpu->state.panic != CPU_ERR_OK) {
         return;
     }
-    address = from_big_endian(&address);
+    address = from_big_endian(address);
 
     if (cpu->debug.print_op) {
         printf("  %lu\t"AXHEX"\tJ    "AXHEX"\n", cpu->debug.step, cpu->pc - 2 * ADDR_SIZE, address);
@@ -271,7 +271,7 @@ void op_sub_rw(CPU *cpu, const word_t *word) {
     if (cpu->state.panic != CPU_ERR_OK) {
         return;
     }
-    value = from_big_endian(&value);
+    value = from_big_endian(value);
 
     if (cpu->debug.print_op) {
         printf("  %lu\t"AXHEX"\tSUB  r%i, "WXHEX"\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, value);
@@ -341,7 +341,7 @@ void op_call(CPU *cpu, const word_t *word) {
     if (cpu->state.panic != CPU_ERR_OK) {
         return;
     }
-    address = from_big_endian(&address);
+    address = from_big_endian(address);
 
     if (cpu->debug.print_op) {
         printf("  %lu\t"AXHEX"\tCALL "AXHEX"\n", cpu->debug.step, cpu->pc - 2 * ADDR_SIZE, address);

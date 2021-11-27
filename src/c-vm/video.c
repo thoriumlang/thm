@@ -23,20 +23,32 @@
 #include "video.h"
 #include "memory.h"
 
+#define VIDEO_BIT_BUFFER 1
+
 typedef struct Video {
     struct mfb_window *window;
     bool enabled;
     VideoMemory *memory;
+    word_t flags_cache;
     uint32_t *buffer;
+    struct {
+        time_t time;
+        int frames;
+        int buffer_switches;
+    } stats;
 } Video;
+
+bool select_buffer(Video *this, word_t flags);
+
+void print_fps(Video *this);
 
 Video *video_create(bool enable) {
     Video *this = malloc(sizeof(Video));
     this->window = 0x0;
     this->enabled = enable;
-
     this->memory = malloc(sizeof(VideoMemory));
     this->memory->metadata = memory_create(VIDEO_META_SIZE, MEM_MODE_RW);
+    this->flags_cache = 0;
 
     if (this->enabled) {
         this->memory->buffer[0] = memory_create(VIDEO_SCREEN_WIDTH * VIDEO_SCREEN_HEIGHT * 4, MEM_MODE_RW);
@@ -69,25 +81,19 @@ void video_loop(Video *this) {
     );
     mfb_set_target_fps(VIDEO_SCREEN_FPS);
 
-    uint32_t i, noise, carry, seed = 0xbeef;
+
     mfb_update_state state;
-
-    time_t start;
-    int frames = 0;
-    time(&start);
-
+    this->stats.time = time(NULL);
+    this->stats.frames = 0;
+    this->stats.buffer_switches = 0;
     do {
-        for (i = 0; i < VIDEO_SCREEN_WIDTH * VIDEO_SCREEN_HEIGHT; ++i) {
-            noise = seed;
-            noise >>= 3;
-            noise ^= seed;
-            carry = noise & 1;
-            noise >>= 1;
-            seed >>= 1;
-            seed |= (carry << 30);
-            noise &= 0xFF;
-            this->buffer[i] = MFB_RGB(noise, noise, noise);
+        word_t flags;
+        if (memory_word_get(this->memory->metadata, 0, &flags) != MEM_ERR_OK) {
+            continue;
         }
+        flags = from_big_endian(flags);
+        select_buffer(this, flags);
+
         state = mfb_update_ex(this->window, this->buffer, VIDEO_SCREEN_WIDTH, VIDEO_SCREEN_HEIGHT);
         if (state != STATE_OK) {
             this->window = 0x0;
@@ -97,12 +103,36 @@ void video_loop(Video *this) {
             video_stop(this);
         }
 
-        frames = (frames + 1) % VIDEO_SCREEN_FPS;
-        if (frames == 0) {
-            printf("FPS: %f\n", 1 / ((double) -(start - time(&start)) / VIDEO_SCREEN_FPS));
-        }
+        print_fps(this);
     } while (mfb_wait_sync(this->window));
     this->window = 0x0;
+}
+
+void print_fps(Video *this) {
+    this->stats.frames = (this->stats.frames + 1) % VIDEO_SCREEN_FPS;
+    if (this->stats.frames == 0) {
+        time_t seconds = -(this->stats.time - time(&(this->stats.time)));
+        printf("FPS: %2.1f ; %2.1f\n",
+               (double) VIDEO_SCREEN_FPS / (double) seconds,
+               (double) this->stats.buffer_switches / (double) seconds);
+        this->stats.buffer_switches = 0;
+    }
+}
+
+/**
+ * updates this->buffer if needed and returns true if an update was needed.
+ */
+
+inline bool select_buffer(Video *this, word_t flags) {
+    bool update_needed = (this->flags_cache ^ flags) & VIDEO_BIT_BUFFER;
+
+    if (update_needed) {
+        this->buffer = memory_raw_get(this->memory->buffer[flags & VIDEO_BIT_BUFFER]);
+        this->flags_cache ^= VIDEO_BIT_BUFFER;
+        this->stats.buffer_switches++;
+    }
+
+    return update_needed;
 }
 
 void video_stop(Video *this) {

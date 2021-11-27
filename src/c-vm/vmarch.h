@@ -58,8 +58,10 @@ typedef uint32_t addr_t;
 
 void arch_print();
 
+void arch_print_header();
+
 JsonElement *arch_json_get();
 
-word_t from_big_endian(word_t *word);
+word_t from_big_endian(word_t word);
 
 #endif //C_VM_VMARCH_H
