@@ -14,7 +14,48 @@
  * limitations under the License.
  */
 
+#include <stdio.h>
 #include "vmarch.h"
+#include "json.h"
+
+void arch_print() {
+    printf("Architecture\n");
+    printf("  addr_size:   %i\n", ADDR_SIZE);
+    printf("  word_size:   %i\n", WORD_SIZE);
+    printf("  stack_dept:  %i\n", STACK_LENGTH);
+    printf("  stack_size:  %i\n", STACK_SIZE);
+    printf("  stack_start: "AXHEX"\n", 0);
+    printf("  stack_end:   "AXHEX"\n", STACK_SIZE - 1);
+    printf("  rom_size:    %i\n", ROM_SIZE);
+    printf("  rom_start:   "AXHEX"\n", ROM_ADDRESS);
+    printf("  rom_end:     "AXHEX"\n", ROM_ADDRESS + ROM_SIZE - 1);
+}
+
+JsonElement * arch_json_get(){
+    char hex[32];
+    JsonElement *arch = json_object();
+    json_object_put(arch, "addr_size", json_number(ADDR_SIZE));
+    json_object_put(arch, "word_size", json_number(WORD_SIZE));
+    json_object_put(arch, "stack_depth", json_number(STACK_LENGTH));
+    json_object_put(arch, "stack_size", json_number(STACK_SIZE));
+    json_object_put(arch, "stack_start", json_number(0));
+    sprintf(hex, AXHEX, 0);
+    json_object_put(arch, "stack_start_hex", json_string(hex));
+    json_object_put(arch, "stack_end", json_number(STACK_SIZE - 1));
+    sprintf(hex, AXHEX, STACK_SIZE - 1);
+    json_object_put(arch, "stack_end_hex", json_string(hex));
+    json_object_put(arch, "code_start", json_number(STACK_SIZE));
+    sprintf(hex, AXHEX, STACK_SIZE);
+    json_object_put(arch, "code_start_hex", json_string(hex));
+    json_object_put(arch, "rom_size", json_number(ROM_SIZE));
+    json_object_put(arch, "rom_start", json_number(ROM_ADDRESS));
+    sprintf(hex, AXHEX, ROM_ADDRESS);
+    json_object_put(arch, "rom_start", json_string(hex));
+    json_object_put(arch, "rom_end", json_number(ROM_ADDRESS + ROM_SIZE - 1));
+    sprintf(hex, AXHEX, ROM_ADDRESS + ROM_SIZE - 1);
+    json_object_put(arch, "rom_end", json_string(hex));
+    return arch;
+}
 
 word_t from_big_endian(word_t *word) {
     uint8_t *bytes = (uint8_t *) word;

@@ -18,6 +18,7 @@
 #define C_VM_VMARCH_H
 
 #include <stdint.h>
+#include "json.h"
 
 #define WORD_SIZE 4 // bytes
 #define ADDR_SIZE 4 // bytes
@@ -46,6 +47,10 @@ typedef uint32_t addr_t;
 
 #define VIDEO_SCREEN_WIDTH 320
 #define VIDEO_SCREEN_HEIGHT 200
+
+void arch_print();
+
+JsonElement *arch_json_get();
 
 word_t from_big_endian(word_t *word);
 

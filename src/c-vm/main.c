@@ -33,100 +33,9 @@ typedef struct VmThreadParam {
 
 void *cpu_loop(void *ptr);
 
-void print_arch() {
-    printf("Architecture\n");
-    printf("  addr_size:   %i\n", ADDR_SIZE);
-    printf("  word_size:   %i\n", WORD_SIZE);
-    printf("  stack_dept:  %i\n", STACK_LENGTH);
-    printf("  stack_size:  %i\n", STACK_SIZE);
-    printf("  stack_start: "AXHEX"\n", 0);
-    printf("  stack_end:   "AXHEX"\n", STACK_SIZE - 1);
-    printf("  rom_size:    %i\n", ROM_SIZE);
-    printf("  rom_start:   "AXHEX"\n", ROM_ADDRESS);
-    printf("  rom_end:     "AXHEX"\n", ROM_ADDRESS + ROM_SIZE - 1);
-}
+void print_json(CPU *cpu, Bus *bus);
 
-void print_json(CPU *cpu, Bus *bus) {
-    char hex[32];
-    JsonElement *arch = json_object();
-    json_object_put(arch, "addr_size", json_number(ADDR_SIZE));
-    json_object_put(arch, "word_size", json_number(WORD_SIZE));
-    json_object_put(arch, "stack_depth", json_number(STACK_LENGTH));
-    json_object_put(arch, "stack_size", json_number(STACK_SIZE));
-    json_object_put(arch, "stack_start", json_number(0));
-    sprintf(hex, AXHEX, 0);
-    json_object_put(arch, "stack_start_hex", json_string(hex));
-    json_object_put(arch, "stack_end", json_number(STACK_SIZE - 1));
-    sprintf(hex, AXHEX, STACK_SIZE - 1);
-    json_object_put(arch, "stack_end_hex", json_string(hex));
-    json_object_put(arch, "code_start", json_number(STACK_SIZE));
-    sprintf(hex, AXHEX, STACK_SIZE);
-    json_object_put(arch, "code_start_hex", json_string(hex));
-    json_object_put(arch, "rom_size", json_number(ROM_SIZE));
-    json_object_put(arch, "rom_start", json_number(ROM_ADDRESS));
-    sprintf(hex, AXHEX, ROM_ADDRESS);
-    json_object_put(arch, "rom_start", json_string(hex));
-    json_object_put(arch, "rom_end", json_number(ROM_ADDRESS + ROM_SIZE - 1));
-    sprintf(hex, AXHEX, ROM_ADDRESS + ROM_SIZE - 1);
-    json_object_put(arch, "rom_end", json_string(hex));
-
-    JsonElement *root = json_object();
-    json_object_put(root, "arch", arch);
-    json_object_put(root, "cpu", cpu_state_to_json(cpu));
-    json_object_put(root, "bus", bus_state_to_json(bus));
-
-    char *json = json_serialize(root);
-    fprintf(stdout, "%s\n", json);
-    free(json);
-}
-
-int load_file(Bus *bus, char *file, addr_t from) {
-    const uint8_t NOP[] = {0x01, 0x00, 0x00, 0x00};
-    if (file == NULL) {
-        switch (bus_word_write(bus, from, *NOP)) {
-            case BUS_ERR_OK:
-                break;
-            case BUS_ERR_INVALID_ADDRESS:
-                fprintf(stderr, "Invalid address: "AXHEX"\n", from);
-                return 0;
-            case BUS_ERR_ILLEGAL_ACCESS:
-                fprintf(stderr, "Cannot write to "AXHEX"\nn", from);
-                return 0;
-            default:
-                abort();
-        }
-        return 1;
-    }
-    FILE *fptr;
-
-    if ((fptr = fopen(file, "rb")) == NULL) {
-        fprintf(stderr, "Cannot open %s\n", file);
-        return 0;
-    }
-
-    addr_t total_words_read = 0;
-    addr_t words_read;
-    word_t word;
-    while ((words_read = fread(&word, WORD_SIZE, 1, fptr)) > 0) {
-        addr_t address = from + total_words_read * WORD_SIZE;
-        switch (bus_word_write(bus, address, word)) {
-            case BUS_ERR_OK:
-                break;
-            case BUS_ERR_INVALID_ADDRESS:
-                fprintf(stderr, "Invalid address: "AXHEX"\n", address);
-                return 0;
-            case BUS_ERR_ILLEGAL_ACCESS:
-                fprintf(stderr, "Cannot write to "AXHEX"\nn", address);
-                return 0;
-            default:
-                abort();
-        }
-        total_words_read += words_read;
-    }
-    fclose(fptr);
-
-    return 1;
-}
+int load_file(Bus *bus, char *file, addr_t from);
 
 int main(int argc, char **argv) {
     Options *options = opts_parse(argc, argv);
@@ -135,7 +44,7 @@ int main(int argc, char **argv) {
         return 0;
     }
     if (options->print_arch) {
-        print_arch();
+        arch_print();
     }
 
     Bus *bus = bus_create();
@@ -218,4 +127,63 @@ void *cpu_loop(void *ptr) {
     }
 
     return NULL;
+}
+
+void print_json(CPU *cpu, Bus *bus) {
+    JsonElement *root = json_object();
+    json_object_put(root, "arch", arch_json_get());
+    json_object_put(root, "cpu", cpu_state_to_json(cpu));
+    json_object_put(root, "bus", bus_state_to_json(bus));
+
+    char *json = json_serialize(root);
+    fprintf(stdout, "%s\n", json);
+    free(json);
+}
+
+int load_file(Bus *bus, char *file, addr_t from) {
+    const uint8_t NOP[] = {0x01, 0x00, 0x00, 0x00};
+    if (file == NULL) {
+        switch (bus_word_write(bus, from, *NOP)) {
+            case BUS_ERR_OK:
+                break;
+            case BUS_ERR_INVALID_ADDRESS:
+                fprintf(stderr, "Invalid address: "AXHEX"\n", from);
+                return 0;
+            case BUS_ERR_ILLEGAL_ACCESS:
+                fprintf(stderr, "Cannot write to "AXHEX"\nn", from);
+                return 0;
+            default:
+                abort();
+        }
+        return 1;
+    }
+    FILE *fptr;
+
+    if ((fptr = fopen(file, "rb")) == NULL) {
+        fprintf(stderr, "Cannot open %s\n", file);
+        return 0;
+    }
+
+    addr_t total_words_read = 0;
+    addr_t words_read;
+    word_t word;
+    while ((words_read = fread(&word, WORD_SIZE, 1, fptr)) > 0) {
+        addr_t address = from + total_words_read * WORD_SIZE;
+        switch (bus_word_write(bus, address, word)) {
+            case BUS_ERR_OK:
+                break;
+            case BUS_ERR_INVALID_ADDRESS:
+                fprintf(stderr, "Invalid address: "AXHEX"\n", address);
+                return 0;
+            case BUS_ERR_ILLEGAL_ACCESS:
+                fprintf(stderr, "Cannot write to "AXHEX"\nn", address);
+                return 0;
+            default:
+                abort();
+        }
+        total_words_read += words_read;
+    }
+    fclose(fptr);
+
+    return 1;
 }
