@@ -23,8 +23,6 @@ Video *video_create(bool enable);
 
 void video_loop(Video *this);
 
-void video_pause(Video *this);
-
 void video_stop(Video *this);
 
 void video_destroy(Video *self);

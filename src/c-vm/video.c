@@ -28,8 +28,8 @@ typedef struct Video {
 
 Video *video_create(bool enable) {
     Video *this = malloc(sizeof(Video));
-    this->enabled = enable;
     this->window = 0x0;
+    this->enabled = enable;
     return this;
 }
 
@@ -37,7 +37,7 @@ void video_loop(Video *this) {
     if (this->enabled) {
         this->window = mfb_open("thm", VIDEO_SCREEN_WIDTH, VIDEO_SCREEN_HEIGHT);
     }
-    if (!this->enabled || !this->window) {
+    if (!this->window) {
         return;
     }
     mfb_set_viewport(this->window, 0, 0, VIDEO_SCREEN_WIDTH, VIDEO_SCREEN_HEIGHT);
@@ -64,15 +64,15 @@ void video_loop(Video *this) {
             this->window = 0x0;
             break;
         }
+        if (!this->enabled) {
+            video_stop(this);
+        }
     } while (mfb_wait_sync(this->window));
     this->window = 0x0;
 }
 
-void video_pause(Video *this) {
-    // fixme
-}
-
 void video_stop(Video *this) {
+    this->enabled = false;
     mfb_close(this->window);
 }
 

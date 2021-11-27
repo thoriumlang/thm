@@ -26,6 +26,8 @@
 
 typedef struct VmThreadParam {
     Options *options;
+    CPU *cpu;
+    Bus *bus;
     Video *video;
 } VmThreadParam;
 
@@ -136,41 +138,22 @@ int main(int argc, char **argv) {
         print_arch();
     }
 
-    Video *video = video_create(options->video);
-
-    VmThreadParam p;
-    p.options = options;
-    p.video = video;
-
-    pthread_t cpu_thread;
-    pthread_create(&cpu_thread, NULL, cpu_loop, &p);
-
-    video_loop(video);              // blocking
-    pthread_join(cpu_thread, NULL); // blocking
-
-    opts_free(options);
-    video_destroy(video);
-}
-
-void *cpu_loop(void *ptr) {
-    VmThreadParam *p = (VmThreadParam *) ptr;
-    Options *options = p->options;
-
     Bus *bus = bus_create();
     Memory *ram = memory_create(options->ram_size, MEM_MODE_RW);
     Memory *rom = memory_create(ROM_SIZE, MEM_MODE_R);
-    CPU *cpu = cpu_create(bus, options->registers);
-
     bus_memory_attach(bus, ram, 0, "RAM");
     bus_memory_attach(bus, rom, ROM_ADDRESS, "ROM");
 
+    CPU *cpu = cpu_create(bus, options->registers);
+    Video *video = video_create(options->video != OPT_VIDEO_MODE_NONE);
+
     if (!load_file(bus, options->image, STACK_SIZE)) {
-        return NULL; // fixme
+        return 1;
     }
     if (options->rom != NULL) {
         memory_mode_set(rom, MEM_MODE_RW);
         if (!load_file(bus, options->rom, ROM_ADDRESS)) {
-            return NULL; // fixme
+            return 1;
         }
         memory_mode_set(rom, MEM_MODE_R);
     }
@@ -191,22 +174,48 @@ void *cpu_loop(void *ptr) {
         bus_dump(bus, ROM_ADDRESS, 128, stdout);
     }
 
-    cpu_start(cpu);
+    VmThreadParam p = {
+            .options = options,
+            .cpu = cpu,
+            .bus = bus,
+            .video = video
+    };
+    pthread_t cpu_thread;
+    pthread_create(&cpu_thread, NULL, cpu_loop, &p);
 
-    if (p->options->print_dump) {
-        cpu_state_print(cpu, stdout);
+    video_loop(video);
+    if (options->video == OPT_VIDEO_MODE_MASTER) {
+        cpu_stop(cpu);
     }
+    pthread_join(cpu_thread, NULL);
 
-    if (p->options->print_json) {
-        print_json(cpu, bus);
-    }
-
-    video_pause(p->video);
-
+    opts_free(options);
     cpu_destroy(cpu);
     bus_destroy(bus);
     memory_destroy(ram);
     memory_destroy(rom);
+    video_destroy(video);
+}
+
+void *cpu_loop(void *ptr) {
+    Options *options = ((VmThreadParam *) ptr)->options;
+    CPU *cpu = ((VmThreadParam *) ptr)->cpu;
+    Bus *bus = ((VmThreadParam *) ptr)->bus;
+    Video *video = ((VmThreadParam *) ptr)->video;
+
+    cpu_start(cpu);
+
+    if (options->print_dump) {
+        cpu_state_print(cpu, stdout);
+    }
+
+    if (options->print_json) {
+        print_json(cpu, bus);
+    }
+
+    if (options->video == OPT_VIDEO_MODE_SLAVE) {
+        video_stop(video);
+    }
 
     return NULL;
 }

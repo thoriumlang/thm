@@ -19,6 +19,10 @@
 
 #include "vmarch.h"
 
+typedef enum {
+    OPT_VIDEO_MODE_NONE, OPT_VIDEO_MODE_MASTER, OPT_VIDEO_MODE_SLAVE
+} OptsVideMode;
+
 typedef struct {
     char *rom;
     char *image;
@@ -31,7 +35,7 @@ typedef struct {
     int print_arch;
     int print_dump;
     int print_json;
-    int video;
+    OptsVideMode video;
 } Options;
 
 Options *opts_parse(int argc, char **argv);

@@ -38,7 +38,7 @@ Options *opts_parse(int argc, char **argv) {
     opts->print_arch = 0;
     opts->print_dump = 0;
     opts->print_json = 0;
-    opts->video = 0;
+    opts->video = OPT_VIDEO_MODE_NONE;
 
     char *register_values = NULL;
 
@@ -50,7 +50,7 @@ Options *opts_parse(int argc, char **argv) {
             {"print-json",      no_argument, &opts->print_json,  1},
             {"registers",       required_argument, NULL,         'r'},
             {"register-values", required_argument, NULL,         0},
-            {"video",           no_argument, &opts->video,       1},
+            {"video",           required_argument, NULL,         'v'},
             {"ram",             required_argument, NULL,         'R'},
             {"rom",             required_argument, NULL,         'M'},
             {"pc",              required_argument, NULL,         0},
@@ -58,7 +58,7 @@ Options *opts_parse(int argc, char **argv) {
     };
     int c;
     int option_index = 0;
-    while ((c = getopt_long(argc, argv, "hr:R:M:", long_options, &option_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "hr:R:M:v:", long_options, &option_index)) != -1) {
         switch (c) {
             case 0:
                 if (long_options[option_index].flag != 0) {
@@ -83,6 +83,16 @@ Options *opts_parse(int argc, char **argv) {
                 break;
             case 'M':
                 opts->rom = optarg;
+                break;
+            case 'v':
+                if (strcmp(optarg, "slave") == 0) {
+                    opts->video = OPT_VIDEO_MODE_SLAVE;
+                } else if (strcmp(optarg, "master") == 0) {
+                    opts->video = OPT_VIDEO_MODE_MASTER;
+                } else {
+                    fprintf(stderr, "`%s` is not a valid option for --video <MODE>\n", optarg);
+                    opts->video = OPT_VIDEO_MODE_NONE;
+                }
                 break;
             default:
                 abort();
@@ -163,11 +173,11 @@ void opts_print_help(char *prog_name) {
     printf("        --print-steps            Prints steps\n");
     printf("        --print-json             Prints json after execution\n");
     printf("    -r, --registers <VAL>        Amount of registers; default to %i, max. 255\n", DEFAULT_REGISTERS_COUNT);
-    printf("    -r, --register-values <VAL>  Initial register values\n"
+    printf("        --register-values <VAL>  Initial register values\n"
            "                                 <VAL> format: `<reg>:<val>[,...]`, <reg> starts at 0\n");
     printf("    -R, --ram <RAM>              Amount of ram; default to %ul Bytes\n", DEFAULT_RAM_SIZE);
     printf("    -M, --rom <PATH>             Path to rom to load\n");
     printf("        --pc <ADDRESS>           Initial address of PC; defaults to "AXHEX"\n", STACK_SIZE);
-    printf("        --video                  Enable video\n");
+    printf("    -v  --video <MODE>           Enable video, <MODE> is `master` or `slave`; default `master`\n");
     printf("\n");
 }
