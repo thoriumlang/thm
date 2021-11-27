@@ -15,11 +15,12 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <MiniFB.h>
 #include <unistd.h>
+#include <time.h>
 #include "vmarch.h"
 #include "video.h"
-
 
 typedef struct Video {
     struct mfb_window *window;
@@ -35,17 +36,28 @@ Video *video_create(bool enable) {
 
 void video_loop(Video *this) {
     if (this->enabled) {
-        this->window = mfb_open("thm", VIDEO_SCREEN_WIDTH, VIDEO_SCREEN_HEIGHT);
+        this->window = mfb_open("thm", VIDEO_SCREEN_WIDTH * VIDEO_SCREEN_SCALE,
+                                VIDEO_SCREEN_HEIGHT * VIDEO_SCREEN_SCALE);
     }
     if (!this->window) {
         return;
     }
-    mfb_set_viewport(this->window, 0, 0, VIDEO_SCREEN_WIDTH, VIDEO_SCREEN_HEIGHT);
+    mfb_set_viewport(this->window,
+                     0, 0,
+                     VIDEO_SCREEN_WIDTH * VIDEO_SCREEN_SCALE,
+                     VIDEO_SCREEN_HEIGHT * VIDEO_SCREEN_SCALE
+    );
+    mfb_set_target_fps(VIDEO_SCREEN_FPS);
 
     uint32_t i, noise, carry, seed = 0xbeef;
     uint32_t *g_buffer = (uint32_t *) malloc(VIDEO_SCREEN_WIDTH * VIDEO_SCREEN_HEIGHT * 4);
 
     mfb_update_state state;
+
+    time_t start;
+    int frames = 0;
+    time(&start);
+
     do {
         for (i = 0; i < VIDEO_SCREEN_WIDTH * VIDEO_SCREEN_HEIGHT; ++i) {
             noise = seed;
@@ -66,6 +78,11 @@ void video_loop(Video *this) {
         }
         if (!this->enabled) {
             video_stop(this);
+        }
+
+        frames = (frames + 1) % VIDEO_SCREEN_FPS;
+        if (frames == 0) {
+            printf("FPS: %f\n", 1 / ((double) -(start - time(&start)) / VIDEO_SCREEN_FPS));
         }
     } while (mfb_wait_sync(this->window));
     this->window = 0x0;

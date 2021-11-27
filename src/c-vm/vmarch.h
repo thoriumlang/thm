@@ -47,6 +47,8 @@ typedef uint32_t addr_t;
 
 #define VIDEO_SCREEN_WIDTH 320
 #define VIDEO_SCREEN_HEIGHT 200
+#define VIDEO_SCREEN_SCALE 4
+#define VIDEO_SCREEN_FPS 30
 
 void arch_print();
 
