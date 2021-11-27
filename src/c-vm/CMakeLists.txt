@@ -25,6 +25,17 @@ if(UNIX)
     endif()
 endif()
 
+SET(VM_DEBUG_MEMORY FALSE CACHE BOOL "Print memory access messages")
+
+if (VM_DEBUG_MEMORY)
+    if (APPLE)
+        # use with `export MallocNanoZone=0`
+        target_compile_options(c_vm PRIVATE -fsanitize=address)
+        target_link_options(c_vm PRIVATE -fsanitize=address)
+        add_compile_definitions(WITH_MEMORY_LOG_MESSAGE)
+    endif()
+endif()
+
 # tests
 include(cmake/FetchCMocka.cmake)
 
