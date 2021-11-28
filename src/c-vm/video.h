@@ -36,4 +36,6 @@ void video_stop(Video *this);
 
 void video_destroy(Video *self);
 
+void video_state_print(Video *this, FILE *file);
+
 #endif //C_VM_VIDEO_H

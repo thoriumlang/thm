@@ -35,6 +35,7 @@ typedef struct Video {
         time_t time;
         int frames;
         int buffer_switches;
+        double fps;
     } stats;
 } Video;
 
@@ -111,8 +112,9 @@ void print_fps(Video *this) {
     this->stats.frames = (this->stats.frames + 1) % VIDEO_SCREEN_FPS;
     if (this->stats.frames == 0) {
         time_t seconds = -(this->stats.time - time(&(this->stats.time)));
+        this->stats.fps = (double) VIDEO_SCREEN_FPS / (double) seconds;
         printf("FPS: %2.1f ; %2.1f\n",
-               (double) VIDEO_SCREEN_FPS / (double) seconds,
+               this->stats.fps,
                (double) this->stats.buffer_switches / (double) seconds);
         this->stats.buffer_switches = 0;
     }
@@ -156,4 +158,12 @@ void video_destroy(Video *this) {
     }
     free(this->memory);
     free(this);
+}
+
+void video_state_print(Video *this, FILE *file) {
+    fprintf(file, "\nVideo state\n");
+    fprintf(file, "  enable:%i\n", (this->flags_cache & VIDEO_BIT_ENABLED) != 0);
+    fprintf(file, "  buffer:%i\n", (this->flags_cache & VIDEO_BIT_BUFFER) != 0);
+    fprintf(file, "  sync:%i\n", (this->flags_cache & VIDEO_BIT_SYNC) != 0);
+    fprintf(file, "  fps: %2.0f\n", this->stats.fps);
 }

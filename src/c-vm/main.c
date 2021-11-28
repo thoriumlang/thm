@@ -92,6 +92,8 @@ int main(int argc, char **argv) {
         bus_dump(bus, 0, 16, stdout);
         bus_dump(bus, STACK_SIZE, 128, stdout);
         bus_dump(bus, ROM_ADDRESS, 128, stdout);
+        bus_dump(bus, VIDEO_META_ADDRESS, VIDEO_META_SIZE, stdout);
+        video_state_print(video, stdout);
     }
 
     VmThreadParam p = {
@@ -127,6 +129,8 @@ void *cpu_loop(void *ptr) {
 
     if (options->print_dump) {
         cpu_state_print(cpu, stdout);
+        bus_dump(bus, VIDEO_META_ADDRESS, VIDEO_META_SIZE, stdout);
+        video_state_print(video, stdout);
     }
 
     if (options->print_json) {
