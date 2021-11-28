@@ -62,6 +62,10 @@ void arch_print_header();
 
 JsonElement *arch_json_get();
 
-word_t from_big_endian(word_t word);
+#define FIXENDIAN
+
+word_t vtoh(word_t word);
+
+word_t htov(word_t word);
 
 #endif //C_VM_VMARCH_H

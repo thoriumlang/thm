@@ -154,7 +154,7 @@ void print_json(CPU *cpu, Bus *bus) {
 int load_file(Bus *bus, char *file, addr_t from) {
     const uint8_t NOP[] = {0x01, 0x00, 0x00, 0x00};
     if (file == NULL) {
-        switch (bus_word_write(bus, from, *NOP)) {
+        switch (bus_word_write(bus, from, vtoh(*NOP))) {
             case BUS_ERR_OK:
                 break;
             case BUS_ERR_INVALID_ADDRESS:
@@ -180,7 +180,7 @@ int load_file(Bus *bus, char *file, addr_t from) {
     word_t word;
     while ((words_read = fread(&word, WORD_SIZE, 1, fptr)) > 0) {
         addr_t address = from + total_words_read * WORD_SIZE;
-        switch (bus_word_write(bus, address, word)) {
+        switch (bus_word_write(bus, address, vtoh(word))) {
             case BUS_ERR_OK:
                 break;
             case BUS_ERR_INVALID_ADDRESS:

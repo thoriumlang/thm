@@ -15,6 +15,7 @@
  */
 
 #include <stdio.h>
+#include <arpa/inet.h>
 #include "vmarch.h"
 #include "json.h"
 
@@ -72,7 +73,22 @@ JsonElement *arch_json_get() {
     return arch;
 }
 
-word_t from_big_endian(word_t word) {
-    uint8_t *bytes = (uint8_t *) &word;
-    return bytes[3] | bytes[2] << 8 | bytes[1] << 16 | bytes[0] << 24;
+word_t vtoh(word_t word) {
+#ifdef FIXENDIAN
+#if WORD_SIZE == 4
+    return ntohl(word);
+#endif
+#else
+    return word;
+#endif
+}
+
+word_t htov(word_t word) {
+#ifdef FIXENDIAN
+#if WORD_SIZE == 4
+    return htonl(word);
+#endif
+#else
+    return word;
+#endif
 }

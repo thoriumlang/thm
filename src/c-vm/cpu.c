@@ -23,7 +23,7 @@
 #include "bus.h"
 #include "ops.h"
 
-op_ptr cpu_decode(CPU *cpu, const word_t *word);
+op_ptr cpu_decode(CPU *cpu, word_t word);
 
 CPU *cpu_create(Bus *bus, uint8_t reg_count) {
     // printf("sizeof(CPU)=%lu", sizeof(CPU));
@@ -44,12 +44,12 @@ void cpu_start(CPU *cpu) {
         printf("\nCPU Steps\n");
     }
     while (cpu->state.running == 1 && cpu->state.panic == CPU_ERR_OK) {
-        word_t word = cpu_fetch(cpu);
+        word_t word = htov(cpu_fetch(cpu));
         if (!cpu->state.panic) {
-            op_ptr op = cpu_decode(cpu, &word);
+            op_ptr op = cpu_decode(cpu, word);
             if (!cpu->state.panic) {
                 if (op) {
-                    op(cpu, &word);
+                    op(cpu, word);
                     cpu->debug.step++;
                 } else {
                     printf("Not implemented: 0x%02x\n", ((uint8_t *) &word)[0]);
@@ -72,11 +72,11 @@ word_t cpu_fetch(CPU *cpu) {
     return word;
 }
 
-op_ptr cpu_decode(CPU *cpu, const word_t *word) {
+op_ptr cpu_decode(CPU *cpu, word_t word) {
     if (cpu->state.panic) {
         return NULL;
     }
-    uint8_t op = ((uint8_t *) word)[0];
+    uint8_t op = ((uint8_t *) &word)[0];
     if (op >= OPS_COUNT) {
         cpu->state.panic = CPU_ERR_UNKNOWN_OPCODE;
         return NULL;

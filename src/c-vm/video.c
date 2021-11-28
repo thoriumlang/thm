@@ -91,7 +91,6 @@ void video_loop(Video *this) {
         if (memory_word_get(this->memory->metadata, 0, &flags) != MEM_ERR_OK) {
             continue;
         }
-        flags = from_big_endian(flags);
         select_buffer(this, flags);
 
         state = mfb_update_ex(this->window, this->buffer, VIDEO_SCREEN_WIDTH, VIDEO_SCREEN_HEIGHT);
