@@ -11,6 +11,10 @@
 10,MulRW,8
 15,Inc,4
 16,Dec,4
+17,AndRR,4
+18,AndRW,8
+19,OrRR,4
+20,OrRW,8
 24,Cmp,4
 25,Push,4
 26,Pop,4

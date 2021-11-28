@@ -95,6 +95,7 @@ impl<'t> Parser<'t> {
     fn parse_instruction(&mut self, op: &str, position: &Position) -> Result<Instruction> {
         return match op {
             "ADD" => self.op_rr_rw(Op::AddRR, Op::AddRW, position),
+            "AND" => self.op_rr_rw(Op::AndRR, Op::AndRW, position),
             "CALL" => self.op_a(Op::Call, position),
             "CMP" => self.op_rr(Op::Cmp, position),
             "DEC" => self.op_r(Op::Dec, position),
@@ -108,6 +109,7 @@ impl<'t> Parser<'t> {
             "MOV" => self.op_rr_rw(Op::MovRR, Op::MovRW, position),
             "MUL" => self.op_rr_rw(Op::MulRR, Op::MulRW, position),
             "NOP" => self.op_void(Op::Nop, position),
+            "OR" => self.op_rr_rw(Op::OrRR, Op::OrRW, position),
             "PANIC" => self.op_void(Op::Panic, position),
             "POP" => self.op_r(Op::Pop, position),
             "PUSH" => self.op_r(Op::Push, position),
@@ -486,6 +488,8 @@ mod tests {
     op_rr_test! {
         mov_rr: ("MOV  r1, r0\n", Op::MovRR, "r1", "r0"),
         add_rr: ("ADD  r1, r0\n", Op::AddRR, "r1", "r0"),
+        and_rr: ("AND  r1, r0\n", Op::AndRR, "r1", "r0"),
+        or_rr:  ("OR   r1, r0\n", Op::OrRR, "r1", "r0"),
         sub_rr: ("SUB  r1, r0\n", Op::SubRR, "r1", "r0"),
         mul_rr: ("MUL  r1, r0\n", Op::MulRR, "r1", "r0"),
         cmp:    ("CMP  r1, r0\n", Op::Cmp,   "r1", "r0"),
@@ -497,6 +501,8 @@ mod tests {
     op_rw_test! {
         mov_rw: ("MOV  r1, 42\n", Op::MovRW, "r1", 42),
         add_rw: ("ADD  r1, 42\n", Op::AddRW, "r1", 42),
+        and_rw: ("AND  r1, 42\n", Op::AndRW, "r1", 42),
+        or_rw:  ("OR   r1, 42\n", Op::OrRW, "r1", 42),
         sub_rw: ("SUB  r1, 42\n", Op::SubRW, "r1", 42),
         mul_rw: ("MUL  r1, 42\n", Op::MulRW, "r1", 42),
     }

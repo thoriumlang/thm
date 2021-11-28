@@ -14,6 +14,10 @@ pub enum Op {
     MulRW = 10, // 0x0a
     Inc = 15, // 0x0f
     Dec = 16, // 0x10
+    AndRR = 17, // 0x11
+    AndRW = 18, // 0x12
+    OrRR = 19, // 0x13
+    OrRW = 20, // 0x14
     Cmp = 24, // 0x18
     Push = 25, // 0x19
     Pop = 26, // 0x1a
@@ -44,6 +48,10 @@ impl Op {
             Op::MulRW => 8,
             Op::Inc => 4,
             Op::Dec => 4,
+            Op::AndRR => 4,
+            Op::AndRW => 8,
+            Op::OrRR => 4,
+            Op::OrRW => 8,
             Op::Cmp => 4,
             Op::Push => 4,
             Op::Pop => 4,
@@ -80,6 +88,10 @@ impl From<u8> for Op {
             10 => Self::MulRW,
             15 => Self::Inc,
             16 => Self::Dec,
+            17 => Self::AndRR,
+            18 => Self::AndRW,
+            19 => Self::OrRR,
+            20 => Self::OrRW,
             24 => Self::Cmp,
             25 => Self::Push,
             26 => Self::Pop,
@@ -164,6 +176,26 @@ mod tests {
     #[test]
     fn test_dec() {
         assert_eq!(Op::Dec, Op::from(Op::Dec.bytecode()));
+    }
+
+    #[test]
+    fn test_andrr() {
+        assert_eq!(Op::AndRR, Op::from(Op::AndRR.bytecode()));
+    }
+
+    #[test]
+    fn test_andrw() {
+        assert_eq!(Op::AndRW, Op::from(Op::AndRW.bytecode()));
+    }
+
+    #[test]
+    fn test_orrr() {
+        assert_eq!(Op::OrRR, Op::from(Op::OrRR.bytecode()));
+    }
+
+    #[test]
+    fn test_orrw() {
+        assert_eq!(Op::OrRW, Op::from(Op::OrRW.bytecode()));
     }
 
     #[test]
