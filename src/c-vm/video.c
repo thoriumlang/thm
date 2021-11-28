@@ -24,6 +24,8 @@
 #include "memory.h"
 
 #define VIDEO_BIT_BUFFER 1
+#define VIDEO_BIT_ENABLED 2
+#define VIDEO_BIT_SYNC 3
 
 typedef struct Video {
     struct mfb_window *window;
@@ -50,6 +52,11 @@ Video *video_create(bool enable) {
     this->memory = malloc(sizeof(VideoMemory));
     this->memory->metadata = memory_create(VIDEO_META_SIZE, MEM_MODE_RW);
     this->flags_cache = 0;
+
+    if (enable) {
+        this->flags_cache |= VIDEO_BIT_ENABLED;
+    }
+    memory_word_set(this->memory->metadata, 0, this->flags_cache);
 
     if (this->enabled) {
         this->memory->buffer[0] = memory_create(VIDEO_SCREEN_WIDTH * VIDEO_SCREEN_HEIGHT * 4, MEM_MODE_RW);

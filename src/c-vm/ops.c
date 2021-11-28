@@ -301,6 +301,80 @@ void op_mul_rr(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, a, (word_t) ((sword_t) a_val * (sword_t) b_val));
 }
 
+void op_and_rr(CPU *cpu, word_t word) {
+    uint8_t a = ((uint8_t *) &word)[1];
+    uint8_t b = ((uint8_t *) &word)[2];
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tAND  r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b);
+    }
+
+    word_t a_val;
+    if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
+        return;
+    }
+    word_t b_val;
+    if ((cpu->state.panic = cpu_register_get(cpu, b, &b_val)) != CPU_ERR_OK) {
+        return;
+    }
+    cpu->state.panic = cpu_register_set(cpu, a, a_val & b_val);
+}
+
+void op_and_rw(CPU *cpu, word_t word) {
+    uint8_t a = ((uint8_t *) &word)[1];
+    word_t b_val = cpu_fetch(cpu);
+    if (cpu->state.panic != CPU_ERR_OK) {
+        return;
+    }
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tAND  r%i, "WXHEX"\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b_val);
+    }
+
+    word_t a_val;
+    if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
+        return;
+    }
+    cpu->state.panic = cpu_register_set(cpu, a, a_val & b_val);
+}
+
+void op_or_rr(CPU *cpu, word_t word) {
+    uint8_t a = ((uint8_t *) &word)[1];
+    uint8_t b = ((uint8_t *) &word)[2];
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tOR   r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b);
+    }
+
+    word_t a_val;
+    if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
+        return;
+    }
+    word_t b_val;
+    if ((cpu->state.panic = cpu_register_get(cpu, b, &b_val)) != CPU_ERR_OK) {
+        return;
+    }
+    cpu->state.panic = cpu_register_set(cpu, a, a_val | b_val);
+}
+
+void op_or_rw(CPU *cpu, word_t word) {
+    uint8_t a = ((uint8_t *) &word)[1];
+    word_t b_val = cpu_fetch(cpu);
+    if (cpu->state.panic != CPU_ERR_OK) {
+        return;
+    }
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tOR   r%i, "WXHEX"\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b_val);
+    }
+
+    word_t a_val;
+    if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
+        return;
+    }
+    cpu->state.panic = cpu_register_set(cpu, a, a_val | b_val);
+}
+
 void op_dec(CPU *cpu, word_t word) {
     uint8_t r = ((uint8_t *) &word)[1];
 
@@ -379,10 +453,10 @@ op_ptr ops[OPS_COUNT] = {
         NULL,
         &op_inc,
         &op_dec,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
+        &op_and_rr,
+        &op_and_rw,
+        &op_or_rr,
+        &op_or_rw,
         NULL,
         NULL,
         NULL,
