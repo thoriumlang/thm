@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(c_vm C)
+project(thm C)
 
 include(cmake/FetchCCANJson.cmake)
 include(cmake/FetchMiniFB.cmake)
@@ -7,7 +7,7 @@ include(cmake/FetchMiniFB.cmake)
 # set(CMAKE_VERBOSE_MAKEFILE on)
 
 set(CMAKE_C_STANDARD 11)
-add_executable(c_vm
+add_executable(thm
         main.c
         opts.c opts.h
         vmarch.c vmarch.h
@@ -18,11 +18,11 @@ add_executable(c_vm
         video.c video.h
         time.c time.h
         json.c json.h ${CCAN_JSON})
-target_link_libraries(c_vm PRIVATE minifb)
+target_link_libraries(thm PRIVATE minifb)
 
 if(UNIX)
     if (NOT APPLE)
-        target_link_libraries(c_vm PRIVATE pthread)
+        target_link_libraries(thm PRIVATE pthread)
     endif()
 endif()
 
@@ -31,8 +31,8 @@ SET(VM_DEBUG_MEMORY FALSE CACHE BOOL "Print memory access messages")
 if (VM_DEBUG_MEMORY)
     if (APPLE)
         # use with `export MallocNanoZone=0`
-        target_compile_options(c_vm PRIVATE -fsanitize=address)
-        target_link_options(c_vm PRIVATE -fsanitize=address)
+        target_compile_options(thm PRIVATE -fsanitize=address)
+        target_link_options(thm PRIVATE -fsanitize=address)
         add_compile_definitions(WITH_MEMORY_LOG_MESSAGE)
     endif()
 endif()

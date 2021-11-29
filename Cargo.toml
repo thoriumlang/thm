@@ -8,18 +8,6 @@ edition = "2018"
 
 [dependencies]
 clap = "2.33.3"
-warp = "0.3.1"
-tokio = { version = "1.7.1", features = ["rt-multi-thread"] }
-serde = { version = "1.0.126", features = ["derive"] }
-minifb = "0.19.3"
-
-[lib]
-name = "vmlib"
-path = "src/vm-api/lib.rs"
-
-[[bin]]
-name = "thm"
-path = "src/vm/main.rs"
 
 [[bin]]
 name = "tha"

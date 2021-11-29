@@ -49,9 +49,8 @@ impl<'t> AddressResolver<'t> {
 #[cfg(test)]
 mod tests {
     use crate::parser::Instruction;
-
+    use crate::op::Op;
     use super::*;
-    use vmlib::op::Op;
 
     #[test]
     fn resolve_success() {

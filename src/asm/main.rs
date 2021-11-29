@@ -4,7 +4,7 @@ use std::io::Write;
 
 use clap::{App, Arg, ArgMatches, crate_authors, crate_version};
 
-use vmlib::REG_COUNT;
+use constants::REG_COUNT;
 
 use crate::address_resolver::AddressResolver;
 use crate::checker::{Checker, VmConfig};
@@ -12,6 +12,8 @@ use crate::emitter::Emitter;
 use crate::lexer::{Lexer, Token};
 use crate::parser::Parser;
 
+mod op;
+mod constants;
 mod lexer;
 mod parser;
 mod address_resolver;

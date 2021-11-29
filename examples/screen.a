@@ -4,70 +4,64 @@
 // in: r0 is the buffer idx
 :select_buffer
     PUSH r1
-    MOV  r1, $__video_start
-    STOR r1, r0
+    PUSH r2
+    MOV  r1, $__video_meta       // load $_video_meta to r2
+    LOAD r2, r1
+    AND  r2, 0xfffffffe          // reset 1st bit
+    OR   r2, r0                  // set 1st bit
+    STOR r1, r2                  // store r2 back to $_video_meta
+    POP  r2
     POP  r1
     RET
 
 :start
-    MOV  r0, 0x01000000
-    CALL @select_buffer // select buffer 1
+    // check if video available
+    MOV  r1, $__video_meta
+    LOAD r1, r1
+    AND  r1, 0x00000002          // video enabled flag
+    JEQ  @end                    // jump to @end if meta & 2 == 0
 
     MOV  r0, 0x000000ff // blue
     MOV  r1, 0x00ff0000 // red
-
-    // buffer 0 start address is at $__video_start + 20
-    MOV  r2, $__video_start
-    ADD  r2, 20
-    LOAD r2, r2
-
-    // buffer 1 start address is at $__video_start + 24
-    MOV  r3, $__video_start
-    ADD  r3, 24
-    LOAD r3, r3
-
-    // buffer size is at $__video_start + 16
-    MOV  r4, $__video_start
-    ADD  r4, 16
-    LOAD r4, r4
+    MOV  r2, 4
+    MOV  r3, $__video_buffer_size
 
 :loop
-    XBM  1
 // start blue
-    MOV  r5, r2          // r4 = pixel index
-    MOV  r6, r2          // r5 = buffer end index
-    ADD  r6, r4
-
-:blue
-    STOR r5, r0
-    ADD  r5, 4
-    CMP  r5, r6
-    JNE  @blue
-    
     // select buffer 0
     PUSH r0
     MOV  r0, 0x00000000
     CALL @select_buffer
     POP  r0
 
+    MOV  r5, $__video_buffer1
+    MOV  r6, $__video_buffer1
+    ADD  r6, r3                 // r5 = buffer1, r6 = end of buffer1
+
+:blue
+    STOR r5, r0
+    ADD  r5, r2                 // move to next pixel
+    CMP  r5, r6
+    JNE  @blue
 
 // start red
-    MOV  r5, r3
-    MOV  r6, r3
-    ADD  r6, r4
-
-:red
-    STOR r5, r1
-    ADD  r5, 4
-    CMP  r5, r6
-    JNE  @red
-
-    // select frame buffer 1
+    // select buffer 1
     PUSH r0
-    MOV  r0, 0x01000000
+    MOV  r0, 0x00000001
     CALL @select_buffer
     POP  r0
 
+    MOV  r5, $__video_buffer2
+    MOV  r6, $__video_buffer2
+    ADD  r6, r3                 // r5 = buffer2, r6 = end of buffer2
+
+:red
+    STOR r5, r1
+    ADD  r5, r2                 // move to next pixel
+    CMP  r5, r6
+    JNE  @red
+
     J    @loop
 
+:end
     HALT

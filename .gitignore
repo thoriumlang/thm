@@ -1,6 +1,7 @@
 /target
 .idea
 
+src/asm/op.rs
 
 CMakeLists.txt.user
 CMakeCache.txt

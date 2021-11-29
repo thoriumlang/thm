@@ -1,2 +1,6 @@
 # thm
 Thorium machine
+
+```
+$ make
+```

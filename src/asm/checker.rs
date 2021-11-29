@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::parser::{Instruction, Node};
-use vmlib::{REG_PC, REG_SP, REG_CS};
+use crate::constants::{REG_PC, REG_SP, REG_CS};
 
 pub struct VmConfig {
     pub register_count: u8,
@@ -51,8 +51,7 @@ impl Checker {
 
 #[cfg(test)]
 mod tests {
-    use vmlib::op::Op;
-
+    use crate::op::Op;
     use crate::parser::{Instruction, Node};
 
     use super::*;

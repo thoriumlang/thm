@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 use std::iter::Peekable;
 
-use vmlib::op::Op;
-
+use crate::op::Op;
 use crate::lexer::{Lexer, Position, Token};
 
 #[derive(Debug, PartialEq)]

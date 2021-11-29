@@ -1,68 +1,43 @@
-all: it
+all: test_tha test_thm demo_screen
 
 release: install_release
 
-tha:
+#### tha
+tha: src/asm/op.rs
 	cargo build --bin tha
-thm:
-	cargo build --bin thm
 
-t_tha: tha
+test_tha: src/asm/op.rs
 	cargo test --bin tha
-t_thm: thm
-	cargo test --bin thm
 
-meta.a: target/meta.a
-target/meta.a: t_thm
-	rm -f target/meta.a
-	target/debug/thm meta -g target/meta.a
-rom: target/meta.a target/rom.bin
-target/rom.bin: target/debug/tha src/rom.a
-	target/debug/tha -i target/meta.a -i src/rom.a -o target/rom.bin
+src/asm/op.rs: src/common/op.csv
+	bin/generate_ops.sh src/common/op.csv > src/asm/op.rs
 
-examples: target/meta.a target/fibonacci.bin target/fibonacci_rec.bin target/fact.bin target/halt.bin
-target/fibonacci.bin: tha examples/fibonacci.a
-	rm -f target/fibonacci.bin
-	target/debug/tha -i target/meta.a -i examples/fibonacci.a -o target/fibonacci.bin
-target/fibonacci_rec.bin: tha examples/fibonacci_rec.a
-	rm -f target/fibonacci_rec.bin
-	target/debug/tha -i target/meta.a -i examples/fibonacci_rec.a -o target/fibonacci_rec.bin
-target/fact.bin: tha examples/fact.a
-	rm -f target/fact.bin
-	target/debug/tha -i target/meta.a -i examples/fact.a -o target/fact.bin
-target/halt.bin: tha examples/halt.a
-	rm -f target/halt.bin
-	target/debug/tha -i target/meta.a -i examples/halt.a -o target/halt.bin
+#### thm
+thm: target/cmake-build-debug
+	cmake --build target/cmake-build-debug
 
-it: t_tha t_thm rom examples
-	target/debug/thm run --mmap target/rom.bin target/fibonacci.bin     -016
-	target/debug/thm run --mmap target/rom.bin target/fibonacci_rec.bin -016
-	target/debug/thm run --mmap target/rom.bin target/fact.bin          -05
-	target/debug/thm run --mmap target/rom.bin target/halt.bin
+target/cmake-build-debug: src/vm/CMakeLists.txt
+	cmake -DCMAKE_BUILD_TYPE=Debug -Wdev -Wdeprecated -S src/vm -B target/cmake-build-debug
 
-target/screen.bin: target/debug/tha examples/screen.a
-	target/debug/tha -i target/meta.a -i examples/screen.a -o target/screen.bin
+test_thm: thm target/fact.bin target/fibonacci.bin target/fibonacci_rec.bin
+	ctest --test-dir target/cmake-build-debug --output-on-failure
+	bin/test-vm.sh target/cmake-build-debug/thm
 
-screen: t_tha t_thm meta.a target/rom.bin target/screen.bin
-	target/debug/thm run --mmap target/rom.bin target/screen.bin
+target/%.bin: examples/%.a tha target/meta.a
+	rm -f $@
+	target/debug/tha -i target/meta.a -i $< -o $@
 
-install_dev:
-	cargo build
-	sudo mv target/debug/thm /usr/local/bin/thm
-	sudo chmod ugo+x /usr/local/bin/thm
-	sudo mv target/debug/tha /usr/local/bin/tha
-	sudo chmod ugo+x /usr/local/bin/tha
+target/meta.a: target/cmake-build-debug/thm
+	target/cmake-build-debug/thm --gen-header > target/meta.a
 
-install_release:
-	cargo build --release
-	strip target/release/thm
-	sudo mv target/release/thm /usr/local/bin/thm
-	sudo chmod ugo+x /usr/local/bin/thm
-	sudo mv target/release/tha /usr/local/bin/tha
-	sudo chmod ugo+x /usr/local/bin/tha
+target/rom.bin: tha target/meta.a src/common/rom.a
+	target/debug/tha -i target/meta.a -i src/common/rom.a -o target/rom.bin
 
-op:
-	./generate_ops.sh src/vm-api/op.csv > src/vm-api/op.rs
+#### Demo
+demo_screen: target/screen.bin
+	target/cmake-build-debug/thm --video master target/screen.bin
 
+#### Maintenance stuff
 clean:
-	cargo clean
+	rm -rf target
+	rm src/asm/op.rs

@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
-use vmlib::{REG_CS, REG_PC, REG_SP};
-
+use crate::constants::{REG_CS, REG_PC, REG_SP};
 use crate::parser::{Instruction, Node};
 
 pub struct Emitter<'t> {
@@ -72,8 +71,7 @@ impl<'t> Emitter<'t> {
 
 #[cfg(test)]
 mod tests {
-    use vmlib::op::Op;
-
+    use crate::op::Op;
     use crate::address_resolver::AddressResolver;
     use crate::parser::Instruction;
 
