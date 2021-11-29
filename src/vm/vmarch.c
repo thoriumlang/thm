@@ -21,22 +21,27 @@
 
 void arch_print() {
     printf("Architecture\n");
-    printf("  addr_size:      %i\n", ADDR_SIZE);
-    printf("  word_size:      %i\n", WORD_SIZE);
-    printf("  stack_dept:     %i\n", STACK_LENGTH);
-    printf("  stack_size:     %i\n", STACK_SIZE);
-    printf("  stack_start:    "AXHEX"\n", 0);
-    printf("  stack_end:      "AXHEX"\n", STACK_SIZE - 1);
-    printf("  vmeta_start:    "AXHEX"\n", VIDEO_META_ADDRESS);
-    printf("  vmeta_end:      "AXHEX"\n", VIDEO_META_ADDRESS + VIDEO_META_SIZE - 1);
-    printf("  vbuffer_size:   %i\n", VIDEO_BUFFER_SIZE);
-    printf("  vbuf1_start:    "AXHEX"\n", VIDEO_BUFFER_1_ADDRESS);
-    printf("  vbuf1_end:      "AXHEX"\n", VIDEO_BUFFER_1_ADDRESS + VIDEO_BUFFER_SIZE - 1);
-    printf("  vbuf2_start:    "AXHEX"\n", VIDEO_BUFFER_2_ADDRESS);
-    printf("  vbuf2_end:      "AXHEX"\n", VIDEO_BUFFER_2_ADDRESS + VIDEO_BUFFER_SIZE - 1);
-    printf("  rom_size:       %i\n", ROM_SIZE);
-    printf("  rom_start:      "AXHEX"\n", ROM_ADDRESS);
-    printf("  rom_end:        "AXHEX"\n", ROM_ADDRESS + ROM_SIZE - 1);
+    printf("  addr_size:             %i\n", ADDR_SIZE);
+    printf("  word_size:             %i\n", WORD_SIZE);
+    printf("  stack_dept:            %i\n", STACK_LENGTH);
+    printf("  stack_size:            %i\n", STACK_SIZE);
+    printf("  stack_start:           "AXHEX"\n", 0);
+    printf("  stack_end:             "AXHEX"\n", STACK_SIZE - 1);
+    printf("  vmeta_start:           "AXHEX"\n", VIDEO_META_ADDRESS);
+    printf("  vmeta_end:             "AXHEX"\n", VIDEO_META_ADDRESS + VIDEO_META_SIZE - 1);
+    printf("  vbuffer_size:          %i\n", VIDEO_BUFFER_SIZE);
+    printf("  vbuf1_start:           "AXHEX"\n", VIDEO_BUFFER_1_ADDRESS);
+    printf("  vbuf1_end:             "AXHEX"\n", VIDEO_BUFFER_1_ADDRESS + VIDEO_BUFFER_SIZE - 1);
+    printf("  vbuf2_start:           "AXHEX"\n", VIDEO_BUFFER_2_ADDRESS);
+    printf("  vbuf2_end:             "AXHEX"\n", VIDEO_BUFFER_2_ADDRESS + VIDEO_BUFFER_SIZE - 1);
+    printf("  rom_size:              %i\n", ROM_SIZE);
+    printf("  rom_start:             "AXHEX"\n", ROM_ADDRESS);
+    printf("  rom_end:               "AXHEX"\n", ROM_ADDRESS + ROM_SIZE - 1);
+    printf("  interrupts_count:      %i\n", INTERRUPTS_COUNT);
+    printf("  idt start:             "AXHEX"\n", INTERRUPT_DESCRIPTOR_TABLE_ADDRESS);
+    printf("  idt end:               "AXHEX"\n", INTERRUPT_MASK_ADDRESS - 1);
+    printf("  interrupts mask start: "AXHEX"\n", INTERRUPT_MASK_ADDRESS);
+    printf("  interrupts mask end:   "AXHEX"\n", INTERRUPT_MASK_ADDRESS + INTERRUPTS_WORDS_COUNT * WORD_SIZE - 1);
 }
 
 void arch_print_header() {
@@ -45,6 +50,8 @@ void arch_print_header() {
     printf("$__video_buffer1 = "AXHEX"\n", VIDEO_BUFFER_1_ADDRESS);
     printf("$__video_buffer2 = "AXHEX"\n", VIDEO_BUFFER_2_ADDRESS);
     printf("$__video_buffer_size = %i\n", VIDEO_BUFFER_SIZE);
+    printf("$__idt_start = "AXHEX"\n", INTERRUPT_DESCRIPTOR_TABLE_ADDRESS);
+    printf("$__imask_start = "AXHEX"\n", INTERRUPT_MASK_ADDRESS);
 }
 
 JsonElement *arch_json_get() {
@@ -54,22 +61,26 @@ JsonElement *arch_json_get() {
     json_object_put(arch, "word_size", json_number(WORD_SIZE));
     json_object_put(arch, "stack_depth", json_number(STACK_LENGTH));
     json_object_put(arch, "stack_size", json_number(STACK_SIZE));
-    json_object_put(arch, "stack_start", json_number(0));
     sprintf(hex, AXHEX, 0);
-    json_object_put(arch, "stack_start_hex", json_string(hex));
-    json_object_put(arch, "stack_end", json_number(STACK_SIZE - 1));
+    json_object_put(arch, "stack_start", json_string(hex));
     sprintf(hex, AXHEX, STACK_SIZE - 1);
-    json_object_put(arch, "stack_end_hex", json_string(hex));
-    json_object_put(arch, "code_start", json_number(STACK_SIZE));
+    json_object_put(arch, "stack_end", json_string(hex));
     sprintf(hex, AXHEX, STACK_SIZE);
-    json_object_put(arch, "code_start_hex", json_string(hex));
+    json_object_put(arch, "code_start", json_string(hex));
     json_object_put(arch, "rom_size", json_number(ROM_SIZE));
-    json_object_put(arch, "rom_start", json_number(ROM_ADDRESS));
     sprintf(hex, AXHEX, ROM_ADDRESS);
     json_object_put(arch, "rom_start", json_string(hex));
-    json_object_put(arch, "rom_end", json_number(ROM_ADDRESS + ROM_SIZE - 1));
     sprintf(hex, AXHEX, ROM_ADDRESS + ROM_SIZE - 1);
     json_object_put(arch, "rom_end", json_string(hex));
+    json_object_put(arch, "interrupts_count", json_number(INTERRUPTS_COUNT));
+    sprintf(hex, AXHEX, INTERRUPT_DESCRIPTOR_TABLE_ADDRESS);
+    json_object_put(arch, "idt_start", json_string(hex));
+    sprintf(hex, AXHEX, INTERRUPT_MASK_ADDRESS - 1);
+    json_object_put(arch, "idt_end", json_string(hex));
+    sprintf(hex, AXHEX, INTERRUPT_MASK_ADDRESS);
+    json_object_put(arch, "interrupt_mask_start", json_string(hex));
+    sprintf(hex, AXHEX, INTERRUPT_MASK_ADDRESS + INTERRUPTS_WORDS_COUNT * WORD_SIZE - 1);
+    json_object_put(arch, "interrupt_mask_end", json_string(hex));
     return arch;
 }
 

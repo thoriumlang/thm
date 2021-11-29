@@ -21,6 +21,7 @@
 #include <stdbool.h>
 #include "vmarch.h"
 #include "bus.h"
+#include "pic.h"
 
 typedef enum {
     CPU_ERR_OK,
@@ -33,7 +34,7 @@ typedef enum {
 
 typedef struct CPU CPU;
 
-CPU *cpu_create(Bus *bus, uint8_t reg_count);
+CPU *cpu_create(Bus *bus, PIC *pic, uint8_t reg_count);
 
 void cpu_start(CPU *cpu);
 

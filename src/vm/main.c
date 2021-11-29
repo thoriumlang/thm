@@ -23,6 +23,7 @@
 #include "memory.h"
 #include "json.h"
 #include "video.h"
+#include "pic.h"
 
 typedef struct VmThreadParam {
     Options *options;
@@ -36,6 +37,13 @@ void *cpu_loop(void *ptr);
 void print_json(CPU *cpu, Bus *bus);
 
 int load_file(Bus *bus, char *file, addr_t from);
+
+void bus_mount(Bus *bus, Memory *memory, addr_t from, char *name) {
+    if (bus_memory_attach(bus, memory, from, name) != BUS_ERR_OK) {
+        fprintf(stderr, "Cannot mount %s in bus\n", name);
+        exit(1);
+    };
+}
 
 int main(int argc, char **argv) {
     Options *options = opts_parse(argc, argv);
@@ -51,21 +59,28 @@ int main(int argc, char **argv) {
     }
 
     Bus *bus = bus_create();
-    Memory *ram = memory_create(options->ram_size, MEM_MODE_RW);
-    Memory *rom = memory_create(ROM_SIZE, MEM_MODE_R);
-    bus_memory_attach(bus, ram, 0, "RAM");
-    bus_memory_attach(bus, rom, ROM_ADDRESS, "ROM");
 
-    CPU *cpu = cpu_create(bus, options->registers);
+    Memory *ram = memory_create(options->ram_size, MEM_MODE_RW);
+    bus_mount(bus, ram, 0, "RAM");
+
+    PIC *pic = pic_create();
+    bus_mount(bus, pic_memory_get(pic)->interrupt_handlers, INTERRUPT_DESCRIPTOR_TABLE_ADDRESS, "IDT");
+    bus_mount(bus, pic_memory_get(pic)->interrupt_mask, INTERRUPT_MASK_ADDRESS, "IMask");
+
     Video *video = video_create(options->video != OPT_VIDEO_MODE_NONE);
     VideoMemory *memory = video_memory_get(video);
-    bus_memory_attach(bus, memory->metadata, VIDEO_META_ADDRESS, "VMeta");
+    bus_mount(bus, memory->metadata, VIDEO_META_ADDRESS, "VMeta");
     if (memory->buffer[0]) {
-        bus_memory_attach(bus, memory->buffer[0], VIDEO_BUFFER_1_ADDRESS, "VBuf1");
+        bus_mount(bus, memory->buffer[0], VIDEO_BUFFER_1_ADDRESS, "VBuf1");
     }
     if (memory->buffer[1]) {
-        bus_memory_attach(bus, memory->buffer[1], VIDEO_BUFFER_2_ADDRESS, "VBuf2");
+        bus_mount(bus, memory->buffer[1], VIDEO_BUFFER_2_ADDRESS, "VBuf2");
     }
+
+    Memory *rom = memory_create(ROM_SIZE, MEM_MODE_R);
+    bus_mount(bus, rom, ROM_ADDRESS, "ROM");
+
+    CPU *cpu = cpu_create(bus, pic, options->registers);
 
     if (!load_file(bus, options->image, STACK_SIZE)) {
         return 1;
@@ -93,6 +108,7 @@ int main(int argc, char **argv) {
         bus_dump(bus, STACK_SIZE, 128, stdout);
         bus_dump(bus, ROM_ADDRESS, 128, stdout);
         bus_dump(bus, VIDEO_META_ADDRESS, VIDEO_META_SIZE, stdout);
+        bus_dump(bus, INTERRUPT_MASK_ADDRESS, INTERRUPTS_WORDS_COUNT * WORD_SIZE, stdout);
         video_state_print(video, stdout);
     }
 
@@ -117,6 +133,7 @@ int main(int argc, char **argv) {
     memory_destroy(ram);
     memory_destroy(rom);
     video_destroy(video);
+    pic_destroy(pic);
 }
 
 void *cpu_loop(void *ptr) {

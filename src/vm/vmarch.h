@@ -36,25 +36,31 @@ typedef uint32_t addr_t;
 #define AXHEX "0x%08x"
 #endif
 
-#define STACK_LENGTH ((addr_t)1024)
-#define STACK_SIZE ((addr_t)(STACK_LENGTH * WORD_SIZE))
+#define STACK_LENGTH                       ((addr_t)1024)
+#define STACK_SIZE                         ((addr_t)(STACK_LENGTH * WORD_SIZE))
 
-#define DEFAULT_RAM_SIZE ((addr_t)(STACK_SIZE + 1024))
-#define DEFAULT_REGISTERS_COUNT 32
+#define DEFAULT_RAM_SIZE                   ((addr_t)(STACK_SIZE + 1024))
+#define DEFAULT_REGISTERS_COUNT            32
 
-#define ROM_SIZE ((addr_t)(32 * 1024 * 1024))
-#define ROM_ADDRESS ((addr_t)((addr_t) - ROM_SIZE))
+#define ROM_SIZE                           ((addr_t)(32 * 1024 * 1024))
+#define ROM_ADDRESS                        ((addr_t)((addr_t) - ROM_SIZE))
 
-#define VIDEO_SCREEN_WIDTH     320
-#define VIDEO_SCREEN_HEIGHT    200
-#define VIDEO_SCREEN_DEPTH     4
-#define VIDEO_SCREEN_SCALE     4
-#define VIDEO_SCREEN_FPS       30
-#define VIDEO_META_SIZE        WORD_SIZE
-#define VIDEO_BUFFER_SIZE      ((addr_t)(VIDEO_SCREEN_WIDTH * VIDEO_SCREEN_HEIGHT * VIDEO_SCREEN_DEPTH))
-#define VIDEO_BUFFER_2_ADDRESS ((addr_t)(ROM_ADDRESS - VIDEO_BUFFER_SIZE))
-#define VIDEO_BUFFER_1_ADDRESS ((addr_t)(VIDEO_BUFFER_2_ADDRESS - VIDEO_BUFFER_SIZE))
-#define VIDEO_META_ADDRESS     ((addr_t)(VIDEO_BUFFER_1_ADDRESS - VIDEO_META_SIZE))
+#define VIDEO_SCREEN_WIDTH                 320
+#define VIDEO_SCREEN_HEIGHT                200
+#define VIDEO_SCREEN_DEPTH                 4
+#define VIDEO_SCREEN_SCALE                 4
+#define VIDEO_SCREEN_FPS                   30
+#define VIDEO_META_SIZE                    WORD_SIZE
+#define VIDEO_BUFFER_SIZE                  ((addr_t)(VIDEO_SCREEN_WIDTH * VIDEO_SCREEN_HEIGHT * VIDEO_SCREEN_DEPTH))
+#define VIDEO_BUFFER_2_ADDRESS             ((addr_t)(ROM_ADDRESS - VIDEO_BUFFER_SIZE))
+#define VIDEO_BUFFER_1_ADDRESS             ((addr_t)(VIDEO_BUFFER_2_ADDRESS - VIDEO_BUFFER_SIZE))
+#define VIDEO_META_ADDRESS                 ((addr_t)(VIDEO_BUFFER_1_ADDRESS - VIDEO_META_SIZE))
+
+#define INTERRUPTS_COUNT                   256
+#define INTERRUPTS_PER_WORD                (WORD_SIZE * 8)
+#define INTERRUPTS_WORDS_COUNT             (INTERRUPTS_COUNT / INTERRUPTS_PER_WORD)
+#define INTERRUPT_MASK_ADDRESS             ((addr_t)(VIDEO_META_ADDRESS - INTERRUPTS_WORDS_COUNT * WORD_SIZE))
+#define INTERRUPT_DESCRIPTOR_TABLE_ADDRESS ((addr_t)(INTERRUPT_MASK_ADDRESS - INTERRUPTS_COUNT * ADDR_SIZE))
 
 void arch_print();
 

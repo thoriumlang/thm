@@ -14,34 +14,31 @@
  * limitations under the License.
  */
 
-#ifndef C_VM_CPU_INTERNAL_H
-#define C_VM_CPU_INTERNAL_H
+#ifndef THM_PIC_H
+#define THM_PIC_H
 
-typedef struct CPU {
-    Bus *bus;
-    PIC *pic;
-    word_t *registers;
-    uint8_t register_count;
-    addr_t pc;
-    addr_t sp;
-    addr_t cs;
-    struct {
-        uint8_t interrupts_enabled: 1;
-        uint8_t zero: 1;
-        uint8_t negative: 1;
-    } flags;
-    struct {
-        uint8_t running: 1;
-        CpuError panic;
-    } state;
-    struct {
-        uint8_t print_op: 1;
-        unsigned long step;
-    } debug;
-} CPU;
+#include "vmarch.h"
+#include "memory.h"
 
-word_t cpu_fetch(CPU *cpu);
+typedef struct PIC PIC;
 
-void cpu_flags_update(CPU *cpu, sword_t value);
+typedef struct PICMemory {
+    Memory *interrupt_mask;
+    Memory *interrupt_handlers;
+} PICMemory;
 
-#endif //C_VM_CPU_INTERNAL_H
+typedef uint8_t interrupt_t;
+
+PIC *pic_create();
+
+PICMemory *pic_memory_get(PIC *this);
+
+bool pic_interrupt_active(PIC *this);
+
+interrupt_t pic_interrupt_get(PIC *this);
+
+void pic_interrupt_trigger(PIC *this, interrupt_t interrupt);
+
+void pic_destroy(PIC *this);
+
+#endif //THM_PIC_H

@@ -22,13 +22,15 @@
 #include "cpu_internal.h"
 #include "bus.h"
 #include "ops.h"
+#include "pic.h"
 
 op_ptr cpu_decode(CPU *cpu, word_t word);
 
-CPU *cpu_create(Bus *bus, uint8_t reg_count) {
+CPU *cpu_create(Bus *bus, PIC *pic, uint8_t reg_count) {
     // printf("sizeof(CPU)=%lu", sizeof(CPU));
     CPU *cpu = malloc(sizeof(CPU));
     cpu->bus = bus;
+    cpu->pic = pic;
     cpu->registers = malloc(sizeof(*cpu->registers) * reg_count);
     cpu->register_count = reg_count;
 
@@ -44,6 +46,13 @@ void cpu_start(CPU *cpu) {
         printf("\nCPU Steps\n");
     }
     while (cpu->state.running == 1 && cpu->state.panic == CPU_ERR_OK) {
+        while (cpu->flags.interrupts_enabled && pic_interrupt_active(cpu->pic)) {
+            interrupt_t interrupt = pic_interrupt_get(cpu->pic);
+            cpu->flags.interrupts_enabled = 0;
+            // todo
+            cpu->flags.interrupts_enabled = 1;
+        }
+
         word_t word = htov(cpu_fetch(cpu));
         if (!cpu->state.panic) {
             op_ptr op = cpu_decode(cpu, word);
@@ -90,6 +99,7 @@ void cpu_reset(CPU *cpu) {
     cpu->pc = STACK_SIZE;
     cpu->sp = STACK_SIZE;
     cpu->cs = STACK_SIZE;
+    cpu->flags.interrupts_enabled = 1;
     cpu->flags.zero = 0;
     cpu->flags.negative = 0;
     cpu->state.running = 0;
@@ -172,7 +182,7 @@ void cpu_state_print(CPU *cpu, FILE *file) {
     }
     fprintf(file, "                  pc            sp            cs\n");
     fprintf(file, "                  "WHEX"      "WHEX"      "WHEX"\n", cpu->pc, cpu->sp, cpu->cs);
-    fprintf(file, "                  z=%i  n=%i\n", cpu->flags.zero, cpu->flags.negative);
+    fprintf(file, "                  z=%i  n=%i  i=%i\n", cpu->flags.zero, cpu->flags.negative, cpu->flags.interrupts_enabled);
     fprintf(file, "  running:%s       print_op:%s    panic:%i\n",
             cpu->state.running == (uint32_t) 1 ? "y" : "n",
             cpu->debug.print_op == (uint32_t) 1 ? "y" : "n",
@@ -217,6 +227,7 @@ JsonElement *cpu_state_to_json(CPU *cpu) {
     JsonElement *flags = json_object();
     json_object_put(flags, "zero", json_bool(cpu->flags.zero));
     json_object_put(flags, "negative", json_bool(cpu->flags.negative));
+    json_object_put(flags, "interrupt_enabled", json_bool(cpu->flags.interrupts_enabled));
 
     JsonElement *state = json_object();
     json_object_put(state, "panic", json_number(cpu->state.panic));
