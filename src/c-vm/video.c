@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <MiniFB.h>
 #include <unistd.h>
-#include <time.h>
+#include "time.h"
 #include "vmarch.h"
 #include "video.h"
 #include "memory.h"
@@ -34,7 +34,7 @@ typedef struct Video {
     word_t flags_cache;
     uint32_t *buffer;
     struct {
-        time_t time;
+        utime_t utime;
         int frames;
         int buffer_switches;
         double fps;
@@ -52,6 +52,10 @@ Video *video_create(bool enable) {
     this->memory = malloc(sizeof(VideoMemory));
     this->memory->metadata = memory_create(VIDEO_META_SIZE, MEM_MODE_RW);
     this->flags_cache = 0;
+    this->stats.frames = 0;
+    this->stats.buffer_switches = 0;
+    this->stats.fps = 0;
+    this->stats.utime = 0;
 
     if (enable) {
         this->flags_cache |= VIDEO_BIT_ENABLED;
@@ -89,9 +93,8 @@ void video_loop(Video *this) {
     );
     mfb_set_target_fps(VIDEO_SCREEN_FPS);
 
-
     mfb_update_state state;
-    this->stats.time = time(NULL);
+    this->stats.utime = time_utime();
     this->stats.frames = 0;
     this->stats.buffer_switches = 0;
     do {
@@ -116,21 +119,25 @@ void video_loop(Video *this) {
 }
 
 void print_fps(Video *this) {
-    this->stats.frames = (this->stats.frames + 1) % VIDEO_SCREEN_FPS;
-    if (this->stats.frames == 0) {
-        time_t seconds = -(this->stats.time - time(&(this->stats.time)));
-        this->stats.fps = (double) VIDEO_SCREEN_FPS / (double) seconds;
+    this->stats.frames++;
+
+    utime_t current_time = time_utime();
+    utime_t elapsed_microsec = current_time - this->stats.utime;
+    if (current_time - this->stats.utime >= ONE_SEC_IN_USECS) {
+        this->stats.fps = (double) this->stats.frames * (double) ONE_SEC_IN_USECS / (double) elapsed_microsec;
+        this->stats.utime = current_time;
+
         printf("FPS: %2.1f ; %2.1f\n",
                this->stats.fps,
-               (double) this->stats.buffer_switches / (double) seconds);
+               (double) this->stats.buffer_switches  * (double) ONE_SEC_IN_USECS / (double) elapsed_microsec);
         this->stats.buffer_switches = 0;
+        this->stats.frames = 0;
     }
 }
 
 /**
- * updates this->buffer if needed and returns true if an update was needed.
+ * updates this->buffer if needed and returns true if it was updated
  */
-
 inline bool select_buffer(Video *this, word_t flags) {
     bool update_needed = (this->flags_cache ^ flags) & VIDEO_BIT_BUFFER;
 

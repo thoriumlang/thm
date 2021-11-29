@@ -16,6 +16,7 @@ add_executable(c_vm
         ops.c ops.h
         memory.c memory.h
         video.c video.h
+        time.c time.h
         json.c json.h ${CCAN_JSON})
 target_link_libraries(c_vm PRIVATE minifb)
 
