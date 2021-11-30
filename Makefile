@@ -27,7 +27,7 @@ target/%.bin: examples/%.a tha target/meta.a
 	rm -f $@
 	target/debug/tha -i target/meta.a -i $< -o $@
 
-target/meta.a: target/cmake-build-debug/thm
+target/meta.a: thm
 	target/cmake-build-debug/thm --gen-header > target/meta.a
 
 target/rom.bin: tha target/meta.a src/common/rom.a
