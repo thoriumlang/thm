@@ -2,7 +2,8 @@ use std::collections::HashMap;
 use std::iter::Peekable;
 
 use crate::op::Op;
-use crate::lexer::{Lexer, Position, Token};
+use crate::lexer::{AddressKind as LexerAddressKind, Lexer, Position, Token};
+use crate::parser::AddressKind::{Absolute, Segment};
 
 #[derive(Debug, PartialEq)]
 pub struct ParseResult {
@@ -28,9 +29,15 @@ pub enum Directive {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum AddressKind {
+    Absolute,
+    Segment,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum Instruction {
     I(Op),
-    IA(Op, String),
+    IA(Op, String, AddressKind),
     IB(Op, u8),
     IR(Op, String),
     IW(Op, u32),
@@ -42,7 +49,7 @@ impl Instruction {
     pub fn op(&self) -> Op {
         return match self {
             &Instruction::I(op) => op,
-            &Instruction::IA(op, _) => op,
+            &Instruction::IA(op, _, _) => op,
             &Instruction::IB(op, _) => op,
             &Instruction::IR(op, _) => op,
             &Instruction::IW(op, _) => op,
@@ -90,7 +97,7 @@ impl<'t> Parser<'t> {
         let token = self.lexer.next();
         match token {
             Some(Ok(Token::Integer(_, _))) => self.symbols.insert(name, token.unwrap().unwrap()),
-            Some(Ok(Token::Address(_, _))) => self.symbols.insert(name, token.unwrap().unwrap()),
+            Some(Ok(Token::Address(_, _, _))) => self.symbols.insert(name, token.unwrap().unwrap()),
             _ => return Err(format!("Expected <integer> or <addr> at {}", position).into()),
         };
 
@@ -128,9 +135,9 @@ impl<'t> Parser<'t> {
             "DEC" => self.op_r(Op::Dec, position),
             "HALT" => self.op_void(Op::Halt, position),
             "INC" => self.op_r(Op::Inc, position),
-            "J" => self.op_a_w(Op::Js, position),
-            "JEQ" => self.op_a_w(Op::Jseq, position),
-            "JNE" => self.op_a_w(Op::Jsne, position),
+            "J" => self.op_a_w(Op::Js, Op::Ja, position),
+            "JEQ" => self.op_a_w(Op::Jseq, Op::Jaeq, position),
+            "JNE" => self.op_a_w(Op::Jsne, Op::Jane, position),
             "LOAD" => self.op_rr(Op::Load, position),
             "MOV" => self.op_rr_rw(Op::MovRR, Op::MovRW, position),
             "MUL" => self.op_rr_rw(Op::MulRR, Op::MulRW, position),
@@ -161,7 +168,7 @@ impl<'t> Parser<'t> {
         };
 
         if self.read_eol() {
-            return Ok(Instruction::IA(op, addr));
+            return Ok(Instruction::IA(op, addr, Segment));
         }
         Err(format!("Expected <eol> at {}", position).into())
     }
@@ -217,14 +224,24 @@ impl<'t> Parser<'t> {
         Err(format!("Expected <eol> at {}", position).into())
     }
 
-    fn op_a_w(&mut self, op: Op, position: &Position) -> Result<Instruction> {
+    fn op_a_w(&mut self, op_segment: Op, op_absolute: Op, position: &Position) -> Result<Instruction> {
         let instruction = self.read_next()
             .and_then(|token| match token {
-                Token::Address(_, addr) => Some(Ok(Instruction::IA(op, addr))),
-                Token::Integer(_, w) => Some(Ok(Instruction::IW(op, w))),
+                Token::Address(_, addr, kind) => {
+                    match kind {
+                        LexerAddressKind::Segment => Some(Ok(Instruction::IA(op_segment, addr, Segment))),
+                        LexerAddressKind::Absolute => Some(Ok(Instruction::IA(op_absolute, addr, Absolute)))
+                    }
+                }
+                Token::Integer(_, w) => Some(Ok(Instruction::IW(op_segment, w))),
                 Token::Variable(_, name) => match self.symbols.get(&name) {
-                    Some(Token::Address(_, addr)) => Some(Ok(Instruction::IA(op, addr.into()))),
-                    Some(Token::Integer(_, w)) => Some(Ok(Instruction::IW(op, *w))),
+                    Some(Token::Address(_, addr, kind)) => {
+                        match kind {
+                            LexerAddressKind::Segment => Some(Ok(Instruction::IA(op_segment, addr.into(), Segment))),
+                            LexerAddressKind::Absolute => Some(Ok(Instruction::IA(op_absolute, addr.into(), Absolute))),
+                        }
+                    }
+                    Some(Token::Integer(_, w)) => Some(Ok(Instruction::IW(op_segment, *w))),
                     _ => None
                 },
                 _ => None,
@@ -289,7 +306,7 @@ impl<'t> Parser<'t> {
     fn read_address(&mut self) -> Option<String> {
         match self.lexer.next() {
             Some(Ok(t)) => match t {
-                Token::Address(_, s) => Some(s),
+                Token::Address(_, s, _) => Some(s),
                 _ => None
             },
             _ => None,
@@ -368,7 +385,7 @@ mod tests {
         $(
             #[test]
             fn $name() {
-                let (input, op, a0) = $value;
+                let (input, op, a0, k) = $value;
 
                 let mut lexer = Lexer::from_text(input);
                 let mut nodes = vec![];
@@ -379,7 +396,7 @@ mod tests {
                 let item = r.unwrap();
                 assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
 
-                let expected = Node::Instruction(Instruction::IA(op, a0.into()));
+                let expected = Node::Instruction(Instruction::IA(op, a0.into(), k));
                 let actual = item.unwrap();
                 assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
             }
@@ -491,10 +508,13 @@ mod tests {
     }
 
     op_a_test! {
-        j:      ("J @address\n",    Op::Js,   "address"),
-        jeq:    ("JEQ @address\n",  Op::Jseq, "address"),
-        jne:    ("JNE @address\n",  Op::Jsne, "address"),
-        call:   ("CALL @address\n", Op::Call, "address"),
+        j_s:    ("J @address\n",    Op::Js,   "address", Segment),
+        j_a:    ("J &address\n",    Op::Ja,   "address", Absolute),
+        jeq_s:  ("JEQ @address\n",  Op::Jseq, "address", Segment),
+        jeq_a:  ("JEQ &address\n",  Op::Jaeq, "address", Absolute),
+        jne_s:  ("JNE @address\n",  Op::Jsne, "address", Segment),
+        jne_a:  ("JNE &address\n",  Op::Jane, "address", Absolute),
+        call:   ("CALL @address\n", Op::Call, "address", Segment),
     }
 
     op_b_test! {

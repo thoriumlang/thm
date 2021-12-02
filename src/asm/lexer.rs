@@ -4,6 +4,7 @@ use std::fmt::Formatter;
 use std::iter::Peekable;
 use std::str::FromStr;
 use std::vec::IntoIter;
+use crate::lexer::AddressKind::{Absolute, Segment};
 
 #[derive(Debug, PartialEq)]
 pub struct Position {
@@ -25,7 +26,7 @@ impl fmt::Display for Position {
 
 #[derive(Debug, PartialEq)]
 pub enum Token {
-    Address(Position, String),
+    Address(Position, String, AddressKind),
     Comma(Position),
     Directive(Position, String),
     Equal(Position),
@@ -38,10 +39,16 @@ pub enum Token {
     Variable(Position, String),
 }
 
+#[derive(Debug, PartialEq)]
+pub enum AddressKind {
+    Absolute,
+    Segment,
+}
+
 impl Token {
     pub fn position(&self) -> &Position {
         match &self {
-            Token::Address(p, _) => p,
+            Token::Address(p, _, _) => p,
             Token::Comma(p) => p,
             Token::Directive(p, _) => p,
             Token::Equal(p) => p,
@@ -93,6 +100,8 @@ impl Lexer {
     }
 
     fn is_address(c: char) -> bool { c == '@' }
+
+    fn is_absolute_address(c: char) -> bool { c == '&' }
 
     fn is_directive(c: char) -> bool { c == '#' }
 
@@ -273,7 +282,8 @@ impl Iterator for Lexer {
                 Some('\n') => return Some(Ok(Token::Eol(position))),
                 Some('=') => return Some(Ok(Token::Equal(position))),
                 Some(c) if c.is_whitespace() => continue,
-                Some(c) if Self::is_address(c) => return Some(self.identifier('\0').map(|s| Token::Address(position, s))),
+                Some(c) if Self::is_absolute_address(c) => return Some(self.identifier('\0').map(|s| Token::Address(position, s, Absolute))),
+                Some(c) if Self::is_address(c) => return Some(self.identifier('\0').map(|s| Token::Address(position, s, Segment))),
                 Some(c) if Self::is_directive(c) => return Some(self.identifier('\0').map(|s| Token::Directive(position, s))),
                 Some(c) if Self::is_identifier(c) => return Some(self.identifier(c).map(|s| Token::Identifier(position, s))),
                 Some(c) if Self::is_number(c) => return Some(self.number(c).map(|n| Token::Integer(position, n))),
@@ -407,14 +417,27 @@ mod tests {
     }
 
     #[test]
-    fn test_address() {
+    fn test_address_segment() {
         let r = Lexer::from_text(" @label ").next();
         assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
 
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(Token::Address), got {:?}", item);
 
-        let expected = Token::Address(Position::new(1, 2), "label".to_string());
+        let expected = Token::Address(Position::new(1, 2), "label".to_string(), Segment);
+        let actual = item.unwrap();
+        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+    }
+
+    #[test]
+    fn test_address_absolute() {
+        let r = Lexer::from_text(" &label ").next();
+        assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
+
+        let item = r.unwrap();
+        assert_eq!(true, item.is_ok(), "Expected Ok(Token::Address), got {:?}", item);
+
+        let expected = Token::Address(Position::new(1, 2), "label".to_string(), Absolute);
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
@@ -499,18 +522,19 @@ mod tests {
 
     #[test]
     fn test_several_tokens() {
-        let mut lexer = Lexer::from_text(".section LOAD r1, @label :label2 0xFF 0b0100 1204 //comment \n");
+        let mut lexer = Lexer::from_text(".section LOAD r1, @label &label_abs :label2 0xFF 0b0100 1204 //comment \n");
         let tokens = vec![
             Token::Section(Position::new(1, 1), "section".to_string()),
             Token::Op(Position::new(1, 10), "LOAD".to_string()),
             Token::Identifier(Position::new(1, 15), "r1".to_string()),
             Token::Comma(Position::new(1, 17)),
-            Token::Address(Position::new(1, 19), "label".to_string()),
-            Token::Label(Position::new(1, 26), "label2".to_string()),
-            Token::Integer(Position::new(1, 34), 255),
-            Token::Integer(Position::new(1, 39), 4),
-            Token::Integer(Position::new(1, 46), 1204),
-            Token::Eol(Position::new(1, 51)),
+            Token::Address(Position::new(1, 19), "label".to_string(), Segment),
+            Token::Address(Position::new(1, 26), "label_abs".to_string(), Absolute),
+            Token::Label(Position::new(1, 37), "label2".to_string()),
+            Token::Integer(Position::new(1, 45), 255),
+            Token::Integer(Position::new(1, 50), 4),
+            Token::Integer(Position::new(1, 57), 1204),
+            Token::Eol(Position::new(1, 62)),
         ];
 
         let mut i = 0;

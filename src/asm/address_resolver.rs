@@ -34,11 +34,11 @@ impl<'t> AddressResolver<'t> {
 
         for node in self.nodes {
             match node {
-                Node::Instruction(Instruction::IA(_, address)) => {
+                Node::Instruction(Instruction::IA(_, address, _)) => {
                     if !map.contains_key(address) {
                         return Err(format!("Label {} is missing", address).to_string());
                     }
-                },
+                }
                 _ => continue,
             }
         }
@@ -49,7 +49,7 @@ impl<'t> AddressResolver<'t> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::Instruction;
+    use crate::parser::{AddressKind, Instruction};
     use crate::op::Op;
     use super::*;
 
@@ -57,7 +57,7 @@ mod tests {
     fn resolve_success() {
         let nodes = vec![
             Node::Label("label1".to_string()),
-            Node::Instruction(Instruction::IA(Op::Jseq, "label2".to_string())),
+            Node::Instruction(Instruction::IA(Op::Jseq, "label2".to_string(), AddressKind::Segment)),
             Node::Label("label2".to_string()),
         ];
         let addresses = AddressResolver::new(&nodes).resolve();
@@ -89,7 +89,7 @@ mod tests {
     #[test]
     fn resolve_missing_label() {
         let nodes = vec![
-            Node::Instruction(Instruction::IA(Op::Jseq, "missing".to_string())),
+            Node::Instruction(Instruction::IA(Op::Jseq, "missing".to_string(), AddressKind::Absolute)),
         ];
         let addresses = AddressResolver::new(&nodes).resolve();
 

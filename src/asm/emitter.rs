@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::constants::{REG_CS, REG_PC, REG_SP};
-use crate::parser::{Directive, Instruction, Node};
+use crate::parser::{AddressKind, Directive, Instruction, Node};
 
 pub struct Emitter<'t> {
     nodes: &'t Vec<Node>,
@@ -52,10 +52,12 @@ impl<'t> Emitter<'t> {
                     Instruction::IRR(op, r1, r2) => bytes.append(vec![
                         op.bytecode(), *self.decode_register(r1) as u8, *self.decode_register(r2) as u8, 0,
                     ].as_mut()),
-                    Instruction::IA(op, addr) => {
+                    Instruction::IA(op, addr, kind) => {
                         bytes.append(vec![op.bytecode(), 0, 0, 0].as_mut());
-                        // fixme actually implement JA*
-                        let b = (base_address + self.decode_address(addr)).to_be_bytes();
+                        let b = (match kind {
+                            AddressKind::Absolute => base_address,
+                            AddressKind::Segment => 0,
+                        } + self.decode_address(addr)).to_be_bytes();
                         bytes.extend_from_slice(&b);
                     }
                 }
@@ -79,6 +81,7 @@ impl<'t> Emitter<'t> {
 mod tests {
     use crate::op::Op;
     use crate::address_resolver::AddressResolver;
+    use crate::parser::AddressKind::Absolute;
     use crate::parser::Instruction;
 
     use super::*;
@@ -86,7 +89,7 @@ mod tests {
     #[test]
     fn emit() {
         let nodes = vec![
-            Node::Instruction(Instruction::IA(Op::Jseq, "label2".to_string())),
+            Node::Instruction(Instruction::IA(Op::Jseq, "label2".to_string(), Absolute)),
             Node::Label("label2".to_string()),
         ];
         let addresses = AddressResolver::new(&nodes).resolve().unwrap();

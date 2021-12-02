@@ -11,6 +11,7 @@
 #base $__rom_start
 
     J @int_dispatch
+    J &int_dispatch
 
 :int_dispatch
 
