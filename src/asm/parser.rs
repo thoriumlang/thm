@@ -100,10 +100,9 @@ impl<'t> Parser<'t> {
             "DEC" => self.op_r(Op::Dec, position),
             "HALT" => self.op_void(Op::Halt, position),
             "INC" => self.op_r(Op::Inc, position),
-            "J" => self.op_a_w(Op::Jr, position),
-            "JA" => self.op_rr(Op::Ja, position),
-            "JEQ" => self.op_a_w(Op::Jreq, position),
-            "JNE" => self.op_a_w(Op::Jrne, position),
+            "J" => self.op_a_w(Op::Js, position),
+            "JEQ" => self.op_a_w(Op::Jseq, position),
+            "JNE" => self.op_a_w(Op::Jsne, position),
             "LOAD" => self.op_rr(Op::Load, position),
             "MOV" => self.op_rr_rw(Op::MovRR, Op::MovRW, position),
             "MUL" => self.op_rr_rw(Op::MulRR, Op::MulRW, position),
@@ -467,9 +466,9 @@ mod tests {
     }
 
     op_a_test! {
-        j:      ("J @address\n",    Op::Jr,   "address"),
-        jeq:    ("JEQ @address\n",  Op::Jreq, "address"),
-        jne:    ("JNE @address\n",  Op::Jrne, "address"),
+        j:      ("J @address\n",    Op::Js,   "address"),
+        jeq:    ("JEQ @address\n",  Op::Jseq, "address"),
+        jne:    ("JNE @address\n",  Op::Jsne, "address"),
         call:   ("CALL @address\n", Op::Call, "address"),
     }
 
@@ -494,7 +493,6 @@ mod tests {
         cmp:    ("CMP  r1, r0\n", Op::Cmp,   "r1", "r0"),
         load:   ("LOAD r1, r0\n", Op::Load,  "r1", "r0"),
         stor:   ("STOR r1, r0\n", Op::Stor,  "r1", "r0"),
-        ja:     ("JA   r1, r0\n", Op::Ja,    "r1", "r0"),
     }
 
     op_rw_test! {

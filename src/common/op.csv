@@ -18,10 +18,9 @@
 24,Cmp,4
 25,Push,4
 26,Pop,4
-27,Ja,4
-28,Jreq,8
-29,Jrne,8
-30,Jr,8
+28,Jseq,8
+29,Jsne,8
+30,Js,8
 31,Stor,4
 32,Load,4
 33,Call,8

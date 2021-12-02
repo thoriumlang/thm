@@ -130,7 +130,7 @@ void op_cmp(CPU *cpu, word_t word) {
     cpu_flags_update(cpu, (sword_t) a_val - (sword_t) b_val);
 }
 
-void op_jreq(CPU *cpu, word_t word) {
+void op_jseq(CPU *cpu, word_t word) {
     addr_t address = 0;
     addr_t pc = cpu->pc;
     if (cpu->flags.zero == 1 || cpu->debug.print_op) {
@@ -154,7 +154,7 @@ void op_jreq(CPU *cpu, word_t word) {
               + (cpu->flags.zero == 0) * (pc + ADDR_SIZE); // otherwise, move to next opcode
 }
 
-void op_jrne(CPU *cpu, word_t word) {
+void op_jsne(CPU *cpu, word_t word) {
     addr_t address = 0;
     addr_t pc = cpu->pc;
     if (cpu->flags.zero == 0 || cpu->debug.print_op) {
@@ -178,7 +178,7 @@ void op_jrne(CPU *cpu, word_t word) {
               + (cpu->flags.zero == 1) * (pc + ADDR_SIZE); // otherwise, move to next word
 }
 
-void op_jr(CPU *cpu, word_t word) {
+void op_js(CPU *cpu, word_t word) {
     word_t address = cpu_fetch(cpu);
     if (cpu->state.panic != CPU_ERR_OK) {
         return;
@@ -464,9 +464,9 @@ op_ptr ops[OPS_COUNT] = {
         &op_push,
         &op_pop,
         NULL,
-        &op_jreq,
-        &op_jrne,
-        &op_jr,
+        &op_jseq,
+        &op_jsne,
+        &op_js,
         &op_stor,
         &op_load,
         &op_call,

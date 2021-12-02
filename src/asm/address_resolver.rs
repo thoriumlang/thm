@@ -56,7 +56,7 @@ mod tests {
     fn resolve_success() {
         let nodes = vec![
             Node::Label("label1".to_string()),
-            Node::Instruction(Instruction::IA(Op::Jreq, "label2".to_string())),
+            Node::Instruction(Instruction::IA(Op::Jseq, "label2".to_string())),
             Node::Label("label2".to_string()),
         ];
         let addresses = AddressResolver::new(&nodes).resolve();
@@ -88,7 +88,7 @@ mod tests {
     #[test]
     fn resolve_missing_label() {
         let nodes = vec![
-            Node::Instruction(Instruction::IA(Op::Jreq, "missing".to_string())),
+            Node::Instruction(Instruction::IA(Op::Jseq, "missing".to_string())),
         ];
         let addresses = AddressResolver::new(&nodes).resolve();
 
