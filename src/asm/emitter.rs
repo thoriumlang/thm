@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::constants::{REG_CS, REG_PC, REG_SP};
-use crate::parser::{Instruction, Node};
+use crate::parser::{Directive, Instruction, Node};
 
 pub struct Emitter<'t> {
     nodes: &'t Vec<Node>,
@@ -27,9 +27,14 @@ impl<'t> Emitter<'t> {
 
     pub fn emit(&self) -> Vec<u8> {
         let mut bytes = vec![];
+        let mut base_address = 0u32;
 
         for node in self.nodes {
             match node {
+                Node::Directive(Directive::Base(addr)) => {
+                    base_address = *addr;
+                    continue;
+                }
                 Node::Instruction(instruction) => match instruction {
                     Instruction::I(op) => bytes.append(vec![op.bytecode(), 0, 0, 0].as_mut()),
                     Instruction::IB(op, imm1) => bytes.append(vec![op.bytecode(), *imm1, 0, 0].as_mut()),
@@ -49,7 +54,8 @@ impl<'t> Emitter<'t> {
                     ].as_mut()),
                     Instruction::IA(op, addr) => {
                         bytes.append(vec![op.bytecode(), 0, 0, 0].as_mut());
-                        let b = self.decode_address(addr).to_be_bytes();
+                        // fixme actually implement JA*
+                        let b = (base_address + self.decode_address(addr)).to_be_bytes();
                         bytes.extend_from_slice(&b);
                     }
                 }

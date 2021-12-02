@@ -19,15 +19,16 @@ impl<'t> AddressResolver<'t> {
         let mut position = 0 as u32;
         for node in self.nodes {
             match node {
+                Node::Instruction(i) => {
+                    position += i.op().length() as u32;
+                }
                 Node::Label(label) => {
                     if map.contains_key(label) {
                         return Err(format!("Label {} used more than once", label).to_string());
                     }
                     map.insert(label.to_owned(), position);
                 }
-                Node::Instruction(i) => {
-                    position += i.op().length() as u32;
-                }
+                _ => continue,
             }
         }
 

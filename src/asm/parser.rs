@@ -12,8 +12,9 @@ pub struct ParseResult {
 
 #[derive(Debug, PartialEq)]
 pub enum Node {
-    Label(String),
+    Directive(Directive),
     Instruction(Instruction),
+    Label(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -22,26 +23,31 @@ pub struct Label {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum Directive {
+    Base(u32),
+}
+
+#[derive(Debug, PartialEq)]
 pub enum Instruction {
     I(Op),
+    IA(Op, String),
     IB(Op, u8),
+    IR(Op, String),
     IW(Op, u32),
     IRW(Op, String, u32),
-    IR(Op, String),
     IRR(Op, String, String),
-    IA(Op, String),
 }
 
 impl Instruction {
     pub fn op(&self) -> Op {
         return match self {
             &Instruction::I(op) => op,
+            &Instruction::IA(op, _) => op,
             &Instruction::IB(op, _) => op,
+            &Instruction::IR(op, _) => op,
             &Instruction::IW(op, _) => op,
             &Instruction::IRW(op, _, _) => op,
-            &Instruction::IR(op, _) => op,
             &Instruction::IRR(op, _, _) => op,
-            &Instruction::IA(op, _) => op,
         };
     }
 }
@@ -89,6 +95,28 @@ impl<'t> Parser<'t> {
         };
 
         Ok(())
+    }
+
+    fn parse_directive(&mut self, name: String, position: &Position) -> Result<Directive> {
+        match name.to_lowercase().as_str() {
+            "base" => {
+                let directive = self.read_next()
+                    .and_then(|token| match token {
+                        Token::Integer(_, w) => Some(Ok(Directive::Base(w))),
+                        Token::Variable(_, name) => match self.symbols.get(&name) {
+                            Some(Token::Integer(_, w)) => Some(Ok(Directive::Base(*w))),
+                            _ => None
+                        },
+                        _ => None,
+                    })
+                    .unwrap_or(Err(format!("Expected <w> or <variable> for directive '#{}' at {}", name, position).into()));
+                if self.read_eol() {
+                    return directive;
+                }
+                Err(format!("Expected <eol> at {}", position).into())
+            }
+            _ => Err(format!("Unknown directive '#{}' at {}", name, position).into()),
+        }
     }
 
     fn parse_instruction(&mut self, op: &str, position: &Position) -> Result<Instruction> {
@@ -289,21 +317,18 @@ impl<'t> Iterator for Parser<'t> {
                 Some(Err(err)) => Some(Err(err)),
                 Some(Ok(token)) => match token {
                     Token::Eol(_) => continue,
-                    Token::Section(_, _) => None,
+                    Token::Directive(position, name) => Some(self.parse_directive(name, &position).map(|d| { Node::Directive(d) })),
                     Token::Label(position, label) => match self.lexer.next() {
                         Some(Ok(Token::Eol(_))) => Some(Ok(Node::Label(label))),
                         _ => Some(Err(format!("Expected <eol> at {}", position).into())),
                     },
+                    Token::Section(_, _) => None,
+                    Token::Op(position, op) => Some(self.parse_instruction(op.as_str(), &position).map(|i| Node::Instruction(i))),
                     Token::Variable(position, name) => match self.parse_variable(name, &position) {
                         Ok(_) => continue,
                         Err(err) => Some(Err(err))
                     }
-                    Token::Op(position, op) => Some(self.parse_instruction(op.as_str(), &position).map(|i| Node::Instruction(i))),
-                    Token::Equal(position)
-                    | Token::Address(position, _)
-                    | Token::Identifier(position, _)
-                    | Token::Integer(position, _)
-                    | Token::Comma(position) => Some(Err(format!("Expected section, label or op at {}", position).into())),
+                    other => Some(Err(format!("Expected directive, label, section, label, op or variable at {}", other.position()).into())),
                 },
             };
         }
@@ -553,6 +578,37 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_directive_base_word() {
+        let mut lexer = Lexer::from_text("#base 1\n");
+        let mut nodes = vec![];
+        let mut symbols = HashMap::new();
+        let r = Parser::from_lexer(&mut lexer, &mut nodes, &mut symbols).parse();
+
+        assert_eq!(true, r.is_ok(), "Expected Ok(...), got {:?}", r);
+        assert_eq!(true, symbols.is_empty());
+
+        let expected = vec![
+            Node::Directive(Directive::Base(1)),
+        ];
+        assert_eq!(expected, nodes, "Expected {:?}, got {:?}", expected, nodes);
+    }
+
+    #[test]
+    fn test_parse_directive_base_variable() {
+        let mut lexer = Lexer::from_text("$var = 12\n#base $var\n");
+        let mut nodes = vec![];
+        let mut symbols = HashMap::new();
+        let r = Parser::from_lexer(&mut lexer, &mut nodes, &mut symbols).parse();
+
+        assert_eq!(true, r.is_ok(), "Expected Ok(...), got {:?}", r);
+
+        let expected = vec![
+            Node::Directive(Directive::Base(12)),
+        ];
+        assert_eq!(expected, nodes, "Expected {:?}, got {:?}", expected, nodes);
+    }
+
+    #[test]
     fn test_parse() {
         let mut lexer = Lexer::from_text("//test\n  :label\nMOV r1, 0\n");
         let mut nodes = vec![];
@@ -562,7 +618,7 @@ mod tests {
 
         let expected = vec![
             Node::Label("label".to_string()),
-            Node::Instruction(Instruction::IRW(Op::MovRW, "r1".to_string(), 0))
+            Node::Instruction(Instruction::IRW(Op::MovRW, "r1".to_string(), 0)),
         ];
         assert_eq!(expected, nodes, "Expected {:?}, got {:?}", expected, nodes);
     }

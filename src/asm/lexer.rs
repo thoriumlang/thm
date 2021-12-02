@@ -25,16 +25,35 @@ impl fmt::Display for Position {
 
 #[derive(Debug, PartialEq)]
 pub enum Token {
-    Label(Position, String),
     Address(Position, String),
-    Op(Position, String),
-    Integer(Position, u32),
-    Section(Position, String),
     Comma(Position),
-    Identifier(Position, String),
-    Variable(Position, String),
+    Directive(Position, String),
     Equal(Position),
     Eol(Position),
+    Identifier(Position, String),
+    Integer(Position, u32),
+    Label(Position, String),
+    Op(Position, String),
+    Section(Position, String),
+    Variable(Position, String),
+}
+
+impl Token {
+    pub fn position(&self) -> &Position {
+        match &self {
+            Token::Address(p, _) => p,
+            Token::Comma(p) => p,
+            Token::Directive(p, _) => p,
+            Token::Equal(p) => p,
+            Token::Eol(p) => p,
+            Token::Identifier(p, _) => p,
+            Token::Integer(p, _) => p,
+            Token::Label(p, _) => p,
+            Token::Op(p, _) => p,
+            Token::Section(p, _) => p,
+            Token::Variable(p, _) => p,
+        }
+    }
 }
 
 pub struct Lexer {
@@ -73,53 +92,43 @@ impl Lexer {
         return char;
     }
 
-    fn is_section(c: char) -> bool { c == '.' }
-
-    fn is_label(c: char) -> bool { c == ':' }
-
     fn is_address(c: char) -> bool { c == '@' }
 
-    fn label(&mut self) -> Result<String> {
-        let mut label: String = "".to_string();
-
-        loop {
-            match self.raw_data.peek() {
-                Some(c) if c.is_ascii_alphabetic() => {
-                    label.push(*c);
-                    self.next_char();
-                }
-                Some(c) if !label.is_empty() && (c.is_ascii_alphanumeric() || *c == '_') => {
-                    label.push(*c);
-                    self.next_char();
-                }
-                _ => {
-                    if label.is_empty() {
-                        return Err(format!("Expected [a-zA-Z]([_0-9a-zA-Z])* at {}", self.position).to_string());
-                    }
-                    return Ok(label);
-                }
-            }
-        }
-    }
+    fn is_directive(c: char) -> bool { c == '#' }
 
     fn is_identifier(c: char) -> bool {
         c.is_ascii_lowercase()
     }
 
+    fn is_label(c: char) -> bool { c == ':' }
+
+    fn is_number(c: char) -> bool {
+        c.is_ascii_digit()
+    }
+
+    fn is_op(c: char) -> bool { c.is_ascii_uppercase() }
+
+    fn is_section(c: char) -> bool { c == '.' }
+
     fn is_variable(c: char) -> bool {
         c == '$'
     }
 
+    /// Parses and return a string in the form `[a-z][A-Za-z0-9_]+` where the first char comes
+    /// as parameter (but _may_ be empty).
     fn identifier(&mut self, c: char) -> Result<String> {
-        let mut identifier: String = c.to_string();
+        let mut identifier: String = match c {
+            '\0' => "".to_string(),
+            c => c.to_string()
+        };
 
         loop {
             match self.raw_data.peek() {
-                Some(c) if c.is_ascii_alphanumeric() || *c == '_' => {
+                Some(c) if c.is_ascii_lowercase() => {
                     identifier.push(*c);
                     self.next_char();
                 }
-                Some(c) if !identifier.is_empty() && (c.is_ascii_digit() || *c == '_') => {
+                Some(c) if !identifier.is_empty() && (c.is_ascii_alphanumeric() || *c == '_') => {
                     identifier.push(*c);
                     self.next_char();
                 }
@@ -128,18 +137,13 @@ impl Lexer {
         }
     }
 
-    fn is_op(c: char) -> bool { c.is_ascii_uppercase() }
-
+    /// Parses a string in the form `[A-Z][A-Za-z0-9_]*` where the first char comes as parameter.
     fn op(&mut self, c: char) -> Result<String> {
         let mut op: String = c.to_string();
 
         loop {
             match self.raw_data.peek() {
-                Some(c) if c.is_ascii_uppercase() => {
-                    op.push(*c);
-                    self.next_char();
-                }
-                Some(c) if !op.is_empty() && (c.is_ascii_digit() || *c == '_') => {
+                Some(c) if c.is_ascii_uppercase() || c.is_ascii_digit() || *c == '_' => {
                     op.push(*c);
                     self.next_char();
                 }
@@ -148,10 +152,8 @@ impl Lexer {
         }
     }
 
-    fn is_number(c: char) -> bool {
-        c.is_ascii_digit()
-    }
-
+    /// Parses a string in one of the forms `0b[01]+` or `0x[0-9A-Fa-f]+` or `[0-9_]+` where the
+    /// first char comes as parameter.
     fn number(&mut self, c: char) -> Result<u32> {
         if c == '0' {
             match self.raw_data.peek() {
@@ -182,7 +184,7 @@ impl Lexer {
                 }
                 Some(_) | None => {
                     if int.is_empty() {
-                        return Err(format!("Expected 0x[0-9a-z]+ at {}", self.position).to_string());
+                        return Err(format!("Expected 0x[0-9A-Fa-z]+ at {}", self.position).to_string());
                     }
                     return match u32::from_str_radix(int.as_str(), 16) {
                         Ok(i) => Ok(i),
@@ -267,17 +269,18 @@ impl Iterator for Lexer {
                         _ => return Some(Err(format!("Unexpected `/` at {}", self.position))),
                     }
                 }
-                Some('\n') => return Some(Ok(Token::Eol(position))),
                 Some(',') => return Some(Ok(Token::Comma(position))),
+                Some('\n') => return Some(Ok(Token::Eol(position))),
                 Some('=') => return Some(Ok(Token::Equal(position))),
                 Some(c) if c.is_whitespace() => continue,
-                Some(c) if Self::is_section(c) => return Some(self.label().map(|s| Token::Section(position, s))),
-                Some(c) if Self::is_label(c) => return Some(self.label().map(|s| Token::Label(position, s))),
-                Some(c) if Self::is_address(c) => return Some(self.label().map(|s| Token::Address(position, s))),
-                Some(c) if Self::is_variable(c) => return Some(self.identifier(c).map(|s| Token::Variable(position, s))),
+                Some(c) if Self::is_address(c) => return Some(self.identifier('\0').map(|s| Token::Address(position, s))),
+                Some(c) if Self::is_directive(c) => return Some(self.identifier('\0').map(|s| Token::Directive(position, s))),
                 Some(c) if Self::is_identifier(c) => return Some(self.identifier(c).map(|s| Token::Identifier(position, s))),
-                Some(c) if Self::is_op(c) => return Some(self.op(c).map(|s| Token::Op(position, s))),
                 Some(c) if Self::is_number(c) => return Some(self.number(c).map(|n| Token::Integer(position, n))),
+                Some(c) if Self::is_label(c) => return Some(self.identifier('\0').map(|s| Token::Label(position, s))),
+                Some(c) if Self::is_op(c) => return Some(self.op(c).map(|s| Token::Op(position, s))),
+                Some(c) if Self::is_section(c) => return Some(self.identifier('\0').map(|s| Token::Section(position, s))),
+                Some(c) if Self::is_variable(c) => return Some(self.identifier(c).map(|s| Token::Variable(position, s))),
                 Some(c) => return Some(Err(format!("Unexpected `{}`", c))),
                 None => return None,
             }
@@ -360,6 +363,19 @@ mod tests {
         assert_eq!(true, item.is_ok(), "Expected Ok(Token::Comma), got {:?}", item);
 
         let expected = Token::Comma(Position::new(1, 2));
+        let actual = item.unwrap();
+        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+    }
+
+    #[test]
+    fn test_directive() {
+        let r = Lexer::from_text(" #base 12 ").next();
+        assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
+
+        let item = r.unwrap();
+        assert_eq!(true, item.is_ok(), "Expected Ok(Token::Directive), got {:?}", item);
+
+        let expected = Token::Directive(Position::new(1, 2), "base".to_string());
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }

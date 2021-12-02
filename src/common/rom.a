@@ -8,12 +8,10 @@
 //  - r0..r31         set to 0
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // cs = sp + 1
-    PUSH r0
-    MOV  r0, sp
-    ADD  r0, 5    // 1 register on stack + 1
-    MOV  cs, r0
-    POP  r0
+#base $__rom_start
 
-    // jump to cs + 0
-    J    0
+    J @int_dispatch
+
+:int_dispatch
+
+    // todo implement
