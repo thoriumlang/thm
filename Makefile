@@ -9,17 +9,20 @@ tha: src/asm/op.rs
 test_tha: src/asm/op.rs
 	cargo test --bin tha
 
-src/asm/op.rs: src/common/op.csv
-	bin/generate_ops.sh src/common/op.csv > src/asm/op.rs
+src/asm/op.rs: bin/tha_generate_ops.sh src/common/op.csv
+	bin/tha_generate_ops.sh src/common/op.csv > src/asm/op.rs
 
 #### thm
-thm: target/cmake-build-debug
+thm: src/vm/ops_array.h target/cmake-build-debug
 	cmake --build target/cmake-build-debug
+
+src/vm/ops_array.h: bin/thm_generate_ops.sh src/common/op.csv
+	bin/thm_generate_ops.sh src/common/op.csv > src/vm/ops_array.h
 
 target/cmake-build-debug: src/vm/CMakeLists.txt
 	cmake -DCMAKE_BUILD_TYPE=Debug -Wdev -Wdeprecated -S src/vm -B target/cmake-build-debug
 
-test_thm: thm target/fact.bin target/fibonacci.bin target/fibonacci_rec.bin
+test_thm: thm target/fact.bin target/fibonacci.bin target/fibonacci_rec.bin target/jumps.bin
 	ctest --test-dir target/cmake-build-debug --output-on-failure
 	bin/test-vm.sh target/cmake-build-debug/thm
 

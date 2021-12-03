@@ -20,18 +20,18 @@
  *  - disable print_op with compile-time macro
  */
 
-#include <stdlib.h>
 #include "vmarch.h"
-#include "ops.h"
 #include "cpu.h"
 #include "cpu_internal.h"
 
+#define OP_NOP
 void op_nop(CPU *cpu, word_t word) {
     if (cpu->debug.print_op) {
         printf("  %lu\t"AXHEX"\tNOP\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
     }
 }
 
+#define OP_HALT
 void op_halt(CPU *cpu, word_t word) {
     if (cpu->debug.print_op) {
         printf("  %lu\t"AXHEX"\tHALT\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
@@ -39,6 +39,7 @@ void op_halt(CPU *cpu, word_t word) {
     cpu->state.running = 0;
 }
 
+#define OP_PANIC
 void op_panic(CPU *cpu, word_t word) {
     if (cpu->debug.print_op) {
         printf("  %lu\t"AXHEX"\tPANIC\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
@@ -48,6 +49,7 @@ void op_panic(CPU *cpu, word_t word) {
     }
 }
 
+#define OP_PUSH
 void op_push(CPU *cpu, word_t word) {
     uint8_t r = ((uint8_t *) &word)[1];
 
@@ -64,6 +66,7 @@ void op_push(CPU *cpu, word_t word) {
     }
 }
 
+#define OP_POP
 void op_pop(CPU *cpu, word_t word) {
     uint8_t r = ((uint8_t *) &word)[1];
 
@@ -80,7 +83,8 @@ void op_pop(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, r, value);
 }
 
-// todo implement support for special registers
+
+#define OP_MOV_RW// todo implement support for special registers
 void op_mov_rw(CPU *cpu, word_t word) {
     uint8_t to = ((uint8_t *) &word)[1];
 
@@ -95,7 +99,8 @@ void op_mov_rw(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, to, val);
 }
 
-// todo implement support for special registers
+
+#define OP_MOV_RR// todo implement support for special registers
 void op_mov_rr(CPU *cpu, word_t word) {
     uint8_t to = ((uint8_t *) &word)[1];
     uint8_t from = ((uint8_t *) &word)[2];
@@ -111,6 +116,7 @@ void op_mov_rr(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, to, value);
 }
 
+#define OP_CMP
 void op_cmp(CPU *cpu, word_t word) {
     uint8_t a = ((uint8_t *) &word)[1];
     uint8_t b = ((uint8_t *) &word)[2];
@@ -130,7 +136,34 @@ void op_cmp(CPU *cpu, word_t word) {
     cpu_flags_update(cpu, (sword_t) a_val - (sword_t) b_val);
 }
 
+#define OP_JSEQ
 void op_jseq(CPU *cpu, word_t word) {
+    addr_t address = 0;
+    addr_t pc = cpu->pc;
+    if (cpu->flags.zero == 1 || cpu->debug.print_op) {
+        address = cpu_fetch(cpu);
+        if (cpu->state.panic != CPU_ERR_OK) {
+            return;
+        }
+
+        if (cpu->debug.print_op) {
+            printf("  %lu\t"AXHEX"\tJEQ  "AXHEX"\t\t// cs="AXHEX"    z=%i -> %s\n",
+                   cpu->debug.step,
+                   cpu->pc - 2 * ADDR_SIZE,
+                   address,
+                   cpu->cs,
+                   cpu->flags.zero,
+                   cpu->flags.zero == 0 ? "no jump" : "jump"
+            );
+        }
+    }
+
+    cpu->pc = (cpu->flags.zero == 1) * (cpu->cs + address) // if equals, jump
+              + (cpu->flags.zero == 0) * (pc + ADDR_SIZE); // otherwise, move to next opcode
+}
+
+#define OP_JAEQ
+void op_jaeq(CPU *cpu, word_t word) {
     addr_t address = 0;
     addr_t pc = cpu->pc;
     if (cpu->flags.zero == 1 || cpu->debug.print_op) {
@@ -150,11 +183,38 @@ void op_jseq(CPU *cpu, word_t word) {
         }
     }
 
-    cpu->pc = (cpu->flags.zero == 1) * (cpu->cs + address) // if equals, jump
+    cpu->pc = (cpu->flags.zero == 1) * address             // if equals, jump
               + (cpu->flags.zero == 0) * (pc + ADDR_SIZE); // otherwise, move to next opcode
 }
 
+#define OP_JSNE
 void op_jsne(CPU *cpu, word_t word) {
+    addr_t address = 0;
+    addr_t pc = cpu->pc;
+    if (cpu->flags.zero == 0 || cpu->debug.print_op) {
+        address = cpu_fetch(cpu);
+        if (cpu->state.panic != CPU_ERR_OK) {
+            return;
+        }
+
+        if (cpu->debug.print_op) {
+            printf("  %lu\t"AXHEX"\tJNE  "AXHEX"\t\t// cs="AXHEX"    z=%i -> %s\n",
+                   cpu->debug.step,
+                   cpu->pc - 2 * ADDR_SIZE,
+                   address,
+                   cpu->cs,
+                   cpu->flags.zero,
+                   cpu->flags.zero == 0 ? "jump" : "no jump"
+            );
+        }
+    }
+
+    cpu->pc = (cpu->flags.zero == 0) * (cpu->cs + address) // if not equals, jump
+              + (cpu->flags.zero == 1) * (pc + ADDR_SIZE); // otherwise, move to next word
+}
+
+#define OP_JANE
+void op_jane(CPU *cpu, word_t word) {
     addr_t address = 0;
     addr_t pc = cpu->pc;
     if (cpu->flags.zero == 0 || cpu->debug.print_op) {
@@ -174,11 +234,26 @@ void op_jsne(CPU *cpu, word_t word) {
         }
     }
 
-    cpu->pc = (cpu->flags.zero == 0) * (cpu->cs + address) // if not equals, jump
+    cpu->pc = (cpu->flags.zero == 0) * address             // if not equals, jump
               + (cpu->flags.zero == 1) * (pc + ADDR_SIZE); // otherwise, move to next word
 }
 
+#define OP_JS
 void op_js(CPU *cpu, word_t word) {
+    word_t address = cpu_fetch(cpu);
+    if (cpu->state.panic != CPU_ERR_OK) {
+        return;
+    }
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tJ    "AXHEX"\t\t// cs="AXHEX"\n", cpu->debug.step, cpu->pc - 2 * ADDR_SIZE, address, cpu->cs);
+    }
+
+    cpu->pc = cpu->cs + address;
+}
+
+#define OP_JA
+void op_ja(CPU *cpu, word_t word) {
     word_t address = cpu_fetch(cpu);
     if (cpu->state.panic != CPU_ERR_OK) {
         return;
@@ -188,9 +263,10 @@ void op_js(CPU *cpu, word_t word) {
         printf("  %lu\t"AXHEX"\tJ    "AXHEX"\n", cpu->debug.step, cpu->pc - 2 * ADDR_SIZE, address);
     }
 
-    cpu->pc = cpu->cs + address;
+    cpu->pc = address;
 }
 
+#define OP_STOR
 void op_stor(CPU *cpu, word_t word) {
     uint8_t to = ((uint8_t *) &word)[1];
     uint8_t from = ((uint8_t *) &word)[2];
@@ -216,6 +292,7 @@ void op_stor(CPU *cpu, word_t word) {
     }
 }
 
+#define OP_LOAD
 void op_load(CPU *cpu, word_t word) {
     uint8_t to = ((uint8_t *) &word)[1];
     uint8_t from = ((uint8_t *) &word)[2];
@@ -241,6 +318,7 @@ void op_load(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, to, val);
 }
 
+#define OP_ADD_RR
 void op_add_rr(CPU *cpu, word_t word) {
     uint8_t a = ((uint8_t *) &word)[1];
     uint8_t b = ((uint8_t *) &word)[2];
@@ -261,6 +339,7 @@ void op_add_rr(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, a, (word_t) ((sword_t) a_val + (sword_t) b_val));
 }
 
+#define OP_SUB_RW
 void op_sub_rw(CPU *cpu, word_t word) {
     uint8_t a = ((uint8_t *) &word)[1];
     word_t value = cpu_fetch(cpu);
@@ -281,6 +360,7 @@ void op_sub_rw(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, a, (word_t) ((sword_t) a_val - (sword_t) value));
 }
 
+#define OP_MUL_RR
 void op_mul_rr(CPU *cpu, word_t word) {
     uint8_t a = ((uint8_t *) &word)[1];
     uint8_t b = ((uint8_t *) &word)[2];
@@ -301,6 +381,7 @@ void op_mul_rr(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, a, (word_t) ((sword_t) a_val * (sword_t) b_val));
 }
 
+#define OP_AND_RR
 void op_and_rr(CPU *cpu, word_t word) {
     uint8_t a = ((uint8_t *) &word)[1];
     uint8_t b = ((uint8_t *) &word)[2];
@@ -320,6 +401,7 @@ void op_and_rr(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, a, a_val & b_val);
 }
 
+#define OP_AND_RW
 void op_and_rw(CPU *cpu, word_t word) {
     uint8_t a = ((uint8_t *) &word)[1];
     word_t b_val = cpu_fetch(cpu);
@@ -338,6 +420,7 @@ void op_and_rw(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, a, a_val & b_val);
 }
 
+#define OP_OR_RR
 void op_or_rr(CPU *cpu, word_t word) {
     uint8_t a = ((uint8_t *) &word)[1];
     uint8_t b = ((uint8_t *) &word)[2];
@@ -357,6 +440,7 @@ void op_or_rr(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, a, a_val | b_val);
 }
 
+#define OP_OR_RW
 void op_or_rw(CPU *cpu, word_t word) {
     uint8_t a = ((uint8_t *) &word)[1];
     word_t b_val = cpu_fetch(cpu);
@@ -375,6 +459,7 @@ void op_or_rw(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, a, a_val | b_val);
 }
 
+#define OP_DEC
 void op_dec(CPU *cpu, word_t word) {
     uint8_t r = ((uint8_t *) &word)[1];
 
@@ -390,6 +475,7 @@ void op_dec(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, r, (word_t) ((sword_t) r_val - 1));
 }
 
+#define OP_INC
 void op_inc(CPU *cpu, word_t word) {
     uint8_t r = ((uint8_t *) &word)[1];
 
@@ -405,6 +491,7 @@ void op_inc(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, r, (word_t) ((sword_t) r_val + 1));
 }
 
+#define OP_CALL
 void op_call(CPU *cpu, word_t word) {
     addr_t address = (addr_t) cpu_fetch(cpu);
     if (cpu->state.panic != CPU_ERR_OK) {
@@ -423,6 +510,7 @@ void op_call(CPU *cpu, word_t word) {
     cpu->pc = cpu->cs + address;
 }
 
+#define OP_RET
 void op_ret(CPU *cpu, word_t word) {
     if (cpu->debug.print_op) {
         printf("  %lu\t"AXHEX"\tRET\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
@@ -435,42 +523,4 @@ void op_ret(CPU *cpu, word_t word) {
     cpu->sp += WORD_SIZE;
 }
 
-op_ptr ops[OPS_COUNT] = {
-        &op_nop,
-        &op_halt,
-        &op_panic,
-        &op_mov_rw,
-        &op_mov_rr,
-        &op_add_rr,
-        NULL,
-        NULL,
-        &op_sub_rw,
-        &op_mul_rr,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        &op_inc,
-        &op_dec,
-        &op_and_rr,
-        &op_and_rw,
-        &op_or_rr,
-        &op_or_rw,
-        NULL,
-        NULL,
-        NULL,
-        &op_cmp,
-        &op_push,
-        &op_pop,
-        NULL,
-        &op_jseq,
-        &op_jsne,
-        &op_js,
-        &op_stor,
-        &op_load,
-        &op_call,
-        &op_ret,
-};
-
-
+#include "ops_array.h"

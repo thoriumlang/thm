@@ -2,6 +2,7 @@
 .idea
 
 src/asm/op.rs
+src/vm/ops_array.h
 
 CMakeLists.txt.user
 CMakeCache.txt

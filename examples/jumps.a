@@ -1,0 +1,38 @@
+// expects to be loaded at address 0x1000
+
+#base 0x1000
+
+// make sure we did not come here because of some jump to before 0x1000
+    MOV    r1, 0
+    CMP    r0, r1
+    JEQ    @step0
+    PANIC
+
+:step0
+    MOV    r0, 1
+    MOV    r1, 2
+    J      @start
+    PANIC
+
+:start
+    J      &step1
+    PANIC
+
+:step1
+    INC    r0
+    CMP    r0, r1
+    JEQ    @step1
+    JNE    @step2
+    PANIC
+
+:step2
+    INC    r0
+    MOV    r1, 4
+    CMP    r0, r1
+    JEQ    &step2
+    JNE    &step3
+    PANIC
+
+:step3
+    HALT
+    // r0 == 5
