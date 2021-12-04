@@ -97,6 +97,7 @@ int main(int argc, char **argv) {
     // cpu_debug_enable(cpu, false);
     cpu_pc_set(cpu, options->pc);
     cpu_cs_set(cpu, options->pc); // FIXME
+    cpu_idt_set(cpu, INTERRUPT_DESCRIPTOR_TABLE_ADDRESS);
     for (int i = 0; i < options->registers; i++) {
         cpu_register_set(cpu, i, (word_t) options->register_values[i]);
     }

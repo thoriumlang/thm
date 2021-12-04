@@ -66,6 +66,11 @@ void pic_interrupt_trigger(PIC *this, interrupt_t interrupt) {
     this->active_interrupts[loc.word_index] |= loc.bit;
 }
 
+void pic_interrupt_reset(PIC *this, interrupt_t interrupt) {
+    int_loc_t loc = find_interrupt_location(interrupt);
+    this->active_interrupts[loc.word_index] &= ~loc.bit;
+}
+
 bool pic_interrupt_active(PIC *this) {
     for (int i = 0; i < INTERRUPTS_WORDS_COUNT; i++) {
         word_t masked;

@@ -542,4 +542,29 @@ void op_ret(CPU *cpu, word_t word) {
     cpu->sp += WORD_SIZE;
 }
 
+#define OP_IRET
+void op_iret(CPU *cpu, word_t word) {
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tIRET\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
+    }
+
+    if (bus_word_read(cpu->bus, cpu->sp, &cpu->pc) != BUS_ERR_OK) {
+        cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
+        return;
+    }
+    cpu->sp += WORD_SIZE;
+    cpu->flags.interrupts_enabled = 1;
+}
+
+#define OP_INT
+void op_int(CPU *cpu, word_t word) {
+    uint8_t interrupt = ((uint8_t *) &word)[1];
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tINT  %i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, interrupt);
+    }
+
+    cpu_interrupt_trigger(cpu, interrupt);
+}
+
 #include "ops_array.h"

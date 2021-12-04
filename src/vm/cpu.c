@@ -46,14 +46,24 @@ void cpu_start(CPU *cpu) {
         printf("\nCPU Steps\n");
     }
     while (cpu->state.running == 1 && cpu->state.panic == CPU_ERR_OK) {
-        while (cpu->flags.interrupts_enabled && pic_interrupt_active(cpu->pic)) {
-            interrupt_t interrupt = pic_interrupt_get(cpu->pic);
+        word_t word;
+        if (cpu->flags.interrupts_enabled && pic_interrupt_active(cpu->pic)) {
             cpu->flags.interrupts_enabled = 0;
-            // todo
-            cpu->flags.interrupts_enabled = 1;
-        }
+            cpu->ir = pic_interrupt_get(cpu->pic);
+            pic_interrupt_reset(cpu->pic, cpu->ir);
 
-        word_t word = htov(cpu_fetch(cpu));
+            cpu->sp -= WORD_SIZE;
+            if (bus_word_write(cpu->bus, cpu->sp, cpu->pc) != BUS_ERR_OK) {
+                cpu->state.panic = CPU_ERR_CANNOT_WRITE_MEMORY;
+            } else {
+                cpu->pc = ROM_ADDRESS + 8;
+                if (cpu->debug.print_op) {
+                    printf("// handling interrupt %i\n", cpu->ir);
+                }
+            }
+        }
+        word = htov(cpu_fetch(cpu));
+
         if (!cpu->state.panic) {
             op_ptr op = cpu_decode(cpu, word);
             if (!cpu->state.panic) {
@@ -72,6 +82,9 @@ void cpu_start(CPU *cpu) {
 
 
 word_t cpu_fetch(CPU *cpu) {
+    if (cpu->state.panic != CPU_ERR_OK){
+        return 0;
+    }
     word_t word;
     if (bus_word_read(cpu->bus, cpu->pc, &word) != BUS_ERR_OK) {
         cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
@@ -150,6 +163,22 @@ addr_t cpu_sp_get(CPU *cpu) {
     return cpu->sp;
 }
 
+void cpu_idt_set(CPU *cpu, addr_t addr) {
+    cpu->idt = addr;
+}
+
+word_t cpu_idt_get(CPU * cpu) {
+    return cpu->idt;
+}
+
+word_t cpu_ir_get(CPU * cpu) {
+    return cpu->ir;
+}
+
+void cpu_interrupt_trigger(CPU *cpu, uint8_t interrupt) {
+    pic_interrupt_trigger(cpu->pic, interrupt);
+}
+
 void cpu_flags_update(CPU *cpu, sword_t value) {
     cpu->flags.zero = (value == 0) ? 1 : 0;
     cpu->flags.negative = ((sword_t) value < 0) ? 1 : 0;
@@ -182,7 +211,10 @@ void cpu_state_print(CPU *cpu, FILE *file) {
     }
     fprintf(file, "                  pc            sp            cs\n");
     fprintf(file, "                  "WHEX"      "WHEX"      "WHEX"\n", cpu->pc, cpu->sp, cpu->cs);
-    fprintf(file, "                  z=%i  n=%i  i=%i\n", cpu->flags.zero, cpu->flags.negative, cpu->flags.interrupts_enabled);
+    fprintf(file, "                  ir            idt\n");
+    fprintf(file, "                  "WHEX"      "WHEX"\n", cpu->ir, cpu->idt);
+    fprintf(file, "                  z=%i  n=%i  i=%i\n", cpu->flags.zero, cpu->flags.negative,
+            cpu->flags.interrupts_enabled);
     fprintf(file, "  running:%s       print_op:%s    panic:%i\n",
             cpu->state.running == (uint32_t) 1 ? "y" : "n",
             cpu->debug.print_op == (uint32_t) 1 ? "y" : "n",

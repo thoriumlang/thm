@@ -7,9 +7,24 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #base $__rom_start
+    J     &skip_int_dispatch
 
-    J     &int_dispatch
+// int_dispatch
+    PUSH  r0
+    CALL  &compute_interrupt_handler_address
+    CALL  r0
+    POP   r0
+    IRET
 
-:int_dispatch
+:compute_interrupt_handler_address
+    PUSH  r1
+    MOV   r0, ir
+    MOV   r1, 4
+    MUL   r0, r1
+    MOV   r1, idt
+    ADD   r0, r1
+    LOAD  r0, r0
+    POP   r1
+    RET
 
-    // todo implement
+:skip_int_dispatch

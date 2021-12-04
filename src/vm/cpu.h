@@ -58,6 +58,14 @@ addr_t cpu_cs_get(CPU *cpu);
 
 addr_t cpu_sp_get(CPU *cpu);
 
+void cpu_idt_set(CPU *cpu, addr_t addr);
+
+word_t cpu_idt_get(CPU * cpu);
+
+word_t cpu_ir_get(CPU * cpu);
+
+void cpu_interrupt_trigger(CPU *cpu, uint8_t interrupt);
+
 void cpu_print_op_enable(CPU *cpu, bool enable);
 
 void cpu_debug_enable(CPU *cpu, bool enable);

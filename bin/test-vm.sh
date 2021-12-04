@@ -15,7 +15,7 @@ function _test {
     echo -ne " * $1($2):  "
 
     failure=0
-    result=$("$VM" --print-json --register-values $2 $1 | jq $4)
+    result=$("$VM" --print-json --register-values $2 --rom target/rom.bin $1 | jq $4)
     if [ "$result" == "$3" ]; then
       echo -e "${COLOR_GREEN}Success$COLOR_NC"
     else
@@ -25,7 +25,7 @@ function _test {
     fi
 
     if [[ $DEBUG -eq 1 || $failure -eq 1 ]]; then
-      echo -e "     ${COLOR_BLUE}${VM} --print-json --register-values $2 $1 | jq -r '$4$COLOR_NC'"
+      echo -e "     ${COLOR_BLUE}${VM} --print-json --register-values $2 --rom target/rom.bin $1 | jq -r '$4$COLOR_NC'"
     fi
 }
 
@@ -34,6 +34,7 @@ function _test {
   && _test target/fibonacci.bin 0:16 987 ".cpu.registers.general[3]" \
   && _test target/fibonacci_rec.bin 0:16 987 ".cpu.registers.general[3]" \
   && _test target/fact.bin 0:5 120 ".cpu.registers.general[3]" \
-  && _test target/jumps.bin 0:0 7 ".cpu.registers.general[0]"
+  && _test target/jumps.bin 0:0 7 ".cpu.registers.general[0]" \
+  && _test target/interrupts.bin 0:0 42 ".cpu.registers.general[0]"
 
 exit $FAIL

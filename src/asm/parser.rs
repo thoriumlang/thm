@@ -40,6 +40,7 @@ pub enum Instruction {
     IA(Op, String, AddressKind),
     IB(Op, u8),
     IR(Op, String),
+    IRA(Op, String, String, AddressKind),
     IRW(Op, String, u32),
     IRR(Op, String, String),
 }
@@ -51,6 +52,7 @@ impl Instruction {
             &Instruction::IA(op, _, _) => op,
             &Instruction::IB(op, _) => op,
             &Instruction::IR(op, _) => op,
+            &Instruction::IRA(op, _, _, _) => op,
             &Instruction::IRW(op, _, _) => op,
             &Instruction::IRR(op, _, _) => op,
         };
@@ -133,11 +135,12 @@ impl<'t> Parser<'t> {
             "DEC" => self.op_r(Op::Dec, position),
             "HALT" => self.op_void(Op::Halt, position),
             "INC" => self.op_r(Op::Inc, position),
+            "INT" => self.op_b(Op::Int, position),
             "J" => self.op_a(Op::Js, Op::Ja, position),
             "JEQ" => self.op_a(Op::Jseq, Op::Jaeq, position),
             "JNE" => self.op_a(Op::Jsne, Op::Jane, position),
             "LOAD" => self.op_rr(Op::Load, position),
-            "MOV" => self.op_rr_rw(Op::MovRR, Op::MovRW, position),
+            "MOV" => self.op_rr_rw_ra(Op::MovRR, Op::MovRW, position),
             "MUL" => self.op_rr_rw(Op::MulRR, Op::MulRW, position),
             "NOP" => self.op_void(Op::Nop, position),
             "OR" => self.op_rr_rw(Op::OrRR, Op::OrRW, position),
@@ -147,6 +150,7 @@ impl<'t> Parser<'t> {
             "RET" => self.op_void(Op::Ret, position),
             "STOR" => self.op_rr(Op::Stor, position),
             "SUB" => self.op_rr_rw(Op::SubRR, Op::SubRW, position),
+            "IRET" => self.op_void(Op::Iret, position),
             "XBM" => self.op_b(Op::Xbm, position),
             op => Err(format!("Invalid mnemonic '{}' at {}", op, position).into())
         };
@@ -198,6 +202,46 @@ impl<'t> Parser<'t> {
                 Token::Integer(_, w) => Some(Ok(Instruction::IRW(op_ri, r1, w))),
                 Token::Variable(_, name) => match self.symbols.get(&name) {
                     Some(Token::Integer(_, w)) => Some(Ok(Instruction::IRW(op_ri, r1, *w))),
+                    _ => None
+                },
+                _ => None,
+            })
+            .unwrap_or(Err(format!("Expected <variable>, <w> or <r> at {}", position).into()));
+
+        if self.read_eol() {
+            return instruction;
+        }
+        Err(format!("Expected <eol> at {}", position).into())
+    }
+
+    fn op_rr_rw_ra(&mut self, op_rr: Op, op_rw: Op, position: &Position) -> Result<Instruction> {
+        let r1 = match self.read_register() {
+            None => return Err(format!("Expected <r> at {}", position).into()),
+            Some(str) => str,
+        };
+
+        if !self.read_comma() {
+            return Err(format!("Expected ',' at {}", position).into());
+        }
+
+        let instruction = self.read_next()
+            .and_then(|token| match token {
+                Token::Address(_, addr, kind) => {
+                    match kind {
+                        LexerAddressKind::Segment => Some(Ok(Instruction::IRA(op_rw, r1, addr, Segment))),
+                        LexerAddressKind::Absolute => Some(Ok(Instruction::IRA(op_rw, r1, addr, Absolute)))
+                    }
+                }
+                Token::Identifier(_, r2) => Some(Ok(Instruction::IRR(op_rr, r1, r2))),
+                Token::Integer(_, w) => Some(Ok(Instruction::IRW(op_rw, r1, w))),
+                Token::Variable(_, name) => match self.symbols.get(&name) {
+                    Some(Token::Integer(_, w)) => Some(Ok(Instruction::IRW(op_rw, r1, *w))),
+                    Some(Token::Address(_, addr, kind)) => {
+                        match kind {
+                            LexerAddressKind::Segment => Some(Ok(Instruction::IRA(op_rw, r1, addr.into(), Segment))),
+                            LexerAddressKind::Absolute => Some(Ok(Instruction::IRA(op_rw, r1, addr.into(), Absolute)))
+                        }
+                    }
                     _ => None
                 },
                 _ => None,
@@ -474,10 +518,35 @@ mod tests {
         }
     }
 
+    macro_rules! op_ra_test {
+        ($($name:ident: $value:expr,)*) => {
+        $(
+            #[test]
+            fn $name() {
+                let (input, op, r0, a, k) = $value;
+
+                let mut lexer = Lexer::from_text(input);
+                let mut nodes = vec![];
+                let mut symbols = HashMap::new();
+                let r = Parser::from_lexer(&mut lexer, &mut nodes, &mut symbols).next();
+                assert_eq!(true, r.is_some());
+
+                let item = r.unwrap();
+                assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
+
+                let expected = Node::Instruction(Instruction::IRA(op, r0.into(), a.into(), k));
+                let actual = item.unwrap();
+                assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+            }
+        )*
+        }
+    }
+
     op_void_test! {
         nop:    ("NOP\n", Op::Nop),
         halt:   ("HALT\n", Op::Halt),
         panic:  ("PANIC\n", Op::Panic),
+        iret:   ("IRET\n", Op::Iret),
         ret:    ("RET\n", Op::Ret),
     }
 
@@ -493,6 +562,7 @@ mod tests {
     }
 
     op_b_test! {
+        int:    ("INT 12\n", Op::Int, 12),
         xbm:    ("XBM 42\n", Op::Xbm, 42),
     }
 
@@ -522,6 +592,11 @@ mod tests {
         or_rw:  ("OR   r1, 42\n", Op::OrRW, "r1", 42),
         sub_rw: ("SUB  r1, 42\n", Op::SubRW, "r1", 42),
         mul_rw: ("MUL  r1, 42\n", Op::MulRW, "r1", 42),
+    }
+
+    op_ra_test! {
+        mov_ra_s: ("MOV  r1, @addr\n", Op::MovRW, "r1", "addr", Segment),
+        mov_ra_a: ("MOV  r1, &addr\n", Op::MovRW, "r1", "addr", Absolute),
     }
 
     #[test]

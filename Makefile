@@ -22,7 +22,7 @@ src/vm/ops_array.h: bin/thm_generate_ops.sh src/common/op.csv
 target/cmake-build-debug: src/vm/CMakeLists.txt
 	cmake -DCMAKE_BUILD_TYPE=Debug -Wdev -Wdeprecated -S src/vm -B target/cmake-build-debug
 
-test_thm: thm target/fact.bin target/fibonacci.bin target/fibonacci_rec.bin target/jumps.bin
+test_thm: thm target/rom.bin target/fact.bin target/fibonacci.bin target/fibonacci_rec.bin target/jumps.bin target/interrupts.bin
 	ctest --test-dir target/cmake-build-debug --output-on-failure
 	bin/test-vm.sh target/cmake-build-debug/thm
 

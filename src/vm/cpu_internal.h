@@ -22,9 +22,11 @@ typedef struct CPU {
     PIC *pic;
     word_t *registers;
     uint8_t register_count;
-    addr_t pc;
-    addr_t sp;
-    addr_t cs;
+    addr_t pc;  // program counter
+    addr_t sp;  // stack pointer
+    addr_t cs;  // code segment
+    addr_t idt; // interrupt descriptor table
+    word_t ir;  // current interrupt
     struct {
         uint8_t interrupts_enabled: 1;
         uint8_t zero: 1;
@@ -39,6 +41,13 @@ typedef struct CPU {
         unsigned long step;
     } debug;
 } CPU;
+
+// todo this is shared with tha and should be derived from come common file
+#define REG_PC    255
+#define REG_SP    254
+#define REG_CS    253
+#define REG_IR    252
+#define REG_IDT   251
 
 word_t cpu_fetch(CPU *cpu);
 

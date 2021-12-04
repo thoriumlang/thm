@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::constants::{REG_CS, REG_PC, REG_SP};
+use crate::constants::{REG_CS, REG_IDT, REG_IR, REG_PC, REG_SP};
 use crate::parser::{AddressKind, Directive, Instruction, Node};
 
 pub struct Emitter<'t> {
@@ -15,6 +15,8 @@ impl<'t> Emitter<'t> {
         registers.insert("cp".to_string(), REG_PC);
         registers.insert("sp".to_string(), REG_SP);
         registers.insert("cs".to_string(), REG_CS);
+        registers.insert("ir".to_string(), REG_IR);
+        registers.insert("idt".to_string(), REG_IDT);
         for r in 0..=31 {
             registers.insert(format!("r{}", r).to_string(), r);
         }
@@ -47,6 +49,14 @@ impl<'t> Emitter<'t> {
                     Instruction::IRR(op, r1, r2) => bytes.append(vec![
                         op.bytecode(), *self.decode_register(r1) as u8, *self.decode_register(r2) as u8, 0,
                     ].as_mut()),
+                    Instruction::IRA(op, r, addr, kind) => {
+                        bytes.append(vec![op.bytecode(),  *self.decode_register(r) as u8, 0, 0].as_mut());
+                        let b = (match kind {
+                            AddressKind::Absolute => base_address,
+                            AddressKind::Segment => 0,
+                        } + self.decode_address(addr)).to_be_bytes();
+                        bytes.extend_from_slice(&b);
+                    }
                     Instruction::IA(op, addr, kind) => {
                         bytes.append(vec![op.bytecode(), 0, 0, 0].as_mut());
                         let b = (match kind {

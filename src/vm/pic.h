@@ -39,6 +39,8 @@ interrupt_t pic_interrupt_get(PIC *this);
 
 void pic_interrupt_trigger(PIC *this, interrupt_t interrupt);
 
+void pic_interrupt_reset(PIC *this, interrupt_t interrupt);
+
 void pic_destroy(PIC *this);
 
 #endif //THM_PIC_H

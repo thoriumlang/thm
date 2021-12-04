@@ -1,0 +1,27 @@
+
+#base 0x1000
+
+// setup_interrupt handler
+
+    MOV   r0, &handler
+    MOV   r1, $__idt_start
+    STOR  r1, r0
+
+// trigger interrupt
+    INT   0
+    MOV   r0, &data
+    LOAD  r0, r0
+    INC   r0
+    HALT                         // r0 == 42
+
+:handler
+    PUSH  r0
+    PUSH  r1
+    MOV   r0, 41
+    MOV   r1, &data
+    STOR  r1, r0
+    POP   r1
+    POP   r0
+    RET
+
+:data
