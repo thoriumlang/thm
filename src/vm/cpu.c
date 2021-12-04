@@ -92,9 +92,9 @@ void cpu_reset(CPU *cpu) {
     for (int r = 0; r < 32; r++) {
         cpu->registers[r] = 0;
     }
-    cpu->pc = 0;
+    cpu->pc = STACK_SIZE;
     cpu->sp = STACK_SIZE;
-    cpu->cs = 0;
+    cpu->cs = STACK_SIZE;
     cpu->flags.zero = 0;
     cpu->flags.negative = 0;
     cpu->state.running = 0;
