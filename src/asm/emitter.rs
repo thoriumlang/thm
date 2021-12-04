@@ -38,11 +38,6 @@ impl<'t> Emitter<'t> {
                 Node::Instruction(instruction) => match instruction {
                     Instruction::I(op) => bytes.append(vec![op.bytecode(), 0, 0, 0].as_mut()),
                     Instruction::IB(op, imm1) => bytes.append(vec![op.bytecode(), *imm1, 0, 0].as_mut()),
-                    Instruction::IW(op, imm4) => {
-                        bytes.append(vec![op.bytecode(), 0, 0, 0].as_mut());
-                        let b = imm4.to_be_bytes();
-                        bytes.extend_from_slice(&b);
-                    }
                     Instruction::IRW(op, r, value) => {
                         bytes.append(vec![op.bytecode(), *self.decode_register(r) as u8, 0, 0].as_mut());
                         let b = value.to_be_bytes();

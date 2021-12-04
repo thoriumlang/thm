@@ -40,7 +40,6 @@ pub enum Instruction {
     IA(Op, String, AddressKind),
     IB(Op, u8),
     IR(Op, String),
-    IW(Op, u32),
     IRW(Op, String, u32),
     IRR(Op, String, String),
 }
@@ -52,7 +51,6 @@ impl Instruction {
             &Instruction::IA(op, _, _) => op,
             &Instruction::IB(op, _) => op,
             &Instruction::IR(op, _) => op,
-            &Instruction::IW(op, _) => op,
             &Instruction::IRW(op, _, _) => op,
             &Instruction::IRR(op, _, _) => op,
         };
@@ -130,14 +128,14 @@ impl<'t> Parser<'t> {
         return match op {
             "ADD" => self.op_rr_rw(Op::AddRR, Op::AddRW, position),
             "AND" => self.op_rr_rw(Op::AndRR, Op::AndRW, position),
-            "CALL" => self.op_a(Op::Call, position),
+            "CALL" => self.op_a(Op::Call, Op::Call, position),
             "CMP" => self.op_rr(Op::Cmp, position),
             "DEC" => self.op_r(Op::Dec, position),
             "HALT" => self.op_void(Op::Halt, position),
             "INC" => self.op_r(Op::Inc, position),
-            "J" => self.op_a_w(Op::Js, Op::Ja, position),
-            "JEQ" => self.op_a_w(Op::Jseq, Op::Jaeq, position),
-            "JNE" => self.op_a_w(Op::Jsne, Op::Jane, position),
+            "J" => self.op_a(Op::Js, Op::Ja, position),
+            "JEQ" => self.op_a(Op::Jseq, Op::Jaeq, position),
+            "JNE" => self.op_a(Op::Jsne, Op::Jane, position),
             "LOAD" => self.op_rr(Op::Load, position),
             "MOV" => self.op_rr_rw(Op::MovRR, Op::MovRW, position),
             "MUL" => self.op_rr_rw(Op::MulRR, Op::MulRW, position),
@@ -157,18 +155,6 @@ impl<'t> Parser<'t> {
     fn op_void(&mut self, op: Op, position: &Position) -> Result<Instruction> {
         if self.read_eol() {
             return Ok(Instruction::I(op));
-        }
-        Err(format!("Expected <eol> at {}", position).into())
-    }
-
-    fn op_a(&mut self, op: Op, position: &Position) -> Result<Instruction> {
-        let addr = match self.read_address() {
-            None => return Err(format!("Expected <addr> at {}", position).into()),
-            Some(str) => str,
-        };
-
-        if self.read_eol() {
-            return Ok(Instruction::IA(op, addr, Segment));
         }
         Err(format!("Expected <eol> at {}", position).into())
     }
@@ -224,7 +210,7 @@ impl<'t> Parser<'t> {
         Err(format!("Expected <eol> at {}", position).into())
     }
 
-    fn op_a_w(&mut self, op_segment: Op, op_absolute: Op, position: &Position) -> Result<Instruction> {
+    fn op_a(&mut self, op_segment: Op, op_absolute: Op, position: &Position) -> Result<Instruction> {
         let instruction = self.read_next()
             .and_then(|token| match token {
                 Token::Address(_, addr, kind) => {
@@ -233,7 +219,6 @@ impl<'t> Parser<'t> {
                         LexerAddressKind::Absolute => Some(Ok(Instruction::IA(op_absolute, addr, Absolute)))
                     }
                 }
-                Token::Integer(_, w) => Some(Ok(Instruction::IW(op_segment, w))),
                 Token::Variable(_, name) => match self.symbols.get(&name) {
                     Some(Token::Address(_, addr, kind)) => {
                         match kind {
@@ -241,7 +226,6 @@ impl<'t> Parser<'t> {
                             LexerAddressKind::Absolute => Some(Ok(Instruction::IA(op_absolute, addr.into(), Absolute))),
                         }
                     }
-                    Some(Token::Integer(_, w)) => Some(Ok(Instruction::IW(op_segment, *w))),
                     _ => None
                 },
                 _ => None,
@@ -299,16 +283,6 @@ impl<'t> Parser<'t> {
     fn read_register(&mut self) -> Option<String> {
         match self.lexer.next() {
             Some(Ok(Token::Identifier(_, r))) => Some(r),
-            _ => None,
-        }
-    }
-
-    fn read_address(&mut self) -> Option<String> {
-        match self.lexer.next() {
-            Some(Ok(t)) => match t {
-                Token::Address(_, s, _) => Some(s),
-                _ => None
-            },
             _ => None,
         }
     }
