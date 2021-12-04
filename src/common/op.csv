@@ -23,9 +23,10 @@
 30,Js,8
 31,Stor,4
 32,Load,4
-33,Call,8
+33,Calls,8
 34,Ret,4
 35,Jaeq,8
 36,Jane,8
 37,Ja,8
 39,Xbm,4
+61,Calla,8

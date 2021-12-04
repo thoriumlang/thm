@@ -22,7 +22,6 @@
 typedef void (*op_ptr)(CPU *, word_t);
 
 extern op_ptr ops[];
-#define OPS_COUNT 40
 
 #endif //C_VM_OPS_H
 

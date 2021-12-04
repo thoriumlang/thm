@@ -76,12 +76,7 @@ op_ptr cpu_decode(CPU *cpu, word_t word) {
     if (cpu->state.panic) {
         return NULL;
     }
-    uint8_t op = ((uint8_t *) &word)[0];
-    if (op >= OPS_COUNT) {
-        cpu->state.panic = CPU_ERR_UNKNOWN_OPCODE;
-        return NULL;
-    }
-    return ops[op];
+    return ops[((uint8_t *) &word)[0]];
 }
 
 void cpu_stop(CPU *cpu) {
@@ -195,9 +190,6 @@ void cpu_state_print(CPU *cpu, FILE *file) {
                 break;
             case CPU_ERR_CANNOT_WRITE_MEMORY:
                 fprintf(file, "CANNOT_WRITE_MEMORY\n");
-                break;
-            case CPU_ERR_UNKNOWN_OPCODE:
-                fprintf(file, "UNKNOWN_OPCODE\n");
                 break;
             case CPU_ERR_INVALID_REGISTER:
                 fprintf(file, "INVALID_REGISTER\n");

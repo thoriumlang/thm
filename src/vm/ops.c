@@ -491,8 +491,27 @@ void op_inc(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, r, (word_t) ((sword_t) r_val + 1));
 }
 
-#define OP_CALL
-void op_call(CPU *cpu, word_t word) {
+#define OP_CALLS
+void op_calls(CPU *cpu, word_t word) {
+    addr_t address = (addr_t) cpu_fetch(cpu);
+    if (cpu->state.panic != CPU_ERR_OK) {
+        return;
+    }
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tCALL "AXHEX"\t\t// cs="AXHEX"\n", cpu->debug.step, cpu->pc - 2 * ADDR_SIZE, address, cpu->cs);
+    }
+
+    cpu->sp -= WORD_SIZE;
+    if (bus_word_write(cpu->bus, cpu->sp, cpu->pc) != BUS_ERR_OK) {
+        cpu->state.panic = CPU_ERR_CANNOT_WRITE_MEMORY;
+        return;
+    }
+    cpu->pc = cpu->cs + address;
+}
+
+#define OP_CALLA
+void op_calla(CPU *cpu, word_t word) {
     addr_t address = (addr_t) cpu_fetch(cpu);
     if (cpu->state.panic != CPU_ERR_OK) {
         return;
@@ -507,7 +526,7 @@ void op_call(CPU *cpu, word_t word) {
         cpu->state.panic = CPU_ERR_CANNOT_WRITE_MEMORY;
         return;
     }
-    cpu->pc = cpu->cs + address;
+    cpu->pc = address;
 }
 
 #define OP_RET

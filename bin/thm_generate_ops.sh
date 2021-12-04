@@ -4,7 +4,7 @@ FILE="$1"
 
 echo "// See https://github.com/thoriumlang/thm/wiki/Instructions"
 echo "#include \"ops.h\""
-echo "op_ptr ops[OPS_COUNT] = {"
+echo "op_ptr ops[256] = {"
 OP_INDEX=0
 for op in `cat $FILE`; do
   MNEMONIC=`echo "$op" | cut -d',' -f2`
@@ -21,6 +21,10 @@ for op in `cat $FILE`; do
   echo "#else"
   echo "        NULL,"
   echo "#endif"
+  OP_INDEX=`echo "$OP_INDEX + 1" | bc`
+done
+while [[ $OP_INDEX -lt 256 ]]; do
+  echo "        NULL, // 0x`printf '%02x\n' $OP_INDEX`,"
   OP_INDEX=`echo "$OP_INDEX + 1" | bc`
 done
 echo "};"

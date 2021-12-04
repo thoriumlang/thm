@@ -128,7 +128,7 @@ impl<'t> Parser<'t> {
         return match op {
             "ADD" => self.op_rr_rw(Op::AddRR, Op::AddRW, position),
             "AND" => self.op_rr_rw(Op::AndRR, Op::AndRW, position),
-            "CALL" => self.op_a(Op::Call, Op::Call, position),
+            "CALL" => self.op_a(Op::Calls, Op::Calla, position),
             "CMP" => self.op_rr(Op::Cmp, position),
             "DEC" => self.op_r(Op::Dec, position),
             "HALT" => self.op_void(Op::Halt, position),
@@ -488,7 +488,8 @@ mod tests {
         jeq_a:  ("JEQ &address\n",  Op::Jaeq, "address", Absolute),
         jne_s:  ("JNE @address\n",  Op::Jsne, "address", Segment),
         jne_a:  ("JNE &address\n",  Op::Jane, "address", Absolute),
-        call:   ("CALL @address\n", Op::Call, "address", Segment),
+        call_s: ("CALL @address\n", Op::Calls, "address", Segment),
+        call_a: ("CALL &address\n", Op::Calla, "address", Absolute),
     }
 
     op_b_test! {
