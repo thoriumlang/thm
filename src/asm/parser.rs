@@ -135,6 +135,8 @@ impl<'t> Parser<'t> {
             "DEC" => self.op_r(Op::Dec, position),
             "HALT" => self.op_void(Op::Halt, position),
             "INC" => self.op_r(Op::Inc, position),
+            "IND" => self.op_void(Op::Ind, position),
+            "INE" => self.op_void(Op::Ine, position),
             "INT" => self.op_b(Op::Int, position),
             "J" => self.op_a(Op::Js, Op::Ja, position),
             "JEQ" => self.op_a(Op::Jseq, Op::Jaeq, position),
@@ -572,6 +574,8 @@ mod tests {
     }
 
     op_void_test! {
+        ind:    ("IND\n", Op::Ind),
+        ine:    ("INE\n", Op::Ine),
         nop:    ("NOP\n", Op::Nop),
         halt:   ("HALT\n", Op::Halt),
         panic:  ("PANIC\n", Op::Panic),

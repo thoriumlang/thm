@@ -112,7 +112,7 @@ void cpu_reset(CPU *cpu) {
     cpu->pc = STACK_SIZE;
     cpu->sp = STACK_SIZE;
     cpu->cs = STACK_SIZE;
-    cpu->flags.interrupts_enabled = 1;
+    cpu->flags.interrupts_enabled = 0;
     cpu->flags.zero = 0;
     cpu->flags.negative = 0;
     cpu->state.running = 0;

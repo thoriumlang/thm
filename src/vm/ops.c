@@ -622,4 +622,22 @@ void op_int(CPU *cpu, word_t word) {
     cpu_interrupt_trigger(cpu, interrupt);
 }
 
+#define OP_IND
+void op_ind(CPU *cpu, word_t word) {
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tIND\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
+    }
+
+    cpu->flags.interrupts_enabled = 0;
+}
+
+#define OP_INE
+void op_ine(CPU *cpu, word_t word) {
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tINE\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
+    }
+
+    cpu->flags.interrupts_enabled = 1;
+}
+
 #include "ops_array.h"

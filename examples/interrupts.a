@@ -7,6 +7,8 @@
     MOV   r1, $__idt_start
     STOR  r1, r0
 
+    INE
+
 // trigger interrupt
     INT   0
     MOV   r0, &data
