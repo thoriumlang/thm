@@ -42,12 +42,7 @@ typedef struct CPU {
     } debug;
 } CPU;
 
-// todo this is shared with tha and should be derived from come common file
-#define REG_PC    255
-#define REG_SP    254
-#define REG_CS    253
-#define REG_IR    252
-#define REG_IDT   251
+#include "cpu_internal_gen.h"
 
 word_t cpu_fetch(CPU *cpu);
 

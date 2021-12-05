@@ -2,7 +2,9 @@
 .idea
 
 src/asm/op.rs
+src/asm/constants.rs
 src/vm/ops_array.h
+src/vm/cpu_internal_gen.h
 
 CMakeLists.txt.user
 CMakeCache.txt
