@@ -15,9 +15,13 @@
  */
 
 #include <stdlib.h>
+#include <pthread.h>
 #include "vmarch.h"
 #include "pic.h"
 #include "memory.h"
+
+pthread_cond_t pic_got_interrupt = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t pic_got_interrupt_lock = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct PIC {
     PICMemory *memory;
@@ -46,12 +50,29 @@ PIC *pic_create() {
     for (int i = 0; i < INTERRUPTS_WORDS_COUNT; i++) {
         this->active_interrupts[i] = 0;
     }
+    pic_interrupt_mask(this, INT_VSYNC);
 
     return this;
 }
 
 PICMemory *pic_memory_get(PIC *this) {
     return this->memory;
+}
+
+void pic_interrupt_mask(PIC *this, interrupt_t interrupt){
+    int_loc_t loc = find_interrupt_location(interrupt);
+    word_t mask;
+    memory_word_get(this->memory->interrupt_mask, loc.word_index * WORD_SIZE, &mask);
+    mask |= loc.bit;
+    memory_word_set(this->memory->interrupt_mask, loc.word_index * WORD_SIZE, mask);
+}
+
+void pic_interrupt_unmask(PIC *this, interrupt_t interrupt) {
+    int_loc_t loc = find_interrupt_location(interrupt);
+    word_t mask;
+    memory_word_get(this->memory->interrupt_mask, loc.word_index * WORD_SIZE, &mask);
+    mask &= ~loc.bit;
+    memory_word_set(this->memory->interrupt_mask, loc.word_index * WORD_SIZE, mask);
 }
 
 inline int_loc_t find_interrupt_location(interrupt_t interrupt) {
@@ -64,6 +85,7 @@ inline int_loc_t find_interrupt_location(interrupt_t interrupt) {
 void pic_interrupt_trigger(PIC *this, interrupt_t interrupt) {
     int_loc_t loc = find_interrupt_location(interrupt);
     this->active_interrupts[loc.word_index] |= loc.bit;
+    pthread_cond_signal(&pic_got_interrupt);
 }
 
 void pic_interrupt_reset(PIC *this, interrupt_t interrupt) {

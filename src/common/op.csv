@@ -33,5 +33,10 @@
 39,Stor,4
 40,Load,4
 41,Xbm,4
+61,Mi,4
+62,Umi,4
 63,Ind,4
 64,Ine,4
+65,Pusha,4
+66,Popa,4
+67,Wfi,4

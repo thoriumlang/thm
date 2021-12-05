@@ -1,4 +1,6 @@
 
+#base 0x1000
+
     J    @start
 
 // in: r0 is the buffer idx
@@ -14,13 +16,53 @@
     POP  r1
     RET
 
-:start
-    // check if video available
+// set &vsync_flag to 1 upon vsync interrupt
+:vsync_int_handler
+    MOV  r0, 1
+    MOV  r1, &vsnyc_flag
+    STOR r1, r0
+    RET
+
+:configure_vsync_int_handler
+    MOV  r0, $__idt_start
+    MOV  r1, 4                    // vsync interrupt
+    MOV  r2, 4                    // word width
+    MUL  r1, r2
+    ADD  r0, r1                   // r1 contains the address of the handler pointer in the idt
+    MOV  r1, &vsync_int_handler
+    STOR r0, r1
+    UMI  4
+    RET
+
+// waits for a interrupt and then loop until vsync_flag is set
+:wait_vsync
+    PUSH r0
+    PUSH r1
+:wait_vsync_1
+    WFI
+    MOV  r0, &vsnyc_flag
+    LOAD r1, r0
+    JEQ  @wait_vsync_1           // if &vsnyc_flag == 0 -> wait again
+    MOV  r1, 0                   // else reset to 0 and return
+    STOR r0, r1
+    POP  r1
+    POP  r0
+    RET
+
+// check if video available
+:check_video
     MOV  r1, $__video_meta
     LOAD r1, r1
     AND  r1, 0x00000002          // video enabled flag
     JEQ  @end                    // jump to @end if meta & 2 == 0
+    RET
 
+:start
+    CALL  @check_video
+    CALL  @configure_vsync_int_handler
+    INE
+
+// setuo some constants
     MOV  r0, 0x000000ff // blue
     MOV  r1, 0x00ff0000 // red
     MOV  r2, 4
@@ -28,7 +70,7 @@
 
 :loop
 // start blue
-    // select buffer 0
+    // select buffer 0, we will write in buffer 1
     PUSH r0
     MOV  r0, 0x00000000
     CALL @select_buffer
@@ -45,14 +87,15 @@
     JNE  @blue
 
 // start red
-    // select buffer 1
+    CALL @wait_vsync
+    // select buffer 1, we will write in buffer 0
     PUSH r0
     MOV  r0, 0x00000001
     CALL @select_buffer
     POP  r0
 
-    MOV  r5, $__video_buffer2
-    MOV  r6, $__video_buffer2
+    MOV  r5, $__video_buffer0
+    MOV  r6, $__video_buffer0
     ADD  r6, r3                 // r5 = buffer2, r6 = end of buffer2
 
 :red
@@ -61,7 +104,10 @@
     CMP  r5, r6
     JNE  @red
 
+    CALL @wait_vsync
     J    @loop
 
 :end
     HALT
+
+:vsnyc_flag

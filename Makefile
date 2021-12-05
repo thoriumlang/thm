@@ -43,8 +43,8 @@ target/rom.bin: tha target/meta.a src/common/rom.a
 	target/debug/tha -i target/meta.a -i src/common/rom.a -o target/rom.bin
 
 #### Demo
-demo_screen: target/screen.bin
-	target/cmake-build-debug/thm --video master target/screen.bin
+demo_screen: target/screen.bin target/rom.bin
+	target/cmake-build-debug/thm --video master --rom target/rom.bin target/screen.bin
 
 #### Maintenance stuff
 clean:

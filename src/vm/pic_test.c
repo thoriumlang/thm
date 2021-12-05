@@ -25,9 +25,25 @@ static void interrupt_handler_get(void **state) {
     for (int i = 0; i < INTERRUPTS_COUNT; i++) {
         PIC *pic = pic_create();
 
+        pic_interrupt_unmask(pic, i);
         pic_interrupt_trigger(pic, i);
         assert_int_equal(i, pic_interrupt_get(pic));
         assert_true(pic_interrupt_active(pic));
+
+        pic_destroy(pic);
+    }
+}
+
+static void interrupt_mask_unmask(void **state) {
+    for (int i = 0; i < INTERRUPTS_COUNT; i++) {
+        PIC *pic = pic_create();
+
+        pic_interrupt_mask(pic, i);
+        pic_interrupt_trigger(pic, i);
+        assert_false(pic_interrupt_active(pic));
+        pic_interrupt_unmask(pic, i);
+        assert_true(pic_interrupt_active(pic));
+        assert_int_equal(i, pic_interrupt_get(pic));
 
         pic_destroy(pic);
     }
@@ -37,6 +53,7 @@ int main() {
     const struct CMUnitTest tests[] =
             {
                     cmocka_unit_test(interrupt_handler_get),
+                    cmocka_unit_test(interrupt_mask_unmask),
             };
     cmocka_set_message_output(CM_OUTPUT_STDOUT);
     return cmocka_run_group_tests(tests, NULL, NULL);

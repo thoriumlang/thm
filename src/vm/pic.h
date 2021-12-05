@@ -17,8 +17,12 @@
 #ifndef THM_PIC_H
 #define THM_PIC_H
 
+#include <pthread.h>
 #include "vmarch.h"
 #include "memory.h"
+
+extern pthread_cond_t pic_got_interrupt;
+extern pthread_mutex_t pic_got_interrupt_lock;
 
 typedef struct PIC PIC;
 
@@ -32,6 +36,10 @@ typedef uint8_t interrupt_t;
 PIC *pic_create();
 
 PICMemory *pic_memory_get(PIC *this);
+
+void pic_interrupt_mask(PIC *this, interrupt_t interrupt);
+
+void pic_interrupt_unmask(PIC *this, interrupt_t interrupt);
 
 bool pic_interrupt_active(PIC *this);
 

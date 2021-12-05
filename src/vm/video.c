@@ -28,6 +28,7 @@
 #define VIDEO_BIT_SYNC 3
 
 typedef struct Video {
+    PIC *pic;
     struct mfb_window *window;
     bool enabled;
     VideoMemory *memory;
@@ -45,8 +46,9 @@ bool select_buffer(Video *this, word_t flags);
 
 void print_fps(Video *this);
 
-Video *video_create(bool enable) {
+Video *video_create(PIC *pic, bool enable) {
     Video *this = malloc(sizeof(Video));
+    this->pic = pic;
     this->window = 0x0;
     this->enabled = enable;
     this->memory = malloc(sizeof(VideoMemory));
@@ -102,13 +104,16 @@ void video_loop(Video *this) {
         if (memory_word_get(this->memory->metadata, 0, &flags) != MEM_ERR_OK) {
             continue;
         }
-        select_buffer(this, flags);
 
-        state = mfb_update_ex(this->window, this->buffer, VIDEO_SCREEN_WIDTH, VIDEO_SCREEN_HEIGHT);
-        if (state != STATE_OK) {
-            this->window = 0x0;
-            break;
+        if (select_buffer(this, flags)) {
+            state = mfb_update_ex(this->window, this->buffer, VIDEO_SCREEN_WIDTH, VIDEO_SCREEN_HEIGHT);
+            if (state != STATE_OK) {
+                this->window = 0x0;
+                break;
+            }
         }
+        pic_interrupt_trigger(this->pic, INT_VSYNC);
+
         if (!this->enabled) {
             video_stop(this);
         }
@@ -129,7 +134,7 @@ void print_fps(Video *this) {
 
         printf("FPS: %2.1f ; %2.1f\n",
                this->stats.fps,
-               (double) this->stats.buffer_switches  * (double) ONE_SEC_IN_USECS / (double) elapsed_microsec);
+               (double) this->stats.buffer_switches * (double) ONE_SEC_IN_USECS / (double) elapsed_microsec);
         this->stats.buffer_switches = 0;
         this->stats.frames = 0;
     }
@@ -146,7 +151,6 @@ inline bool select_buffer(Video *this, word_t flags) {
         this->flags_cache ^= VIDEO_BIT_BUFFER;
         this->stats.buffer_switches++;
     }
-
     return update_needed;
 }
 

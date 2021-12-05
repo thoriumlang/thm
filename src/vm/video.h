@@ -18,6 +18,7 @@
 #define C_VM_VIDEO_H
 
 #include "memory.h"
+#include "pic.h"
 
 typedef struct VideoMemory {
     Memory *metadata;
@@ -26,7 +27,7 @@ typedef struct VideoMemory {
 
 typedef struct Video Video;
 
-Video *video_create(bool enable);
+Video *video_create(PIC *pic, bool enable);
 
 VideoMemory *video_memory_get(Video *this);
 

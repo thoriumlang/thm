@@ -52,14 +52,14 @@ void cpu_start(CPU *cpu) {
             cpu->ir = pic_interrupt_get(cpu->pic);
             pic_interrupt_reset(cpu->pic, cpu->ir);
 
+            if (cpu->debug.print_op) {
+                printf("// handling interrupt %i\n", cpu->ir);
+            }
             cpu->sp -= WORD_SIZE;
             if (bus_word_write(cpu->bus, cpu->sp, cpu->pc) != BUS_ERR_OK) {
                 cpu->state.panic = CPU_ERR_CANNOT_WRITE_MEMORY;
             } else {
                 cpu->pc = ROM_ADDRESS + 8;
-                if (cpu->debug.print_op) {
-                    printf("// handling interrupt %i\n", cpu->ir);
-                }
             }
         }
         word = htov(cpu_fetch(cpu));

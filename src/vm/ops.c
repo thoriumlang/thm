@@ -21,6 +21,7 @@
  */
 
 #include <string.h>
+#include <pthread.h>
 #include "vmarch.h"
 #include "cpu.h"
 #include "cpu_internal.h"
@@ -89,6 +90,24 @@ void op_push(CPU *cpu, word_t word) {
     }
 }
 
+#define OP_PUSHA
+void op_pusha(CPU *cpu, word_t word) {
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tPUSHA\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
+    }
+
+    for (int r = 0; r < cpu->register_count; r++) {
+        word_t value;
+        if ((cpu->state.panic = cpu_register_get(cpu, r, &value)) == CPU_ERR_OK) {
+            cpu->sp -= WORD_SIZE;
+            if (bus_word_write(cpu->bus, cpu->sp, value) != BUS_ERR_OK) {
+                cpu->state.panic = CPU_ERR_CANNOT_WRITE_MEMORY;
+            }
+        }
+        //printf("push r%i=%i\n", r, value);
+    }
+}
+
 #define OP_POP
 void op_pop(CPU *cpu, word_t word) {
     uint8_t r = ((uint8_t *) &word)[1];
@@ -106,6 +125,23 @@ void op_pop(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, r, value);
 }
 
+#define OP_POPA
+void op_popa(CPU *cpu, word_t word) {
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tPOPA\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
+    }
+
+    for (int r = cpu->register_count - 1; r >= 0; r--) {
+        word_t value;
+        if (bus_word_read(cpu->bus, cpu->sp, &value) != BUS_ERR_OK) {
+            cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
+            return;
+        }
+        cpu->sp += WORD_SIZE;
+        cpu->state.panic = cpu_register_set(cpu, r, value);
+        //printf("pop r%i=%i\n", r, value);
+    }
+}
 
 #define OP_MOV_RW// todo implement support for special registers
 void op_mov_rw(CPU *cpu, word_t word) {
@@ -622,6 +658,28 @@ void op_int(CPU *cpu, word_t word) {
     cpu_interrupt_trigger(cpu, interrupt);
 }
 
+#define OP_MI
+void op_mi(CPU *cpu, word_t word) {
+    uint8_t interrupt = ((uint8_t *) &word)[1];
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tMI   %i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, interrupt);
+    }
+
+    pic_interrupt_mask(cpu->pic, interrupt);
+}
+
+#define OP_UMI
+void op_umi(CPU *cpu, word_t word) {
+    uint8_t interrupt = ((uint8_t *) &word)[1];
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tUMI  %i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, interrupt);
+    }
+
+    pic_interrupt_unmask(cpu->pic, interrupt);
+}
+
 #define OP_IND
 void op_ind(CPU *cpu, word_t word) {
     if (cpu->debug.print_op) {
@@ -638,6 +696,21 @@ void op_ine(CPU *cpu, word_t word) {
     }
 
     cpu->flags.interrupts_enabled = 1;
+}
+
+#define OP_WFI
+void op_wfi(CPU *cpu, word_t word) {
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tWFI\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
+    }
+    int rc = pthread_mutex_lock(&pic_got_interrupt_lock);
+    if (rc) {
+        perror("pthread_mutex_lock");
+        pthread_exit(NULL);
+    }
+
+    pthread_cond_wait(&pic_got_interrupt, &pic_got_interrupt_lock);
+    pthread_mutex_unlock(&pic_got_interrupt_lock);
 }
 
 #include "ops_array.h"

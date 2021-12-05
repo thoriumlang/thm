@@ -142,17 +142,22 @@ impl<'t> Parser<'t> {
             "JEQ" => self.op_a(Op::Jseq, Op::Jaeq, position),
             "JNE" => self.op_a(Op::Jsne, Op::Jane, position),
             "LOAD" => self.op_rr(Op::Load, position),
+            "MI" => self.op_b(Op::Mi,  position),
             "MOV" => self.op_rr_rw_ra(Op::MovRR, Op::MovRW, position),
             "MUL" => self.op_rr_rw(Op::MulRR, Op::MulRW, position),
             "NOP" => self.op_void(Op::Nop, position),
             "OR" => self.op_rr_rw(Op::OrRR, Op::OrRW, position),
             "PANIC" => self.op_void(Op::Panic, position),
             "POP" => self.op_r(Op::Pop, position),
+            "POPA" => self.op_void(Op::Popa, position),
             "PUSH" => self.op_r(Op::Push, position),
+            "PUSHA" => self.op_void(Op::Pusha, position),
             "RET" => self.op_void(Op::Ret, position),
             "STOR" => self.op_rr(Op::Stor, position),
             "SUB" => self.op_rr_rw(Op::SubRR, Op::SubRW, position),
+            "UMI" => self.op_b(Op::Umi, position),
             "IRET" => self.op_void(Op::Iret, position),
+            "WFI" => self.op_void(Op::Wfi, position),
             "XBM" => self.op_b(Op::Xbm, position),
             op => Err(format!("Invalid mnemonic '{}' at {}", op, position).into())
         };
@@ -579,8 +584,11 @@ mod tests {
         nop:    ("NOP\n", Op::Nop),
         halt:   ("HALT\n", Op::Halt),
         panic:  ("PANIC\n", Op::Panic),
+        popa:   ("POPA\n", Op::Popa),
+        pusha:  ("PUSHA\n", Op::Pusha),
         iret:   ("IRET\n", Op::Iret),
         ret:    ("RET\n", Op::Ret),
+        wfi:    ("WFI\n", Op::Wfi),
     }
 
     op_a_test! {
@@ -596,6 +604,8 @@ mod tests {
 
     op_b_test! {
         int:    ("INT 12\n", Op::Int, 12),
+        mi:     ("MI 12\n", Op::Mi, 12),
+        umi:    ("UMI 12\n", Op::Umi, 12),
         xbm:    ("XBM 42\n", Op::Xbm, 42),
     }
 

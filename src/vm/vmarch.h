@@ -52,15 +52,17 @@ typedef uint32_t addr_t;
 #define VIDEO_SCREEN_FPS                   30
 #define VIDEO_META_SIZE                    WORD_SIZE
 #define VIDEO_BUFFER_SIZE                  ((addr_t)(VIDEO_SCREEN_WIDTH * VIDEO_SCREEN_HEIGHT * VIDEO_SCREEN_DEPTH))
-#define VIDEO_BUFFER_2_ADDRESS             ((addr_t)(ROM_ADDRESS - VIDEO_BUFFER_SIZE))
-#define VIDEO_BUFFER_1_ADDRESS             ((addr_t)(VIDEO_BUFFER_2_ADDRESS - VIDEO_BUFFER_SIZE))
-#define VIDEO_META_ADDRESS                 ((addr_t)(VIDEO_BUFFER_1_ADDRESS - VIDEO_META_SIZE))
+#define VIDEO_BUFFER_1_ADDRESS             ((addr_t)(ROM_ADDRESS - VIDEO_BUFFER_SIZE))
+#define VIDEO_BUFFER_0_ADDRESS             ((addr_t)(VIDEO_BUFFER_1_ADDRESS - VIDEO_BUFFER_SIZE))
+#define VIDEO_META_ADDRESS                 ((addr_t)(VIDEO_BUFFER_0_ADDRESS - VIDEO_META_SIZE))
 
 #define INTERRUPTS_COUNT                   256
 #define INTERRUPTS_PER_WORD                (WORD_SIZE * 8)
 #define INTERRUPTS_WORDS_COUNT             (INTERRUPTS_COUNT / INTERRUPTS_PER_WORD)
 #define INTERRUPT_MASK_ADDRESS             ((addr_t)(VIDEO_META_ADDRESS - INTERRUPTS_WORDS_COUNT * WORD_SIZE))
 #define INTERRUPT_DESCRIPTOR_TABLE_ADDRESS ((addr_t)(INTERRUPT_MASK_ADDRESS - INTERRUPTS_COUNT * ADDR_SIZE))
+
+#define INT_VSYNC 4
 
 void arch_print();
 

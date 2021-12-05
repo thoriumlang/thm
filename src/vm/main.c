@@ -67,14 +67,14 @@ int main(int argc, char **argv) {
     bus_mount(bus, pic_memory_get(pic)->interrupt_handlers, INTERRUPT_DESCRIPTOR_TABLE_ADDRESS, "IDT");
     bus_mount(bus, pic_memory_get(pic)->interrupt_mask, INTERRUPT_MASK_ADDRESS, "IMask");
 
-    Video *video = video_create(options->video != OPT_VIDEO_MODE_NONE);
+    Video *video = video_create(pic, options->video != OPT_VIDEO_MODE_NONE);
     VideoMemory *memory = video_memory_get(video);
     bus_mount(bus, memory->metadata, VIDEO_META_ADDRESS, "VMeta");
     if (memory->buffer[0]) {
-        bus_mount(bus, memory->buffer[0], VIDEO_BUFFER_1_ADDRESS, "VBuf1");
+        bus_mount(bus, memory->buffer[0], VIDEO_BUFFER_0_ADDRESS, "VBuf0");
     }
     if (memory->buffer[1]) {
-        bus_mount(bus, memory->buffer[1], VIDEO_BUFFER_2_ADDRESS, "VBuf2");
+        bus_mount(bus, memory->buffer[1], VIDEO_BUFFER_1_ADDRESS, "VBuf1");
     }
 
     Memory *rom = memory_create(ROM_SIZE, MEM_MODE_R);

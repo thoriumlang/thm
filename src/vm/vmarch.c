@@ -30,10 +30,10 @@ void arch_print() {
     printf("  vmeta_start:           "AXHEX"\n", VIDEO_META_ADDRESS);
     printf("  vmeta_end:             "AXHEX"\n", VIDEO_META_ADDRESS + VIDEO_META_SIZE - 1);
     printf("  vbuffer_size:          %i\n", VIDEO_BUFFER_SIZE);
+    printf("  vbuf0_start:           "AXHEX"\n", VIDEO_BUFFER_0_ADDRESS);
+    printf("  vbuf0_end:             "AXHEX"\n", VIDEO_BUFFER_0_ADDRESS + VIDEO_BUFFER_SIZE - 1);
     printf("  vbuf1_start:           "AXHEX"\n", VIDEO_BUFFER_1_ADDRESS);
     printf("  vbuf1_end:             "AXHEX"\n", VIDEO_BUFFER_1_ADDRESS + VIDEO_BUFFER_SIZE - 1);
-    printf("  vbuf2_start:           "AXHEX"\n", VIDEO_BUFFER_2_ADDRESS);
-    printf("  vbuf2_end:             "AXHEX"\n", VIDEO_BUFFER_2_ADDRESS + VIDEO_BUFFER_SIZE - 1);
     printf("  rom_size:              %i\n", ROM_SIZE);
     printf("  rom_start:             "AXHEX"\n", ROM_ADDRESS);
     printf("  rom_end:               "AXHEX"\n", ROM_ADDRESS + ROM_SIZE - 1);
@@ -47,8 +47,8 @@ void arch_print() {
 void arch_print_header() {
     printf("$__rom_start = "AXHEX"\n", ROM_ADDRESS);
     printf("$__video_meta = "AXHEX"\n", VIDEO_META_ADDRESS);
+    printf("$__video_buffer0 = "AXHEX"\n", VIDEO_BUFFER_0_ADDRESS);
     printf("$__video_buffer1 = "AXHEX"\n", VIDEO_BUFFER_1_ADDRESS);
-    printf("$__video_buffer2 = "AXHEX"\n", VIDEO_BUFFER_2_ADDRESS);
     printf("$__video_buffer_size = %i\n", VIDEO_BUFFER_SIZE);
     printf("$__idt_start = "AXHEX"\n", INTERRUPT_DESCRIPTOR_TABLE_ADDRESS);
     printf("$__imask_start = "AXHEX"\n", INTERRUPT_MASK_ADDRESS);
