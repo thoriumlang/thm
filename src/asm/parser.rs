@@ -130,7 +130,7 @@ impl<'t> Parser<'t> {
         return match op {
             "ADD" => self.op_rr_rw(Op::AddRR, Op::AddRW, position),
             "AND" => self.op_rr_rw(Op::AndRR, Op::AndRW, position),
-            "CALL" => self.op_a(Op::Calls, Op::Calla, position),
+            "CALL" => self.op_a_r(Op::Calls, Op::CallaA, Op::CallaR, position),
             "CMP" => self.op_rr(Op::Cmp, position),
             "DEC" => self.op_r(Op::Dec, position),
             "HALT" => self.op_void(Op::Halt, position),
@@ -263,6 +263,35 @@ impl<'t> Parser<'t> {
                         LexerAddressKind::Absolute => Some(Ok(Instruction::IA(op_absolute, addr, Absolute)))
                     }
                 }
+                Token::Variable(_, name) => match self.symbols.get(&name) {
+                    Some(Token::Address(_, addr, kind)) => {
+                        match kind {
+                            LexerAddressKind::Segment => Some(Ok(Instruction::IA(op_segment, addr.into(), Segment))),
+                            LexerAddressKind::Absolute => Some(Ok(Instruction::IA(op_absolute, addr.into(), Absolute))),
+                        }
+                    }
+                    _ => None
+                },
+                _ => None,
+            })
+            .unwrap_or(Err(format!("Expected <variable>, <w> or <addr> at {}", position).into()));
+
+        if self.read_eol() {
+            return instruction;
+        }
+        Err(format!("Expected <eol> at {}", position).into())
+    }
+
+    fn op_a_r(&mut self, op_segment: Op, op_absolute: Op, op_register: Op, position: &Position) -> Result<Instruction> {
+        let instruction = self.read_next()
+            .and_then(|token| match token {
+                Token::Address(_, addr, kind) => {
+                    match kind {
+                        LexerAddressKind::Segment => Some(Ok(Instruction::IA(op_segment, addr, Segment))),
+                        LexerAddressKind::Absolute => Some(Ok(Instruction::IA(op_absolute, addr, Absolute)))
+                    }
+                }
+                Token::Identifier(_, r) => Some(Ok(Instruction::IR(op_register, r.into()))),
                 Token::Variable(_, name) => match self.symbols.get(&name) {
                     Some(Token::Address(_, addr, kind)) => {
                         match kind {
@@ -551,14 +580,14 @@ mod tests {
     }
 
     op_a_test! {
-        j_s:    ("J @address\n",    Op::Js,   "address", Segment),
-        j_a:    ("J &address\n",    Op::Ja,   "address", Absolute),
-        jeq_s:  ("JEQ @address\n",  Op::Jseq, "address", Segment),
-        jeq_a:  ("JEQ &address\n",  Op::Jaeq, "address", Absolute),
-        jne_s:  ("JNE @address\n",  Op::Jsne, "address", Segment),
-        jne_a:  ("JNE &address\n",  Op::Jane, "address", Absolute),
-        call_s: ("CALL @address\n", Op::Calls, "address", Segment),
-        call_a: ("CALL &address\n", Op::Calla, "address", Absolute),
+        j_s:      ("J @address\n",    Op::Js,   "address", Segment),
+        j_a:      ("J &address\n",    Op::Ja,   "address", Absolute),
+        jeq_s:    ("JEQ @address\n",  Op::Jseq, "address", Segment),
+        jeq_a:    ("JEQ &address\n",  Op::Jaeq, "address", Absolute),
+        jne_s:    ("JNE @address\n",  Op::Jsne, "address", Segment),
+        jne_a:    ("JNE &address\n",  Op::Jane, "address", Absolute),
+        calls_a:  ("CALL @address\n", Op::Calls, "address", Segment),
+        calla_a:  ("CALL &address\n", Op::CallaA, "address", Absolute),
     }
 
     op_b_test! {
@@ -567,10 +596,11 @@ mod tests {
     }
 
     op_r_test! {
-        inc:    ("INC  r0\n", Op::Inc, "r0"),
-        dec:    ("DEC  r0\n", Op::Dec, "r0"),
-        push:   ("PUSH r0\n", Op::Push, "r0"),
-        pop:    ("POP  r0\n", Op::Pop, "r0"),
+        inc:     ("INC  r0\n", Op::Inc, "r0"),
+        dec:     ("DEC  r0\n", Op::Dec, "r0"),
+        push:    ("PUSH r0\n", Op::Push, "r0"),
+        pop:     ("POP  r0\n", Op::Pop, "r0"),
+        calla_r: ("CALL r0\n", Op::CallaR, "r0"),
     }
 
     op_rr_test! {

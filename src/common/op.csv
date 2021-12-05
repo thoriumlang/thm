@@ -31,4 +31,5 @@
 39,Xbm,4
 52,Int,4
 53,Iret,4
-61,Calla,8
+61,CallaA,8
+62,CallaR,4

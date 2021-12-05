@@ -544,8 +544,8 @@ void op_calls(CPU *cpu, word_t word) {
     cpu->pc = cpu->cs + address;
 }
 
-#define OP_CALLA
-void op_calla(CPU *cpu, word_t word) {
+#define OP_CALLA_A
+void op_calla_a(CPU *cpu, word_t word) {
     addr_t address = (addr_t) cpu_fetch(cpu);
     if (cpu->state.panic != CPU_ERR_OK) {
         return;
@@ -553,6 +553,27 @@ void op_calla(CPU *cpu, word_t word) {
 
     if (cpu->debug.print_op) {
         printf("  %lu\t"AXHEX"\tCALL "AXHEX"\n", cpu->debug.step, cpu->pc - 2 * ADDR_SIZE, address);
+    }
+
+    cpu->sp -= WORD_SIZE;
+    if (bus_word_write(cpu->bus, cpu->sp, cpu->pc) != BUS_ERR_OK) {
+        cpu->state.panic = CPU_ERR_CANNOT_WRITE_MEMORY;
+        return;
+    }
+    cpu->pc = address;
+}
+
+#define OP_CALLA_R
+void op_calla_r(CPU *cpu, word_t word) {
+    uint8_t r = ((uint8_t *) &word)[1];
+
+    word_t address;
+    if ((cpu->state.panic = cpu_register_get(cpu, r, &address)) != CPU_ERR_OK) {
+        return;
+    }
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tCALL r%i\n", cpu->debug.step, cpu->pc - 2 * ADDR_SIZE, r);
     }
 
     cpu->sp -= WORD_SIZE;
