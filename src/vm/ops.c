@@ -20,9 +20,32 @@
  *  - disable print_op with compile-time macro
  */
 
+#include <string.h>
 #include "vmarch.h"
 #include "cpu.h"
 #include "cpu_internal.h"
+
+void register_name(uint8_t from, char *buf) {
+    switch (from) {
+        case REG_IR:
+            strcpy(buf, "ir");
+            break;
+        case REG_IDT:
+            strcpy(buf, "idt");
+            break;
+        case REG_CS:
+            strcpy(buf, "cs");
+            break;
+        case REG_PC:
+            strcpy(buf, "pc");
+            break;
+        case REG_SP:
+            strcpy(buf, "sp");
+            break;
+        default:
+            sprintf(buf, "r%i", from);
+    }
+}
 
 #define OP_NOP
 void op_nop(CPU *cpu, word_t word) {
@@ -106,12 +129,23 @@ void op_mov_rr(CPU *cpu, word_t word) {
     uint8_t from = ((uint8_t *) &word)[2];
 
     if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tMOV  r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, to, from);
+        char from_name[5];
+        register_name(from, from_name);
+        printf("  %lu\t"AXHEX"\tMOV  r%i, %s\n", cpu->debug.step, cpu->pc - ADDR_SIZE, to, from_name);
     }
 
     word_t value;
-    if ((cpu->state.panic = cpu_register_get(cpu, from, &value)) != CPU_ERR_OK) {
-        return;
+    switch (from) {
+        case REG_IDT:
+            value = cpu_idt_get(cpu);
+            break;
+        case REG_IR:
+            value = cpu_ir_get(cpu);
+            break;
+        default:
+            if ((cpu->state.panic = cpu_register_get(cpu, from, &value)) != CPU_ERR_OK) {
+                return;
+            }
     }
     cpu->state.panic = cpu_register_set(cpu, to, value);
 }
