@@ -49,7 +49,7 @@ typedef uint32_t addr_t;
 #define VIDEO_SCREEN_HEIGHT                200
 #define VIDEO_SCREEN_DEPTH                 4
 #define VIDEO_SCREEN_SCALE                 4
-#define VIDEO_SCREEN_FPS                   30
+#define VIDEO_SCREEN_FPS                   55
 #define VIDEO_META_SIZE                    WORD_SIZE
 #define VIDEO_BUFFER_SIZE                  ((addr_t)(VIDEO_SCREEN_WIDTH * VIDEO_SCREEN_HEIGHT * VIDEO_SCREEN_DEPTH))
 #define VIDEO_BUFFER_1_ADDRESS             ((addr_t)(ROM_ADDRESS - VIDEO_BUFFER_SIZE))

@@ -105,19 +105,18 @@ void video_loop(Video *this) {
             continue;
         }
 
-        if (select_buffer(this, flags)) {
-            state = mfb_update_ex(this->window, this->buffer, VIDEO_SCREEN_WIDTH, VIDEO_SCREEN_HEIGHT);
-            if (state != STATE_OK) {
-                this->window = 0x0;
-                break;
-            }
+        select_buffer(this, flags);
+        state = mfb_update_ex(this->window, this->buffer, VIDEO_SCREEN_WIDTH, VIDEO_SCREEN_HEIGHT);
+        if (state != STATE_OK) {
+            this->window = 0x0;
+            break;
         }
-        pic_interrupt_trigger(this->pic, INT_VSYNC);
 
         if (!this->enabled) {
             video_stop(this);
         }
 
+        pic_interrupt_trigger(this->pic, INT_VSYNC);
         print_fps(this);
     } while (mfb_wait_sync(this->window));
     this->window = 0x0;
