@@ -51,6 +51,7 @@ PIC *pic_create() {
         this->active_interrupts[i] = 0;
     }
     pic_interrupt_mask(this, INT_VSYNC);
+    pic_interrupt_mask(this, INT_TIMER);
 
     return this;
 }

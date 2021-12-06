@@ -38,6 +38,7 @@ typedef struct CPU {
     } state;
     struct {
         uint8_t print_op: 1;
+        uint8_t print_interrupts: 1;
         unsigned long step;
     } debug;
 } CPU;

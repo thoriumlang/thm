@@ -52,7 +52,7 @@ void cpu_start(CPU *cpu) {
             cpu->ir = pic_interrupt_get(cpu->pic);
             pic_interrupt_reset(cpu->pic, cpu->ir);
 
-            if (cpu->debug.print_op) {
+            if (cpu->debug.print_interrupts) {
                 printf("// handling interrupt %i\n", cpu->ir);
             }
             cpu->sp -= WORD_SIZE;
@@ -118,6 +118,7 @@ void cpu_reset(CPU *cpu) {
     cpu->state.running = 0;
     cpu->state.panic = 0;
     cpu->debug.print_op = 0;
+    cpu->debug.print_interrupts = 0;
     cpu->debug.step = 0;
 }
 
@@ -180,8 +181,8 @@ void cpu_interrupt_trigger(CPU *cpu, uint8_t interrupt) {
 }
 
 void cpu_flags_update(CPU *cpu, sword_t value) {
-    cpu->flags.zero = (value == 0) ? 1 : 0;
-    cpu->flags.negative = ((sword_t) value < 0) ? 1 : 0;
+    cpu->flags.zero = (value == 0);
+    cpu->flags.negative = (value < 0);
 }
 
 void cpu_print_op_enable(CPU *cpu, bool enable) {

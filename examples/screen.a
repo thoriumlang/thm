@@ -3,6 +3,8 @@
 
     J    @start
 
+$word_width = 4
+
 // in: r0 is the buffer idx
 :select_buffer
     PUSH r1, r2
@@ -22,15 +24,54 @@
     RET
 
 :configure_vsync_int_handler
-    $word_width = 4
-    $vsync_interrupt = 4
-    MOV  r1, $vsync_interrupt
+    MOV  r1, 4
     MUL  r1, $word_width
     MOV  r0, $__idt_start
     ADD  r0, r1                    // r1 contains the address of the handler pointer in the idt
     MOV  r1, &vsync_int_handler
     STOR r0, r1
     UMI  4
+    RET
+
+:timer_int_handler
+    MOV  r1, &seconds
+    LOAD r0, r1
+    DEC  r0
+    JEQ  @timer_int_handler_switch
+    STOR r1, r0
+    RET
+:timer_int_handler_switch
+    // reset counter
+    MOV  r0, 3
+    STOR r1, r0
+    // switch colors blue<->white
+    MOV  r0, &color_blue
+    MOV  r1, &color_white
+    CALL @switch_mem
+    // switch colors red<->black
+    MOV  r0, &color_red
+    MOV  r1, &color_black
+    CALL @switch_mem
+    RET
+:switch_mem
+    PUSH r2, r3
+    LOAD r2, r0
+    LOAD r3, r1
+    PUSH r2, r3
+    POP  r2, r3
+    STOR r0, r2
+    STOR r1, r3
+    POP  r3, r2
+    RET
+
+:configure_timer_int_handler
+    MOV  r1, 3
+    MUL  r1, $word_width
+    MOV  r0, $__idt_start
+    ADD  r0, r1                  // r1 contains the address of the handler pointer in the idt
+    MOV  r1, &timer_int_handler
+    STOR r0, r1
+    UMI  3
     RET
 
 // waits for a interrupt and then loop until vsync_flag is set
@@ -57,14 +98,19 @@
 :start
     CALL  @check_video
     CALL  @configure_vsync_int_handler
+    CALL  @configure_timer_int_handler
     INE
 
 // setup some constants
-    MOV  r0, 0x000000ff // blue
-    MOV  r1, 0x00ff0000 // red
-    MOV  r2, 4          // pixel_width
+    MOV  r4, 4          // pixel_width
 
 :loop
+    // load colors
+    MOV  r0, &color_blue
+    LOAD r0, r0
+    MOV  r1, &color_red
+    LOAD r1, r1
+
 // start blue
     // select buffer 0, we will write in buffer 1
     PUSH r0
@@ -78,7 +124,7 @@
 
 :blue
     STOR r5, r0
-    ADD  r5, r2                   // move to next pixel
+    ADD  r5, r4                   // move to next pixel
     CMP  r5, r6
     JNE  @blue
 
@@ -96,7 +142,7 @@
 
 :red
     STOR r5, r1
-    ADD  r5, r2                   // move to next pixel
+    ADD  r5, r4                   // move to next pixel
     CMP  r5, r6
     JNE  @red
 
@@ -106,4 +152,9 @@
 :end
     HALT
 
-#word vsync_flag 0
+#word vsync_flag   0
+#word seconds      3
+#word color_red    0x000000ff
+#word color_blue   0x00ff0000
+#word color_black  0x00000000
+#word color_white  0x00ffffff

@@ -18,8 +18,7 @@
 
 :compute_interrupt_handler_address
     MOV   r0, ir
-    MOV   r1, 4
-    MUL   r0, r1
+    MUL   r0, 4
     MOV   r1, idt
     ADD   r0, r1
     LOAD  r0, r0

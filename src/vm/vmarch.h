@@ -62,6 +62,7 @@ typedef uint32_t addr_t;
 #define INTERRUPT_MASK_ADDRESS             ((addr_t)(VIDEO_META_ADDRESS - INTERRUPTS_WORDS_COUNT * WORD_SIZE))
 #define INTERRUPT_DESCRIPTOR_TABLE_ADDRESS ((addr_t)(INTERRUPT_MASK_ADDRESS - INTERRUPTS_COUNT * ADDR_SIZE))
 
+#define INT_TIMER 3
 #define INT_VSYNC 4
 
 void arch_print();
