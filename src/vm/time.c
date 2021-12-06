@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-#include <unistd.h>
 #include <sys/time.h>
 #include "time.h"
 
 utime_t time_utime() {
     struct timeval time;
     gettimeofday(&time, NULL);
-    return ((unsigned long long) time.tv_sec * 1000000) + time.tv_usec;
+    return ((utime_t) time.tv_sec * ONE_SEC_IN_USECS) + time.tv_usec;
 }
