@@ -7,11 +7,11 @@
 :select_buffer
     PUSH r1
     PUSH r2
-    MOV  r1, $__video_meta       // load $_video_meta to r2
+    MOV  r1, $__video_meta        // load $_video_meta to r2
     LOAD r2, r1
-    AND  r2, 0xfffffffe          // reset 1st bit
-    OR   r2, r0                  // set 1st bit
-    STOR r1, r2                  // store r2 back to $_video_meta
+    AND  r2, 0xfffffffe           // reset 1st bit
+    OR   r2, r0                   // set 1st bit
+    STOR r1, r2                   // store r2 back to $_video_meta
     POP  r2
     POP  r1
     RET
@@ -24,11 +24,12 @@
     RET
 
 :configure_vsync_int_handler
+    $word_width = 4
+    $vsync_interrupt = 4
+    MOV  r1, $vsync_interrupt
+    MUL  r1, $word_width
     MOV  r0, $__idt_start
-    MOV  r1, 4                    // vsync interrupt
-    MOV  r2, 4                    // word width
-    MUL  r1, r2
-    ADD  r0, r1                   // r1 contains the address of the handler pointer in the idt
+    ADD  r0, r1                    // r1 contains the address of the handler pointer in the idt
     MOV  r1, &vsync_int_handler
     STOR r0, r1
     UMI  4
@@ -42,8 +43,8 @@
     WFI
     MOV  r0, &vsnyc_flag
     LOAD r1, r0
-    JEQ  @wait_vsync_1           // if &vsnyc_flag == 0 -> wait again
-    MOV  r1, 0                   // else reset to 0 and return
+    JEQ  @wait_vsync_1            // if &vsnyc_flag == 0 -> wait again
+    MOV  r1, 0                    // else reset to 0 and return
     STOR r0, r1
     POP  r1
     POP  r0
@@ -53,8 +54,8 @@
 :check_video
     MOV  r1, $__video_meta
     LOAD r1, r1
-    AND  r1, 0x00000002          // video enabled flag
-    JEQ  @end                    // jump to @end if meta & 2 == 0
+    AND  r1, 0x00000002           // video enabled flag
+    JEQ  @end                     // jump to @end if meta & 2 == 0
     RET
 
 :start
@@ -66,7 +67,6 @@
     MOV  r0, 0x000000ff // blue
     MOV  r1, 0x00ff0000 // red
     MOV  r2, 4
-    MOV  r3, $__video_buffer_size
 
 :loop
 // start blue
@@ -78,11 +78,11 @@
 
     MOV  r5, $__video_buffer1
     MOV  r6, $__video_buffer1
-    ADD  r6, r3                 // r5 = buffer1, r6 = end of buffer1
+    ADD  r6, $__video_buffer_size // r5 = buffer1, r6 = end of buffer1
 
 :blue
     STOR r5, r0
-    ADD  r5, r2                 // move to next pixel
+    ADD  r5, r2                   // move to next pixel
     CMP  r5, r6
     JNE  @blue
 
@@ -96,11 +96,11 @@
 
     MOV  r5, $__video_buffer0
     MOV  r6, $__video_buffer0
-    ADD  r6, r3                 // r5 = buffer2, r6 = end of buffer2
+    ADD  r6, $__video_buffer_size // r5 = buffer2, r6 = end of buffer0
 
 :red
     STOR r5, r1
-    ADD  r5, r2                 // move to next pixel
+    ADD  r5, r2                   // move to next pixel
     CMP  r5, r6
     JNE  @red
 

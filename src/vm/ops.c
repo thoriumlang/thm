@@ -409,6 +409,49 @@ void op_add_rr(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, a, (word_t) ((sword_t) a_val + (sword_t) b_val));
 }
 
+#define OP_ADD_RW
+void op_add_rw(CPU *cpu, word_t word) {
+    uint8_t a = ((uint8_t *) &word)[1];
+    word_t value = cpu_fetch(cpu);
+    if (cpu->state.panic != CPU_ERR_OK) {
+        return;
+    }
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tADD  r%i, "WXHEX"\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, value);
+    }
+
+    word_t a_val;
+    if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
+        return;
+    }
+
+    // todo implement overflow/underflow
+    cpu->state.panic = cpu_register_set(cpu, a, (word_t) ((sword_t) a_val + (sword_t) value));
+}
+
+#define OP_SUB_RR
+void op_sub_rr(CPU *cpu, word_t word) {
+    uint8_t a = ((uint8_t *) &word)[1];
+    uint8_t b = ((uint8_t *) &word)[2];
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tSUB  r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b);
+    }
+
+    word_t a_val;
+    if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
+        return;
+    }
+    word_t b_val;
+    if ((cpu->state.panic = cpu_register_get(cpu, b, &b_val)) != CPU_ERR_OK) {
+        return;
+    }
+
+    // todo implement overflow/underflow
+    cpu->state.panic = cpu_register_set(cpu, a, (word_t) ((sword_t) a_val - (sword_t) b_val));
+}
+
 #define OP_SUB_RW
 void op_sub_rw(CPU *cpu, word_t word) {
     uint8_t a = ((uint8_t *) &word)[1];
@@ -449,6 +492,27 @@ void op_mul_rr(CPU *cpu, word_t word) {
     }
     // todo implement overflow/underflow
     cpu->state.panic = cpu_register_set(cpu, a, (word_t) ((sword_t) a_val * (sword_t) b_val));
+}
+
+#define OP_MUL_RW
+void op_mul_rw(CPU *cpu, word_t word) {
+    uint8_t a = ((uint8_t *) &word)[1];
+    word_t value = cpu_fetch(cpu);
+    if (cpu->state.panic != CPU_ERR_OK) {
+        return;
+    }
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tMUL  r%i, "WXHEX"\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, value);
+    }
+
+    word_t a_val;
+    if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
+        return;
+    }
+
+    // todo implement overflow/underflow
+    cpu->state.panic = cpu_register_set(cpu, a, (word_t) ((sword_t) a_val * (sword_t) value));
 }
 
 #define OP_AND_RR
