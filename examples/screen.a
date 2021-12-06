@@ -59,10 +59,10 @@
     CALL  @configure_vsync_int_handler
     INE
 
-// setuo some constants
+// setup some constants
     MOV  r0, 0x000000ff // blue
     MOV  r1, 0x00ff0000 // red
-    MOV  r2, 4
+    MOV  r2, 4          // pixel_width
 
 :loop
 // start blue
