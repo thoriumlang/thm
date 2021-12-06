@@ -43,6 +43,7 @@ pub enum Instruction {
     IRA(Op, String, String, AddressKind),
     IRW(Op, String, u32),
     IRR(Op, String, String),
+    IRRR(Op, String, String, String),
 }
 
 impl Instruction {
@@ -55,6 +56,7 @@ impl Instruction {
             &Instruction::IRA(op, _, _, _) => op,
             &Instruction::IRW(op, _, _) => op,
             &Instruction::IRR(op, _, _) => op,
+            &Instruction::IRRR(op, _, _, _) => op,
         };
     }
 }
@@ -142,15 +144,15 @@ impl<'t> Parser<'t> {
             "JEQ" => self.op_a(Op::Jseq, Op::Jaeq, position),
             "JNE" => self.op_a(Op::Jsne, Op::Jane, position),
             "LOAD" => self.op_rr(Op::Load, position),
-            "MI" => self.op_b(Op::Mi,  position),
+            "MI" => self.op_b(Op::Mi, position),
             "MOV" => self.op_rr_rw_ra(Op::MovRR, Op::MovRW, position),
             "MUL" => self.op_rr_rw(Op::MulRR, Op::MulRW, position),
             "NOP" => self.op_void(Op::Nop, position),
             "OR" => self.op_rr_rw(Op::OrRR, Op::OrRW, position),
             "PANIC" => self.op_void(Op::Panic, position),
-            "POP" => self.op_r(Op::Pop, position),
+            "POP" => self.op_r_rr_rrr(Op::Pop, Op::PopRR, Op::PopRRR, position),
             "POPA" => self.op_void(Op::Popa, position),
-            "PUSH" => self.op_r(Op::Push, position),
+            "PUSH" => self.op_r_rr_rrr(Op::Push, Op::PushRR, Op::PushRRR, position),
             "PUSHA" => self.op_void(Op::Pusha, position),
             "RET" => self.op_void(Op::Ret, position),
             "STOR" => self.op_rr(Op::Stor, position),
@@ -189,6 +191,41 @@ impl<'t> Parser<'t> {
         };
         if self.read_eol() {
             return Ok(Instruction::IR(op, r));
+        }
+        Err(format!("Expected <eol> at {}", position).into())
+    }
+
+    fn op_r_rr_rrr(&mut self, op_r: Op, op_rr: Op, op_rrr: Op, position: &Position) -> Result<Instruction> {
+        let r0 = match self.read_register() {
+            None => return Err(format!("Expected <r> at {}", position).into()),
+            Some(str) => str,
+        };
+        let mut r1: Option<String> = None;
+        let mut r2: Option<String> = None;
+
+        if let Some(Token::Comma(_)) = self.peek_next() {
+            self.read_next();
+            r1 = match self.read_register() {
+                None => return Err(format!("Expected <r> at {}", position).into()),
+                Some(str) => Some(str),
+            };
+        }
+        if let Some(Token::Comma(_)) = self.peek_next() {
+            self.read_next();
+            r2 = match self.read_register() {
+                None => return Err(format!("Expected <r> at {}", position).into()),
+                Some(str) => Some(str),
+            };
+        }
+
+        if self.read_eol() {
+            if let Some(r1) = r1 {
+                if let Some(r2) = r2 {
+                    return Ok(Instruction::IRRR(op_rrr, r0, r1, r2));
+                }
+                return Ok(Instruction::IRR(op_rr, r0, r1));
+            }
+            return Ok(Instruction::IR(op_r, r0));
         }
         Err(format!("Expected <eol> at {}", position).into())
     }
@@ -355,6 +392,13 @@ impl<'t> Parser<'t> {
 
     fn read_next(&mut self) -> Option<Token> {
         match self.lexer.next() {
+            Some(Ok(t)) => Some(t),
+            _ => None
+        }
+    }
+
+    fn peek_next(&mut self) -> Option<&Token> {
+        match self.lexer.peek() {
             Some(Ok(t)) => Some(t),
             _ => None
         }
@@ -530,6 +574,30 @@ mod tests {
         }
     }
 
+    macro_rules! op_rrr_test {
+        ($($name:ident: $value:expr,)*) => {
+        $(
+            #[test]
+            fn $name() {
+                let (input, op, r0, r1, r2) = $value;
+
+                let mut lexer = Lexer::from_text(input);
+                let mut nodes = vec![];
+                let mut symbols = HashMap::new();
+                let r = Parser::from_lexer(&mut lexer, &mut nodes, &mut symbols).next();
+                assert_eq!(true, r.is_some());
+
+                let item = r.unwrap();
+                assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
+
+                let expected = Node::Instruction(Instruction::IRRR(op, r0.into(), r1.into(), r2.into()));
+                let actual = item.unwrap();
+                assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+            }
+        )*
+        }
+    }
+
     macro_rules! op_rw_test {
         ($($name:ident: $value:expr,)*) => {
         $(
@@ -618,15 +686,22 @@ mod tests {
     }
 
     op_rr_test! {
-        mov_rr: ("MOV  r1, r0\n", Op::MovRR, "r1", "r0"),
-        add_rr: ("ADD  r1, r0\n", Op::AddRR, "r1", "r0"),
-        and_rr: ("AND  r1, r0\n", Op::AndRR, "r1", "r0"),
-        or_rr:  ("OR   r1, r0\n", Op::OrRR, "r1", "r0"),
-        sub_rr: ("SUB  r1, r0\n", Op::SubRR, "r1", "r0"),
-        mul_rr: ("MUL  r1, r0\n", Op::MulRR, "r1", "r0"),
-        cmp:    ("CMP  r1, r0\n", Op::Cmp,   "r1", "r0"),
-        load:   ("LOAD r1, r0\n", Op::Load,  "r1", "r0"),
-        stor:   ("STOR r1, r0\n", Op::Stor,  "r1", "r0"),
+        mov_rr: ("MOV  r1, r0\n", Op::MovRR,  "r1", "r0"),
+        add_rr: ("ADD  r1, r0\n", Op::AddRR,  "r1", "r0"),
+        and_rr: ("AND  r1, r0\n", Op::AndRR,  "r1", "r0"),
+        or_rr:  ("OR   r1, r0\n", Op::OrRR,   "r1", "r0"),
+        sub_rr: ("SUB  r1, r0\n", Op::SubRR,  "r1", "r0"),
+        mul_rr: ("MUL  r1, r0\n", Op::MulRR,  "r1", "r0"),
+        cmp:    ("CMP  r1, r0\n", Op::Cmp,    "r1", "r0"),
+        load:   ("LOAD r1, r0\n", Op::Load,   "r1", "r0"),
+        pop_rr: ("POP  r2, r3\n", Op::PopRR,  "r2", "r3"),
+        push_rr:("PUSH r2, r3\n", Op::PushRR, "r2", "r3"),
+        stor:   ("STOR r1, r0\n", Op::Stor,   "r1", "r0"),
+    }
+
+    op_rrr_test! {
+        pop_rrr:  ("POP  r2, r3, r4\n", Op::PopRRR,  "r2", "r3", "r4"),
+        push_rrr: ("PUSH r2, r3, r4\n", Op::PushRRR, "r2", "r3", "r4"),
     }
 
     op_rw_test! {

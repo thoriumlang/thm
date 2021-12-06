@@ -5,15 +5,13 @@
 
 // in: r0 is the buffer idx
 :select_buffer
-    PUSH r1
-    PUSH r2
+    PUSH r1, r2
     MOV  r1, $__video_meta        // load $_video_meta to r2
     LOAD r2, r1
     AND  r2, 0xfffffffe           // reset 1st bit
     OR   r2, r0                   // set 1st bit
     STOR r1, r2                   // store r2 back to $_video_meta
-    POP  r2
-    POP  r1
+    POP  r2, r1
     RET
 
 // set &vsync_flag to 1 upon vsync interrupt
@@ -37,8 +35,7 @@
 
 // waits for a interrupt and then loop until vsync_flag is set
 :wait_vsync
-    PUSH r0
-    PUSH r1
+    PUSH r0, r1
 :wait_vsync_1
     WFI
     MOV  r0, &vsnyc_flag
@@ -46,8 +43,7 @@
     JEQ  @wait_vsync_1            // if &vsnyc_flag == 0 -> wait again
     MOV  r1, 0                    // else reset to 0 and return
     STOR r0, r1
-    POP  r1
-    POP  r0
+    POP  r1, r0
     RET
 
 // check if video available

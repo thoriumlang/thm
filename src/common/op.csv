@@ -40,3 +40,7 @@
 65,Pusha,4
 66,Popa,4
 67,Wfi,4
+68,PushRR,4
+69,PushRRR,4
+70,PopRR,4
+71,PopRRR,4

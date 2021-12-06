@@ -90,6 +90,61 @@ void op_push(CPU *cpu, word_t word) {
     }
 }
 
+#define OP_PUSH_RR
+void op_push_rr(CPU *cpu, word_t word) {
+    uint8_t r0 = ((uint8_t *) &word)[1];
+    uint8_t r1 = ((uint8_t *) &word)[2];
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tPUSH r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, r0, r1);
+    }
+
+    word_t value;
+    if ((cpu->state.panic = cpu_register_get(cpu, r0, &value)) == CPU_ERR_OK) {
+        cpu->sp -= WORD_SIZE;
+        if (bus_word_write(cpu->bus, cpu->sp, value) != BUS_ERR_OK) {
+            cpu->state.panic = CPU_ERR_CANNOT_WRITE_MEMORY;
+        }
+    }
+    if ((cpu->state.panic = cpu_register_get(cpu, r1, &value)) == CPU_ERR_OK) {
+        cpu->sp -= WORD_SIZE;
+        if (bus_word_write(cpu->bus, cpu->sp, value) != BUS_ERR_OK) {
+            cpu->state.panic = CPU_ERR_CANNOT_WRITE_MEMORY;
+        }
+    }
+}
+
+#define OP_PUSH_RRR
+void op_push_rrr(CPU *cpu, word_t word) {
+    uint8_t r0 = ((uint8_t *) &word)[1];
+    uint8_t r1 = ((uint8_t *) &word)[2];
+    uint8_t r2 = ((uint8_t *) &word)[3];
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tPUSH r%i, r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, r0, r1, r2);
+    }
+
+    word_t value;
+    if ((cpu->state.panic = cpu_register_get(cpu, r0, &value)) == CPU_ERR_OK) {
+        cpu->sp -= WORD_SIZE;
+        if (bus_word_write(cpu->bus, cpu->sp, value) != BUS_ERR_OK) {
+            cpu->state.panic = CPU_ERR_CANNOT_WRITE_MEMORY;
+        }
+    }
+    if ((cpu->state.panic = cpu_register_get(cpu, r1, &value)) == CPU_ERR_OK) {
+        cpu->sp -= WORD_SIZE;
+        if (bus_word_write(cpu->bus, cpu->sp, value) != BUS_ERR_OK) {
+            cpu->state.panic = CPU_ERR_CANNOT_WRITE_MEMORY;
+        }
+    }
+    if ((cpu->state.panic = cpu_register_get(cpu, r2, &value)) == CPU_ERR_OK) {
+        cpu->sp -= WORD_SIZE;
+        if (bus_word_write(cpu->bus, cpu->sp, value) != BUS_ERR_OK) {
+            cpu->state.panic = CPU_ERR_CANNOT_WRITE_MEMORY;
+        }
+    }
+}
+
 #define OP_PUSHA
 void op_pusha(CPU *cpu, word_t word) {
     if (cpu->debug.print_op) {
@@ -123,6 +178,64 @@ void op_pop(CPU *cpu, word_t word) {
     }
     cpu->sp += WORD_SIZE;
     cpu->state.panic = cpu_register_set(cpu, r, value);
+}
+
+#define OP_POP_RR
+void op_pop_rr(CPU *cpu, word_t word) {
+    uint8_t r0 = ((uint8_t *) &word)[1];
+    uint8_t r1 = ((uint8_t *) &word)[2];
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tPOP  r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, r0, r1);
+    }
+
+    word_t value;
+    if (bus_word_read(cpu->bus, cpu->sp, &value) != BUS_ERR_OK) {
+        cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
+        return;
+    }
+    cpu->sp += WORD_SIZE;
+    cpu->state.panic = cpu_register_set(cpu, r0, value);
+
+    if (bus_word_read(cpu->bus, cpu->sp, &value) != BUS_ERR_OK) {
+        cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
+        return;
+    }
+    cpu->sp += WORD_SIZE;
+    cpu->state.panic = cpu_register_set(cpu, r1, value);
+}
+
+#define OP_POP_RRR
+void op_pop_rrr(CPU *cpu, word_t word) {
+    uint8_t r0 = ((uint8_t *) &word)[1];
+    uint8_t r1 = ((uint8_t *) &word)[2];
+    uint8_t r2 = ((uint8_t *) &word)[3];
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tPOP  r%i, r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, r0, r1, r2);
+    }
+
+    word_t value;
+    if (bus_word_read(cpu->bus, cpu->sp, &value) != BUS_ERR_OK) {
+        cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
+        return;
+    }
+    cpu->sp += WORD_SIZE;
+    cpu->state.panic = cpu_register_set(cpu, r0, value);
+
+    if (bus_word_read(cpu->bus, cpu->sp, &value) != BUS_ERR_OK) {
+        cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
+        return;
+    }
+    cpu->sp += WORD_SIZE;
+    cpu->state.panic = cpu_register_set(cpu, r1, value);
+
+    if (bus_word_read(cpu->bus, cpu->sp, &value) != BUS_ERR_OK) {
+        cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
+        return;
+    }
+    cpu->sp += WORD_SIZE;
+    cpu->state.panic = cpu_register_set(cpu, r2, value);
 }
 
 #define OP_POPA

@@ -49,6 +49,9 @@ impl<'t> Emitter<'t> {
                     Instruction::IRR(op, r1, r2) => bytes.append(vec![
                         op.bytecode(), *self.decode_register(r1) as u8, *self.decode_register(r2) as u8, 0,
                     ].as_mut()),
+                    Instruction::IRRR(op, r1, r2, r3) => bytes.append(vec![
+                        op.bytecode(), *self.decode_register(r1) as u8, *self.decode_register(r2) as u8, *self.decode_register(r3) as u8,
+                    ].as_mut()),
                     Instruction::IRA(op, r, addr, kind) => {
                         bytes.append(vec![op.bytecode(),  *self.decode_register(r) as u8, 0, 0].as_mut());
                         let b = (match kind {
