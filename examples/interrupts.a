@@ -26,4 +26,4 @@
     POP   r0
     RET
 
-:data
+#word data 0

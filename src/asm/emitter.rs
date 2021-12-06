@@ -33,10 +33,10 @@ impl<'t> Emitter<'t> {
 
         for node in self.nodes {
             match node {
-                Node::Directive(Directive::Base(addr)) => {
-                    base_address = *addr;
-                    continue;
-                }
+                Node::Directive(directive) => match directive {
+                    Directive::Base(addr) => base_address = *addr,
+                    Directive::Word(_, v) => bytes.extend_from_slice(&v.to_be_bytes()),
+                },
                 Node::Instruction(instruction) => match instruction {
                     Instruction::I(op) => bytes.append(vec![op.bytecode(), 0, 0, 0].as_mut()),
                     Instruction::IB(op, imm1) => bytes.append(vec![op.bytecode(), *imm1, 0, 0].as_mut()),
@@ -53,7 +53,7 @@ impl<'t> Emitter<'t> {
                         op.bytecode(), *self.decode_register(r1) as u8, *self.decode_register(r2) as u8, *self.decode_register(r3) as u8,
                     ].as_mut()),
                     Instruction::IRA(op, r, addr, kind) => {
-                        bytes.append(vec![op.bytecode(),  *self.decode_register(r) as u8, 0, 0].as_mut());
+                        bytes.append(vec![op.bytecode(), *self.decode_register(r) as u8, 0, 0].as_mut());
                         let b = (match kind {
                             AddressKind::Absolute => base_address,
                             AddressKind::Segment => 0,

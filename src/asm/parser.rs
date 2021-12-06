@@ -26,6 +26,7 @@ pub struct Label {
 #[derive(Debug, PartialEq)]
 pub enum Directive {
     Base(u32),
+    Word(String, i32),
 }
 
 #[derive(Debug, PartialEq)]
@@ -122,6 +123,22 @@ impl<'t> Parser<'t> {
                 if self.read_eol() {
                     return directive;
                 }
+                Err(format!("Expected <eol> at {}", position).into())
+            }
+            "word" => {
+                let identifier = match self.read_next() {
+                    Some(Token::Identifier(_, str)) => str,
+                    _ => return Err(format!("Expected <identifier> for directive '#{}' at {}",name, position).into()),
+                };
+                let value = match self.read_next() {
+                    Some(Token::Integer(_, val)) => val,
+                    _ => return Err(format!("Expected <value> for directive '#{}' at {}",name, position).into()),
+                };
+
+                if self.read_eol() {
+                    return Ok(Directive::Word(identifier, value as i32));
+                }
+
                 Err(format!("Expected <eol> at {}", position).into())
             }
             _ => Err(format!("Unknown directive '#{}' at {}", name, position).into()),
@@ -793,6 +810,21 @@ mod tests {
 
         let expected = vec![
             Node::Directive(Directive::Base(12)),
+        ];
+        assert_eq!(expected, nodes, "Expected {:?}, got {:?}", expected, nodes);
+    }
+
+    #[test]
+    fn test_parse_directive_word() {
+        let mut lexer = Lexer::from_text("#word var 42\n");
+        let mut nodes = vec![];
+        let mut symbols = HashMap::new();
+        let r = Parser::from_lexer(&mut lexer, &mut nodes, &mut symbols).parse();
+
+        assert_eq!(true, r.is_ok(), "Expected Ok(...), got {:?}", r);
+
+        let expected = vec![
+            Node::Directive(Directive::Word("var".into(), 42)),
         ];
         assert_eq!(expected, nodes, "Expected {:?}, got {:?}", expected, nodes);
     }

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::parser::{Instruction, Node};
+use crate::parser::{Directive, Instruction, Node};
 
 pub struct AddressResolver<'t> {
     nodes: &'t Vec<Node>,
@@ -19,6 +19,13 @@ impl<'t> AddressResolver<'t> {
         let mut position = 0 as u32;
         for node in self.nodes {
             match node {
+                Node::Directive(Directive::Word(label, _)) => {
+                    if map.contains_key(label) {
+                        return Err(format!("Label {} used more than once", label).to_string());
+                    }
+                    map.insert(label.to_owned(), position);
+                    position += 4 as u32; // todo extract to a word_size constant?
+                }
                 Node::Instruction(i) => {
                     position += i.op().length() as u32;
                 }
