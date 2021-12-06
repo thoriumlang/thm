@@ -85,21 +85,13 @@ JsonElement *arch_json_get() {
 }
 
 word_t vtoh(word_t word) {
-#ifdef FIXENDIAN
 #if WORD_SIZE == 4
     return ntohl(word);
-#endif
-#else
-    return word;
 #endif
 }
 
 word_t htov(word_t word) {
-#ifdef FIXENDIAN
 #if WORD_SIZE == 4
     return htonl(word);
-#endif
-#else
-    return word;
 #endif
 }
