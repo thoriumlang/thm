@@ -17,45 +17,46 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <printf.h>
-#include "timer.h"
+#include "pit.h"
 #include "pic.h"
 #include "vmarch.h"
 #include "time.h"
 
-typedef struct Timer {
+// todo rework that so it can be programmed from programs
+typedef struct PIT {
     PIC *pic;
     microsec_t period;
     pthread_t thread;
     volatile bool running;
     interrupt_t interrupt;
-} Timer;
+} PIT;
 
 void *timer_loop(void *ptr);
 
-Timer *timer_create(PIC *pic, microsec_t period, interrupt_t interrupt) {
-    Timer *timer = malloc(sizeof(Timer));
+PIT *pit_create(PIC *pic, microsec_t period, interrupt_t interrupt) {
+    PIT *timer = malloc(sizeof(PIT));
     timer->pic = pic;
     timer->period = period;
     timer->interrupt = interrupt;
-    timer->thread = NULL;
+    timer->thread = 0;
     return timer;
 }
 
-void timer_destroy(Timer *this) {
-    timer_stop(this);
+void pit_destroy(PIT *this) {
+    pit_stop(this);
     free(this);
 }
 
-void timer_start(Timer *this) {
+void pit_start(PIT *this) {
+    this->running = true;
     pthread_create(&this->thread, NULL, timer_loop, this);
 }
 
 void *timer_loop(void *ptr) {
-    Timer *this = (Timer *) ptr;
+    PIT *this = (PIT *) ptr;
 
     utime_t time = time_utime();
 
-    this->running = true;
     while (this->running) {
         usleep(100);
         utime_t new_time = time_utime();
@@ -67,8 +68,8 @@ void *timer_loop(void *ptr) {
     return NULL;
 }
 
-void timer_stop(Timer *this) {
+void pit_stop(PIT *this) {
     this->running = false;
     pthread_join(this->thread, NULL);
-    this->thread = NULL;
+    this->thread = 0;
 }

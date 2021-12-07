@@ -24,7 +24,7 @@
 #include "json.h"
 #include "video.h"
 #include "pic.h"
-#include "timer.h"
+#include "pit.h"
 
 typedef struct VmThreadParam {
     Options *options;
@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
     bus_mount(bus, pic_memory_get(pic)->interrupt_handlers, INTERRUPT_DESCRIPTOR_TABLE_ADDRESS, "IDT");
     bus_mount(bus, pic_memory_get(pic)->interrupt_mask, INTERRUPT_MASK_ADDRESS, "IMask");
 
-    Timer *timer = timer_create(pic, 1000 * 1000, INT_TIMER);
+    PIT *timer = pit_create(pic, 1000 * 1000, INT_TIMER);
 
     Video *video = video_create(pic, options->video != OPT_VIDEO_MODE_NONE);
     VideoMemory *memory = video_memory_get(video);
@@ -126,14 +126,14 @@ int main(int argc, char **argv) {
     pthread_t cpu_thread;
     pthread_create(&cpu_thread, NULL, cpu_loop, &p);
 
-    timer_start(timer);
+    pit_start(timer);
     video_loop(video);
     if (options->video == OPT_VIDEO_MODE_MASTER) {
         cpu_stop(cpu);
     }
     pthread_join(cpu_thread, NULL);
 
-    timer_destroy(timer);
+    pit_destroy(timer);
     opts_free(options);
     cpu_destroy(cpu);
     bus_destroy(bus);

@@ -18,7 +18,7 @@ add_executable(thm
         memory.c memory.h
         video.c video.h
         time.c time.h
-        timer.c timer.h
+        pit.c pit.h
         json.c json.h ${CCAN_JSON})
 target_link_libraries(thm PRIVATE minifb)
 

@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef THM_TIMER_H
-#define THM_TIMER_H
+#ifndef THM_PIT_H
+#define THM_PIT_H
 
 #include "pic.h"
 
-typedef struct Timer Timer;
+typedef struct PIT PIT;
 typedef uint32_t microsec_t;
 
-Timer *timer_create(PIC *pic, microsec_t period, interrupt_t interrupt);
+PIT *pit_create(PIC *pic, microsec_t period, interrupt_t interrupt);
 
-void timer_destroy(Timer *this);
+void pit_destroy(PIT *this);
 
-void timer_start(Timer *this);
+void pit_start(PIT *this);
 
-void timer_stop(Timer *this);
+void pit_stop(PIT *this);
 
-#endif //THM_TIMER_H
+#endif //THM_PIT_H
