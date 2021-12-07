@@ -77,6 +77,9 @@ void cpu_start(CPU *cpu) {
             }
         }
     }
+    if (cpu->state.panic) {
+        printf("Panic: %i\n", cpu->state.panic);
+    }
     cpu->state.running = 0;
 }
 

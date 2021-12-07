@@ -52,6 +52,7 @@ PIC *pic_create() {
     }
     pic_interrupt_mask(this, INT_VSYNC);
     pic_interrupt_mask(this, INT_TIMER);
+    pic_interrupt_mask(this, INT_KEYBOARD);
 
     return this;
 }

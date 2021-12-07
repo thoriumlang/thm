@@ -17,6 +17,7 @@ add_executable(thm
         pic.c pic.h
         memory.c memory.h
         video.c video.h
+        keyboard.c keyboard.h
         time.c time.h
         pit.c pit.h
         json.c json.h ${CCAN_JSON})

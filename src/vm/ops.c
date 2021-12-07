@@ -706,6 +706,45 @@ void op_or_rw(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, a, a_val | b_val);
 }
 
+#define OP_XOR_RR
+void op_xor_rr(CPU *cpu, word_t word) {
+    uint8_t a = ((uint8_t *) &word)[1];
+    uint8_t b = ((uint8_t *) &word)[2];
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tXOR  r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b);
+    }
+
+    word_t a_val;
+    if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
+        return;
+    }
+    word_t b_val;
+    if ((cpu->state.panic = cpu_register_get(cpu, b, &b_val)) != CPU_ERR_OK) {
+        return;
+    }
+    cpu->state.panic = cpu_register_set(cpu, a, a_val ^ b_val);
+}
+
+#define OP_XOR_RW
+void op_xor_rw(CPU *cpu, word_t word) {
+    uint8_t a = ((uint8_t *) &word)[1];
+    word_t b_val = cpu_fetch(cpu);
+    if (cpu->state.panic != CPU_ERR_OK) {
+        return;
+    }
+
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tXOR  r%i, "WXHEX"\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b_val);
+    }
+
+    word_t a_val;
+    if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
+        return;
+    }
+    cpu->state.panic = cpu_register_set(cpu, a, a_val ^ b_val);
+}
+
 #define OP_DEC
 void op_dec(CPU *cpu, word_t word) {
     uint8_t r = ((uint8_t *) &word)[1];
@@ -888,6 +927,13 @@ void op_wfi(CPU *cpu, word_t word) {
 
     pthread_cond_wait(&pic_got_interrupt, &pic_got_interrupt_lock);
     pthread_mutex_unlock(&pic_got_interrupt_lock);
+}
+
+#define OP_XDBG
+void op_xdbg(CPU *cpu, word_t word) {
+    if (cpu->debug.print_op) { // todo guard with debug cli options
+        printf("  %lu\t"AXHEX"\tXDBG\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
+    }
 }
 
 #include "ops_array.h"

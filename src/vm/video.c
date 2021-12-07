@@ -22,16 +22,147 @@
 #include "vmarch.h"
 #include "video.h"
 #include "memory.h"
+#include "keyboard.h"
 
 #define VIDEO_BIT_BUFFER 1
 #define VIDEO_BIT_ENABLED 2
 #define VIDEO_BIT_SYNC 3
 
+Video *g_video = NULL;
+keyboard_keycode codes[KB_KEY_LAST + 1] = {0};
+
+void init_codes() {
+    for (unsigned int i = 0; i <= KB_KEY_LAST; i++) {
+        codes[i] = KEYBOARD_KEY_UNKNOWN;
+    }
+    codes[KB_KEY_SPACE] = KEYBOARD_KEY_SPACE;
+    codes[KB_KEY_APOSTROPHE] = KEYBOARD_KEY_APOSTROPHE;
+    codes[KB_KEY_COMMA] = KEYBOARD_KEY_COMMA;
+    codes[KB_KEY_MINUS] = KEYBOARD_KEY_MINUS;
+    codes[KB_KEY_PERIOD] = KEYBOARD_KEY_PERIOD;
+    codes[KB_KEY_SLASH] = KEYBOARD_KEY_SLASH;
+    codes[KB_KEY_0] = KEYBOARD_KEY_0;
+    codes[KB_KEY_1] = KEYBOARD_KEY_1;
+    codes[KB_KEY_2] = KEYBOARD_KEY_2;
+    codes[KB_KEY_3] = KEYBOARD_KEY_3;
+    codes[KB_KEY_4] = KEYBOARD_KEY_4;
+    codes[KB_KEY_5] = KEYBOARD_KEY_5;
+    codes[KB_KEY_6] = KEYBOARD_KEY_6;
+    codes[KB_KEY_7] = KEYBOARD_KEY_7;
+    codes[KB_KEY_8] = KEYBOARD_KEY_8;
+    codes[KB_KEY_9] = KEYBOARD_KEY_9;
+    codes[KB_KEY_SEMICOLON] = KEYBOARD_KEY_SEMICOLON;
+    codes[KB_KEY_EQUAL] = KEYBOARD_KEY_EQUAL;
+    codes[KB_KEY_A] = KEYBOARD_KEY_A;
+    codes[KB_KEY_B] = KEYBOARD_KEY_B;
+    codes[KB_KEY_C] = KEYBOARD_KEY_C;
+    codes[KB_KEY_D] = KEYBOARD_KEY_D;
+    codes[KB_KEY_E] = KEYBOARD_KEY_E;
+    codes[KB_KEY_F] = KEYBOARD_KEY_F;
+    codes[KB_KEY_G] = KEYBOARD_KEY_G;
+    codes[KB_KEY_H] = KEYBOARD_KEY_H;
+    codes[KB_KEY_I] = KEYBOARD_KEY_I;
+    codes[KB_KEY_J] = KEYBOARD_KEY_J;
+    codes[KB_KEY_K] = KEYBOARD_KEY_K;
+    codes[KB_KEY_L] = KEYBOARD_KEY_L;
+    codes[KB_KEY_M] = KEYBOARD_KEY_M;
+    codes[KB_KEY_N] = KEYBOARD_KEY_N;
+    codes[KB_KEY_O] = KEYBOARD_KEY_O;
+    codes[KB_KEY_P] = KEYBOARD_KEY_P;
+    codes[KB_KEY_Q] = KEYBOARD_KEY_Q;
+    codes[KB_KEY_R] = KEYBOARD_KEY_R;
+    codes[KB_KEY_S] = KEYBOARD_KEY_S;
+    codes[KB_KEY_T] = KEYBOARD_KEY_T;
+    codes[KB_KEY_U] = KEYBOARD_KEY_U;
+    codes[KB_KEY_V] = KEYBOARD_KEY_V;
+    codes[KB_KEY_W] = KEYBOARD_KEY_W;
+    codes[KB_KEY_X] = KEYBOARD_KEY_X;
+    codes[KB_KEY_Y] = KEYBOARD_KEY_Y;
+    codes[KB_KEY_Z] = KEYBOARD_KEY_Z;
+    codes[KB_KEY_LEFT_BRACKET] = KEYBOARD_KEY_LEFT_BRACKET;
+    codes[KB_KEY_BACKSLASH] = KEYBOARD_KEY_BACKSLASH;
+    codes[KB_KEY_RIGHT_BRACKET] = KEYBOARD_KEY_RIGHT_BRACKET;
+    codes[KB_KEY_GRAVE_ACCENT] = KEYBOARD_KEY_GRAVE_ACCENT;
+    codes[KB_KEY_WORLD_1] = KEYBOARD_KEY_WORLD_1;
+    codes[KB_KEY_WORLD_2] = KEYBOARD_KEY_WORLD_2;
+    codes[KB_KEY_ESCAPE] = KEYBOARD_KEY_ESCAPE;
+    codes[KB_KEY_ENTER] = KEYBOARD_KEY_ENTER;
+    codes[KB_KEY_TAB] = KEYBOARD_KEY_TAB;
+    codes[KB_KEY_BACKSPACE] = KEYBOARD_KEY_BACKSPACE;
+    codes[KB_KEY_INSERT] = KEYBOARD_KEY_INSERT;
+    codes[KB_KEY_DELETE] = KEYBOARD_KEY_DELETE;
+    codes[KB_KEY_RIGHT] = KEYBOARD_KEY_RIGHT;
+    codes[KB_KEY_LEFT] = KEYBOARD_KEY_LEFT;
+    codes[KB_KEY_DOWN] = KEYBOARD_KEY_DOWN;
+    codes[KB_KEY_UP] = KEYBOARD_KEY_UP;
+    codes[KB_KEY_PAGE_UP] = KEYBOARD_KEY_PAGE_UP;
+    codes[KB_KEY_PAGE_DOWN] = KEYBOARD_KEY_PAGE_DOWN;
+    codes[KB_KEY_HOME] = KEYBOARD_KEY_HOME;
+    codes[KB_KEY_END] = KEYBOARD_KEY_END;
+    codes[KB_KEY_CAPS_LOCK] = KEYBOARD_KEY_CAPS_LOCK;
+    codes[KB_KEY_SCROLL_LOCK] = KEYBOARD_KEY_SCROLL_LOCK;
+    codes[KB_KEY_NUM_LOCK] = KEYBOARD_KEY_NUM_LOCK;
+    codes[KB_KEY_PRINT_SCREEN] = KEYBOARD_KEY_PRINT_SCREEN;
+    codes[KB_KEY_PAUSE] = KEYBOARD_KEY_PAUSE;
+    codes[KB_KEY_F1] = KEYBOARD_KEY_F1;
+    codes[KB_KEY_F2] = KEYBOARD_KEY_F2;
+    codes[KB_KEY_F3] = KEYBOARD_KEY_F3;
+    codes[KB_KEY_F4] = KEYBOARD_KEY_F4;
+    codes[KB_KEY_F5] = KEYBOARD_KEY_F5;
+    codes[KB_KEY_F6] = KEYBOARD_KEY_F6;
+    codes[KB_KEY_F7] = KEYBOARD_KEY_F7;
+    codes[KB_KEY_F8] = KEYBOARD_KEY_F8;
+    codes[KB_KEY_F9] = KEYBOARD_KEY_F9;
+    codes[KB_KEY_F10] = KEYBOARD_KEY_F10;
+    codes[KB_KEY_F11] = KEYBOARD_KEY_F11;
+    codes[KB_KEY_F12] = KEYBOARD_KEY_F12;
+    codes[KB_KEY_F13] = KEYBOARD_KEY_F13;
+    codes[KB_KEY_F14] = KEYBOARD_KEY_F14;
+    codes[KB_KEY_F15] = KEYBOARD_KEY_F15;
+    codes[KB_KEY_F16] = KEYBOARD_KEY_F16;
+    codes[KB_KEY_F17] = KEYBOARD_KEY_F17;
+    codes[KB_KEY_F18] = KEYBOARD_KEY_F18;
+    codes[KB_KEY_F19] = KEYBOARD_KEY_F19;
+    codes[KB_KEY_F20] = KEYBOARD_KEY_F20;
+    codes[KB_KEY_F21] = KEYBOARD_KEY_F21;
+    codes[KB_KEY_F22] = KEYBOARD_KEY_F22;
+    codes[KB_KEY_F23] = KEYBOARD_KEY_F23;
+    codes[KB_KEY_F24] = KEYBOARD_KEY_F24;
+    codes[KB_KEY_F25] = KEYBOARD_KEY_F25;
+    codes[KB_KEY_KP_0] = KEYBOARD_KEY_KP_0;
+    codes[KB_KEY_KP_1] = KEYBOARD_KEY_KP_1;
+    codes[KB_KEY_KP_2] = KEYBOARD_KEY_KP_2;
+    codes[KB_KEY_KP_3] = KEYBOARD_KEY_KP_3;
+    codes[KB_KEY_KP_4] = KEYBOARD_KEY_KP_4;
+    codes[KB_KEY_KP_5] = KEYBOARD_KEY_KP_5;
+    codes[KB_KEY_KP_6] = KEYBOARD_KEY_KP_6;
+    codes[KB_KEY_KP_7] = KEYBOARD_KEY_KP_7;
+    codes[KB_KEY_KP_8] = KEYBOARD_KEY_KP_8;
+    codes[KB_KEY_KP_9] = KEYBOARD_KEY_KP_9;
+    codes[KB_KEY_KP_DECIMAL] = KEYBOARD_KEY_KP_DECIMAL;
+    codes[KB_KEY_KP_DIVIDE] = KEYBOARD_KEY_KP_DIVIDE;
+    codes[KB_KEY_KP_MULTIPLY] = KEYBOARD_KEY_KP_MULTIPLY;
+    codes[KB_KEY_KP_SUBTRACT] = KEYBOARD_KEY_KP_SUBTRACT;
+    codes[KB_KEY_KP_ADD] = KEYBOARD_KEY_KP_ADD;
+    codes[KB_KEY_KP_ENTER] = KEYBOARD_KEY_KP_ENTER;
+    codes[KB_KEY_KP_EQUAL] = KEYBOARD_KEY_KP_EQUAL;
+    codes[KB_KEY_LEFT_SHIFT] = KEYBOARD_KEY_LEFT_SHIFT;
+    codes[KB_KEY_LEFT_CONTROL] = KEYBOARD_KEY_LEFT_CONTROL;
+    codes[KB_KEY_LEFT_ALT] = KEYBOARD_KEY_LEFT_ALT;
+    codes[KB_KEY_LEFT_SUPER] = KEYBOARD_KEY_LEFT_SUPER;
+    codes[KB_KEY_RIGHT_SHIFT] = KEYBOARD_KEY_RIGHT_SHIFT;
+    codes[KB_KEY_RIGHT_CONTROL] = KEYBOARD_KEY_RIGHT_CONTROL;
+    codes[KB_KEY_RIGHT_ALT] = KEYBOARD_KEY_RIGHT_ALT;
+    codes[KB_KEY_RIGHT_SUPER] = KEYBOARD_KEY_RIGHT_SUPER;
+    codes[KB_KEY_MENU] = KEYBOARD_KEY_MENU;
+}
+
 typedef struct Video {
     PIC *pic;
+    VideoMemory *memory;
+    Keyboard *keyboard;
     struct mfb_window *window;
     bool enabled;
-    VideoMemory *memory;
     word_t flags_cache;
     uint32_t *buffer;
     struct {
@@ -46,12 +177,21 @@ bool select_buffer(Video *this, word_t flags);
 
 void print_fps(Video *this);
 
-Video *video_create(PIC *pic, bool enable) {
+Video *video_create(PIC *pic, Keyboard *keyboard, bool enable) {
+    if (g_video != NULL) {
+        if (pic != g_video->pic || keyboard != g_video->keyboard) {
+            fprintf(stderr, "Cannot create 2 video instances");
+            exit(1);
+        }
+        return g_video;
+    }
+    init_codes();
     Video *this = malloc(sizeof(Video));
     this->pic = pic;
+    this->memory = malloc(sizeof(VideoMemory));
+    this->keyboard = keyboard;
     this->window = 0x0;
     this->enabled = enable;
-    this->memory = malloc(sizeof(VideoMemory));
     this->memory->metadata = memory_create(VIDEO_META_SIZE, MEM_MODE_RW);
     this->flags_cache = 0;
     this->stats.frames = 0;
@@ -73,11 +213,26 @@ Video *video_create(PIC *pic, bool enable) {
         this->memory->buffer[1] = NULL;
         this->buffer = NULL;
     }
+
+    g_video = this;
+
     return this;
 }
 
-VideoMemory *video_memory_get(Video *this) {
+inline VideoMemory *video_memory_get(Video *this) {
     return this->memory;
+}
+
+void video_kb_callback(struct mfb_window *window, mfb_key key, mfb_key_mod mod, bool isPressed) {
+    if (key == KB_KEY_ESCAPE) {
+        mfb_close(window);
+    }
+
+    if (isPressed) {
+        keyboard_key_pressed(g_video->keyboard, codes[key] << 8 | mod);
+    } else {
+        keyboard_key_released(g_video->keyboard, codes[key] << 8 | mod);
+    }
 }
 
 void video_loop(Video *this) {
@@ -94,6 +249,8 @@ void video_loop(Video *this) {
                      VIDEO_SCREEN_HEIGHT * VIDEO_SCREEN_SCALE
     );
     mfb_set_target_fps(VIDEO_SCREEN_FPS);
+
+    mfb_set_keyboard_callback(this->window, video_kb_callback);
 
     mfb_update_state state;
     this->stats.utime = time_utime();
@@ -117,7 +274,7 @@ void video_loop(Video *this) {
         }
 
         pic_interrupt_trigger(this->pic, INT_VSYNC);
-        print_fps(this);
+        print_fps(this); // todo create an cli option for that
     } while (mfb_wait_sync(this->window));
     this->window = 0x0;
 }
@@ -159,6 +316,7 @@ void video_stop(Video *this) {
 }
 
 void video_destroy(Video *this) {
+    g_video = NULL;
     video_stop(this);
     for (int i = 0; i < 100; i++) {
         if (this->window == 0x0) {

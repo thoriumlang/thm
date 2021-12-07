@@ -178,6 +178,8 @@ impl<'t> Parser<'t> {
             "IRET" => self.op_void(Op::Iret, position),
             "WFI" => self.op_void(Op::Wfi, position),
             "XBM" => self.op_b(Op::Xbm, position),
+            "XDBG" => self.op_void(Op::Xdbg, position),
+            "XOR" => self.op_rr_rw(Op::XorRR, Op::XorRW, position),
             op => Err(format!("Invalid mnemonic '{}' at {}", op, position).into())
         };
     }
@@ -190,13 +192,24 @@ impl<'t> Parser<'t> {
     }
 
     fn op_b(&mut self, op: Op, position: &Position) -> Result<Instruction> {
-        let b = match self.read_byte() {
-            None => return Err(format!("Expected <b> at {}", position).into()),
-            Some(i) => i,
-        };
+        let instruction = match self.read_next() {
+            None => None,
+            Some(Token::Integer(_, v)) => match v {
+                0..=255 => Some(Ok(Instruction::IB(op, v as u8))),
+                _ => None,
+            },
+            Some(Token::Variable(_,name)) => match self.symbols.get(&name) {
+                Some(Token::Integer(_, v)) => match v {
+                    0..=255 => Some(Ok(Instruction::IB(op, *v as u8))),
+                    _ => None,
+                },
+                _ => None
+            },
+            _ => None
+        }.unwrap_or( Err(format!("Expected <b> or <var> at {}", position).into()));
 
         if self.read_eol() {
-            return Ok(Instruction::IB(op, b));
+            return instruction;
         }
         Err(format!("Expected <eol> at {}", position).into())
     }
@@ -424,16 +437,6 @@ impl<'t> Parser<'t> {
     fn read_register(&mut self) -> Option<String> {
         match self.lexer.next() {
             Some(Ok(Token::Identifier(_, r))) => Some(r),
-            _ => None,
-        }
-    }
-
-    fn read_byte(&mut self) -> Option<u8> {
-        match self.lexer.next() {
-            Some(Ok(Token::Integer(_, v))) => match v {
-                0..=255 => Some(v as u8),
-                _ => None,
-            }
             _ => None,
         }
     }
@@ -674,6 +677,7 @@ mod tests {
         iret:   ("IRET\n", Op::Iret),
         ret:    ("RET\n", Op::Ret),
         wfi:    ("WFI\n", Op::Wfi),
+        xdbg:   ("XDBG\n", Op::Xdbg),
     }
 
     op_a_test! {
@@ -714,6 +718,7 @@ mod tests {
         pop_rr: ("POP  r2, r3\n", Op::PopRR,  "r2", "r3"),
         push_rr:("PUSH r2, r3\n", Op::PushRR, "r2", "r3"),
         stor:   ("STOR r1, r0\n", Op::Stor,   "r1", "r0"),
+        xor_rr: ("XOR  r1, r0\n", Op::XorRR,  "r1", "r0"),
     }
 
     op_rrr_test! {
@@ -728,6 +733,7 @@ mod tests {
         or_rw:  ("OR   r1, 42\n", Op::OrRW, "r1", 42),
         sub_rw: ("SUB  r1, 42\n", Op::SubRW, "r1", 42),
         mul_rw: ("MUL  r1, 42\n", Op::MulRW, "r1", 42),
+        xor_rw: ("XOR  r1, 42\n", Op::XorRW, "r1", 42),
     }
 
     op_ra_test! {

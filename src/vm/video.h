@@ -19,6 +19,7 @@
 
 #include "memory.h"
 #include "pic.h"
+#include "keyboard.h"
 
 typedef struct VideoMemory {
     Memory *metadata;
@@ -27,7 +28,7 @@ typedef struct VideoMemory {
 
 typedef struct Video Video;
 
-Video *video_create(PIC *pic, bool enable);
+Video *video_create(PIC *pic, Keyboard *keyboard, bool enable);
 
 VideoMemory *video_memory_get(Video *this);
 

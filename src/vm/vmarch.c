@@ -42,9 +42,12 @@ void arch_print() {
     printf("  idt end:               "AXHEX"\n", INTERRUPT_MASK_ADDRESS - 1);
     printf("  interrupts mask start: "AXHEX"\n", INTERRUPT_MASK_ADDRESS);
     printf("  interrupts mask end:   "AXHEX"\n", INTERRUPT_MASK_ADDRESS + INTERRUPTS_WORDS_COUNT * WORD_SIZE - 1);
+    printf("  keyboard start:        "AXHEX"\n", KEYBOARD_ADDRESS);
+    printf("  keyboard end:          "AXHEX"\n", KEYBOARD_ADDRESS + KEYBOARD_MEMORY_SIZE - 1);
 }
 
 void arch_print_header() {
+    printf("// addresses\n");
     printf("$__rom_start = "AXHEX"\n", ROM_ADDRESS);
     printf("$__video_meta = "AXHEX"\n", VIDEO_META_ADDRESS);
     printf("$__video_buffer0 = "AXHEX"\n", VIDEO_BUFFER_0_ADDRESS);
@@ -52,6 +55,11 @@ void arch_print_header() {
     printf("$__video_buffer_size = %i\n", VIDEO_BUFFER_SIZE);
     printf("$__idt_start = "AXHEX"\n", INTERRUPT_DESCRIPTOR_TABLE_ADDRESS);
     printf("$__imask_start = "AXHEX"\n", INTERRUPT_MASK_ADDRESS);
+    printf("$__keyboard_start = "AXHEX"\n\n", KEYBOARD_ADDRESS);
+    printf("// interrupts\n");
+    printf("$__int_timer = 0x%02x\n", INT_TIMER);
+    printf("$__int_vsync = 0x%02x\n", INT_VSYNC);
+    printf("$__int_keyboard = 0x%02x\n", INT_KEYBOARD);
 }
 
 JsonElement *arch_json_get() {

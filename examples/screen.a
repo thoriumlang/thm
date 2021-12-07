@@ -24,13 +24,13 @@ $word_width = 4
     RET
 
 :configure_vsync_int_handler
-    MOV  r1, 4
+    MOV  r1, $__int_vsync
     MUL  r1, $word_width
     MOV  r0, $__idt_start
     ADD  r0, r1                    // r1 contains the address of the handler pointer in the idt
     MOV  r1, &vsync_int_handler
     STOR r0, r1
-    UMI  4
+    UMI  $__int_vsync
     RET
 
 :timer_int_handler
@@ -65,13 +65,49 @@ $word_width = 4
     RET
 
 :configure_timer_int_handler
-    MOV  r1, 3
+    MOV  r1, $__int_timer
     MUL  r1, $word_width
     MOV  r0, $__idt_start
     ADD  r0, r1                  // r1 contains the address of the handler pointer in the idt
     MOV  r1, &timer_int_handler
     STOR r0, r1
-    UMI  3
+    UMI  $__int_timer
+    RET
+
+:keyboard_int_handler
+    MOV  r1, 0x00230001         // <p> key pressed ref.
+    MOV  r0, $__keyboard_start
+    LOAD r0, r0
+    CMP  r0, r1 // todo replace with cmp r, w
+    JEQ  @keyboard_int_handler_key_is_p
+    PUSH r0                     // keep for update last seen before exit
+    J    @keyboard_int_handler_exit
+:keyboard_int_handler_key_is_p
+    MOV  r1, &prev_key
+    LOAD r1, r1
+    PUSH r1                     // keep for update last seen before exit
+    CMP  r1, r0
+    JNE  @keyboard_int_handler_toggle
+    J    @keyboard_int_handler_exit
+:keyboard_int_handler_toggle
+    MOV  r0, &active
+    LOAD r1, r0
+    XOR  r1, 1
+    STOR r0, r1
+:keyboard_int_handler_exit
+    POP  r0
+    MOV  r1, &prev_key
+    STOR r1, r0
+    RET
+
+:configure_keyboard_int_handler
+    MOV  r1, $__int_keyboard
+    MUL  r1, $word_width
+    MOV  r0, $__idt_start
+    ADD  r0, r1                 // r1 contains the address of the handler pointer in the idt
+    MOV  r1, &keyboard_int_handler
+    STOR r0, r1
+    UMI  $__int_keyboard
     RET
 
 // waits for a interrupt and then loop until vsync_flag is set
@@ -99,6 +135,7 @@ $word_width = 4
     CALL  @check_video
     CALL  @configure_vsync_int_handler
     CALL  @configure_timer_int_handler
+    CALL  @configure_keyboard_int_handler
     INE
 
 // setup some constants
@@ -127,9 +164,14 @@ $word_width = 4
     ADD  r5, r4                   // move to next pixel
     CMP  r5, r6
     JNE  @blue
+:blue_wait
+    CALL @wait_vsync
+    MOV  r7, &active
+    LOAD r7, r7
+    AND  r7, 1
+    JEQ  @blue_wait
 
 // start red
-    CALL @wait_vsync
     // select buffer 1, we will write in buffer 0
     PUSH r0
     MOV  r0, 0x00000001
@@ -145,8 +187,13 @@ $word_width = 4
     ADD  r5, r4                   // move to next pixel
     CMP  r5, r6
     JNE  @red
-
+:red_wait
     CALL @wait_vsync
+    MOV  r7, &active
+    LOAD r7, r7
+    AND  r7, 1
+    JEQ  @red_wait
+
     J    @loop
 
 :end
@@ -158,3 +205,5 @@ $word_width = 4
 #word color_blue   0x00ff0000
 #word color_black  0x00000000
 #word color_white  0x00ffffff
+#word active       0
+#word prev_key     0

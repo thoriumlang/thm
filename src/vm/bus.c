@@ -179,6 +179,7 @@ char *memory_mode_to_char(MemMode mode) {
 }
 
 void bus_dump(Bus *bus, addr_t from, addr_t count, FILE *file) {
+    // fixme this is in reverse order...
     fprintf(file, "\nDump of "AXHEX" - "AXHEX"\n", from, from + count - 1);
     int col = 0;
     for (addr_t address = from; address < from + count - 1; address += WORD_SIZE) {

@@ -60,31 +60,27 @@ int main(int argc, char **argv) {
         arch_print();
     }
 
-    Bus *bus = bus_create();
-
     Memory *ram = memory_create(options->ram_size, MEM_MODE_RW);
-    bus_mount(bus, ram, 0, "RAM");
-
+    Memory *rom = memory_create(ROM_SIZE, MEM_MODE_R);
+    Bus *bus = bus_create();
     PIC *pic = pic_create();
+    PIT *timer = pit_create(pic, 1000 * 1000, INT_TIMER);
+    Keyboard *keyboard = keyboard_create(pic);
+    Video *video = video_create(pic, keyboard, options->video != OPT_VIDEO_MODE_NONE);
+    CPU *cpu = cpu_create(bus, pic, options->registers);
+
+    bus_mount(bus, ram, 0, "RAM");
+    bus_mount(bus, keyboard_memory_get(keyboard), KEYBOARD_ADDRESS, "KB");
     bus_mount(bus, pic_memory_get(pic)->interrupt_handlers, INTERRUPT_DESCRIPTOR_TABLE_ADDRESS, "IDT");
     bus_mount(bus, pic_memory_get(pic)->interrupt_mask, INTERRUPT_MASK_ADDRESS, "IMask");
-
-    PIT *timer = pit_create(pic, 1000 * 1000, INT_TIMER);
-
-    Video *video = video_create(pic, options->video != OPT_VIDEO_MODE_NONE);
-    VideoMemory *memory = video_memory_get(video);
-    bus_mount(bus, memory->metadata, VIDEO_META_ADDRESS, "VMeta");
-    if (memory->buffer[0]) {
-        bus_mount(bus, memory->buffer[0], VIDEO_BUFFER_0_ADDRESS, "VBuf0");
+    bus_mount(bus, video_memory_get(video)->metadata, VIDEO_META_ADDRESS, "VMeta");
+    if (video_memory_get(video)->buffer[0]) {
+        bus_mount(bus, video_memory_get(video)->buffer[0], VIDEO_BUFFER_0_ADDRESS, "VBuf0");
     }
-    if (memory->buffer[1]) {
-        bus_mount(bus, memory->buffer[1], VIDEO_BUFFER_1_ADDRESS, "VBuf1");
+    if (video_memory_get(video)->buffer[1]) {
+        bus_mount(bus, video_memory_get(video)->buffer[1], VIDEO_BUFFER_1_ADDRESS, "VBuf1");
     }
-
-    Memory *rom = memory_create(ROM_SIZE, MEM_MODE_R);
     bus_mount(bus, rom, ROM_ADDRESS, "ROM");
-
-    CPU *cpu = cpu_create(bus, pic, options->registers);
 
     if (!load_file(bus, options->image, STACK_SIZE)) {
         return 1;
@@ -109,11 +105,11 @@ int main(int argc, char **argv) {
     if (options->print_dump) {
         cpu_state_print(cpu, stdout);
         bus_state_print(bus, stdout);
-        bus_dump(bus, 0, 16, stdout);
+        // bus_dump(bus, 0, 16, stdout);
         bus_dump(bus, STACK_SIZE, 128, stdout);
         bus_dump(bus, ROM_ADDRESS, 128, stdout);
-        bus_dump(bus, VIDEO_META_ADDRESS, VIDEO_META_SIZE, stdout);
-        bus_dump(bus, INTERRUPT_MASK_ADDRESS, INTERRUPTS_WORDS_COUNT * WORD_SIZE, stdout);
+        //bus_dump(bus, VIDEO_META_ADDRESS, VIDEO_META_SIZE, stdout);
+        //bus_dump(bus, INTERRUPT_MASK_ADDRESS, INTERRUPTS_WORDS_COUNT * WORD_SIZE, stdout);
         video_state_print(video, stdout);
     }
 
@@ -140,6 +136,7 @@ int main(int argc, char **argv) {
     memory_destroy(ram);
     memory_destroy(rom);
     video_destroy(video);
+    keyboard_destroy(keyboard);
     pic_destroy(pic);
 }
 
