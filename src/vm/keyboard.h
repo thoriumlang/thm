@@ -22,11 +22,9 @@
 typedef struct Keyboard Keyboard;
 typedef uint16_t keyboard_key;
 
-Keyboard *keyboard_create(PIC *pic);
+Keyboard *keyboard_create(Bus *bus, PIC *pic);
 
 void keyboard_destroy(Keyboard *this);
-
-Memory *keyboard_memory_get(Keyboard *this);
 
 void keyboard_key_pressed(Keyboard *this, keyboard_key key);
 

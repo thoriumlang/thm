@@ -49,6 +49,6 @@ MemError memory_word_get(Memory *memory, addr_t address, word_t *word);
 
 MemError memory_word_set(Memory *memory, addr_t address, word_t word);
 
-void * memory_raw_get(Memory *memory);
+void *memory_raw_get(Memory *memory);
 
 #endif //C_VM_MEMORY_H

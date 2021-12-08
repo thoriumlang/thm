@@ -56,16 +56,35 @@ void bus_destroy(Bus *bus) {
 BusError bus_memory_attach(Bus *bus, Memory *memory, addr_t from, char *name) {
     for (uint8_t i = 0; i < bus->zones_count; i++) {
         if (in_zone(&bus->zones[i], from)) {
-            return BUS_ERR_ZONE_OUT_OF_ORDER;
+            fprintf(stderr, "Cannot attach %s\n", name);
+            return BUS_ERR_ZONE_OUT_OF_ORDER; // todo force error handling / stop vm
         }
     }
 
-    bus->zones = realloc(bus->zones, sizeof(*bus->zones) * (bus->zones_count + 1));
-    Zone *new_zone = &bus->zones[bus->zones_count];
-    new_zone->memory = memory;
-    new_zone->from = from;
-    new_zone->name = name;
+    Zone *old_zones = bus->zones;
+    bus->zones = malloc(sizeof(*bus->zones) * (bus->zones_count + 1));
+
+    uint8_t i;
+    for (i = 0; i < bus->zones_count; i++) {
+        if (from < memory_max_address(old_zones[i].memory, old_zones[i].from)) {
+            break;
+        }
+        bus->zones[i] = old_zones[i];
+    }
+
+    bus->zones[i].memory = memory;
+    bus->zones[i].from = from;
+    bus->zones[i].name = name;
+
     bus->zones_count++;
+    for (i = i + 1; i < bus->zones_count; i++) {
+        bus->zones[i] = old_zones[i - 1];
+    }
+
+    if (old_zones) {
+        free(old_zones);
+    }
+
     return BUS_ERR_OK;
 }
 
@@ -146,7 +165,7 @@ void bus_state_print(Bus *bus, FILE *file) {
     }
 }
 
-JsonElement *bus_state_to_json(Bus *bus) {
+JsonElement *bus_json_get(Bus *bus) {
     JsonElement *root = json_array();
     for (int z = 0; z < bus->zones_count; z++) {
         char hex[32];
@@ -179,41 +198,47 @@ char *memory_mode_to_char(MemMode mode) {
 }
 
 void bus_dump(Bus *bus, addr_t from, addr_t count, FILE *file) {
-    // fixme this is in reverse order...
     fprintf(file, "\nDump of "AXHEX" - "AXHEX"\n", from, from + count - 1);
     int col = 0;
     for (addr_t address = from; address < from + count - 1; address += WORD_SIZE) {
         word_t word;
         if (bus_word_read(bus, address, &word) == BUS_ERR_OK) {
+            if (col % 4 == 0) {
+
+            }
             switch (col % 4) {
                 // todo make it dynamic regarding to the WORD_SIZE
                 case 0:
                     fprintf(file, "  "AHEX"  %02x %02x %02x %02x", address,
-                            word & 0x000000ff,
-                            (word >> 8) & 0x000000ff,
+                            (word >> 24) & 0x000000ff,
                             (word >> 16) & 0x000000ff,
-                            (word >> 24) & 0x000000ff);
+                            (word >> 8) & 0x000000ff,
+                            word & 0x000000ff
+                    );
                     break;
                 case 1:
                     fprintf(file, " %02x %02x %02x %02x",
-                            word & 0x000000ff,
-                            (word >> 8) & 0x000000ff,
+                            (word >> 24) & 0x000000ff,
                             (word >> 16) & 0x000000ff,
-                            (word >> 24) & 0x000000ff);
+                            (word >> 8) & 0x000000ff,
+                            word & 0x000000ff
+                    );
                     break;
                 case 2:
                     fprintf(file, "  %02x %02x %02x %02x",
-                            word & 0x000000ff,
-                            (word >> 8) & 0x000000ff,
+                            (word >> 24) & 0x000000ff,
                             (word >> 16) & 0x000000ff,
-                            (word >> 24) & 0x000000ff);
+                            (word >> 8) & 0x000000ff,
+                            word & 0x000000ff
+                    );
                     break;
                 case 3:
                     fprintf(file, " %02x %02x %02x %02x\n",
-                            word & 0x000000ff,
-                            (word >> 8) & 0x000000ff,
+                            (word >> 24) & 0x000000ff,
                             (word >> 16) & 0x000000ff,
-                            (word >> 24) & 0x000000ff);
+                            (word >> 8) & 0x000000ff,
+                            word & 0x000000ff
+                    );
                     break;
             }
             col++;

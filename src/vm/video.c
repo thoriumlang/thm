@@ -28,7 +28,6 @@
 #define VIDEO_BIT_ENABLED 2
 #define VIDEO_BIT_SYNC 3
 
-Video *g_video = NULL;
 keyboard_keycode codes[KB_KEY_LAST + 1] = {0};
 
 void init_codes() {
@@ -177,14 +176,7 @@ bool select_buffer(Video *this, word_t flags);
 
 void print_fps(Video *this);
 
-Video *video_create(PIC *pic, Keyboard *keyboard, bool enable) {
-    if (g_video != NULL) {
-        if (pic != g_video->pic || keyboard != g_video->keyboard) {
-            fprintf(stderr, "Cannot create 2 video instances");
-            exit(1);
-        }
-        return g_video;
-    }
+Video *video_create(Bus *bus, PIC *pic, Keyboard *keyboard, bool enable) {
     init_codes();
     Video *this = malloc(sizeof(Video));
     this->pic = pic;
@@ -199,6 +191,8 @@ Video *video_create(PIC *pic, Keyboard *keyboard, bool enable) {
     this->stats.fps = 0;
     this->stats.utime = 0;
 
+    bus_memory_attach(bus, this->memory->metadata, VIDEO_META_ADDRESS, "VMeta");
+
     if (enable) {
         this->flags_cache |= VIDEO_BIT_ENABLED;
     }
@@ -208,19 +202,16 @@ Video *video_create(PIC *pic, Keyboard *keyboard, bool enable) {
         this->memory->buffer[0] = memory_create(VIDEO_SCREEN_WIDTH * VIDEO_SCREEN_HEIGHT * 4, MEM_MODE_RW);
         this->memory->buffer[1] = memory_create(VIDEO_SCREEN_WIDTH * VIDEO_SCREEN_HEIGHT * 4, MEM_MODE_RW);
         this->buffer = memory_raw_get(this->memory->buffer[0]);
+
+        bus_memory_attach(bus, this->memory->buffer[0], VIDEO_BUFFER_0_ADDRESS, "VBuf0");
+        bus_memory_attach(bus, this->memory->buffer[1], VIDEO_BUFFER_1_ADDRESS, "VBuf1");
     } else {
         this->memory->buffer[0] = NULL;
         this->memory->buffer[1] = NULL;
         this->buffer = NULL;
     }
 
-    g_video = this;
-
     return this;
-}
-
-inline VideoMemory *video_memory_get(Video *this) {
-    return this->memory;
 }
 
 void video_kb_callback(struct mfb_window *window, mfb_key key, mfb_key_mod mod, bool isPressed) {
@@ -228,10 +219,12 @@ void video_kb_callback(struct mfb_window *window, mfb_key key, mfb_key_mod mod, 
         mfb_close(window);
     }
 
+    Video *video = (Video *) mfb_get_user_data(window);
+
     if (isPressed) {
-        keyboard_key_pressed(g_video->keyboard, codes[key] << 8 | mod);
+        keyboard_key_pressed(video->keyboard, codes[key] << 8 | mod);
     } else {
-        keyboard_key_released(g_video->keyboard, codes[key] << 8 | mod);
+        keyboard_key_released(video->keyboard, codes[key] << 8 | mod);
     }
 }
 
@@ -243,6 +236,7 @@ void video_loop(Video *this) {
     if (!this->window) {
         return;
     }
+    mfb_set_user_data(this->window, this);
     mfb_set_viewport(this->window,
                      0, 0,
                      VIDEO_SCREEN_WIDTH * VIDEO_SCREEN_SCALE,
@@ -316,7 +310,6 @@ void video_stop(Video *this) {
 }
 
 void video_destroy(Video *this) {
-    g_video = NULL;
     video_stop(this);
     for (int i = 0; i < 100; i++) {
         if (this->window == 0x0) {

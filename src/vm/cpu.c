@@ -39,7 +39,7 @@ CPU *cpu_create(Bus *bus, PIC *pic, uint8_t reg_count) {
     return cpu;
 }
 
-void cpu_start(CPU *cpu) {
+void cpu_loop(CPU *cpu) {
     cpu->state.running = 1;
     cpu->state.panic = CPU_ERR_OK;
     if (cpu->debug.print_op) {
@@ -82,7 +82,6 @@ void cpu_start(CPU *cpu) {
     }
     cpu->state.running = 0;
 }
-
 
 word_t cpu_fetch(CPU *cpu) {
     if (cpu->state.panic != CPU_ERR_OK){
@@ -246,7 +245,7 @@ void cpu_state_print(CPU *cpu, FILE *file) {
     }
 }
 
-JsonElement *cpu_state_to_json(CPU *cpu) {
+JsonElement *cpu_json_get(CPU *cpu) {
     JsonElement *registers = json_object();
     json_object_put(registers, "pc", json_number(cpu_pc_get(cpu)));
     json_object_put(registers, "sp", json_number(cpu_sp_get(cpu)));

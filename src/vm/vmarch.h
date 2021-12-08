@@ -69,11 +69,11 @@ typedef uint32_t addr_t;
 #define INT_VSYNC 4
 #define INT_KEYBOARD 5
 
-void arch_print();
+void vmarch_print();
 
-void arch_print_header();
+void vmarch_header_print();
 
-JsonElement *arch_json_get();
+JsonElement *vmarch_json_get();
 
 word_t vtoh(word_t word);
 

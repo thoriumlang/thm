@@ -25,11 +25,11 @@ typedef struct Memory {
     MemMode mode;
 } Memory;
 
-inline addr_t round_up(addr_t bytes);
+#define ROUND_UP(i) ((((i) + WORD_SIZE - 1) / WORD_SIZE) * WORD_SIZE)
 
 Memory *memory_create(addr_t bytes, MemMode mode) {
     Memory *memory = malloc(sizeof(Memory));
-    memory->size = round_up(bytes);
+    memory->size = ROUND_UP(bytes);
     memory->raw = malloc(memory->size);
     memory->mode = mode;
 
@@ -38,10 +38,6 @@ Memory *memory_create(addr_t bytes, MemMode mode) {
     }
 
     return memory;
-}
-
-addr_t round_up(addr_t bytes) {
-    return ((bytes + WORD_SIZE - 1) / WORD_SIZE) * WORD_SIZE;
 }
 
 void memory_destroy(Memory *memory) {

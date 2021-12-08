@@ -21,30 +21,13 @@
 #include "bus.h"
 #include "cpu.h"
 #include "memory.h"
-#include "json.h"
-#include "video.h"
-#include "pic.h"
-#include "pit.h"
+#include "vm.h"
 
-typedef struct VmThreadParam {
-    Options *options;
-    CPU *cpu;
-    Bus *bus;
-    Video *video;
-} VmThreadParam;
-
-void *cpu_loop(void *ptr);
-
-void print_json(CPU *cpu, Bus *bus);
+void *cpu_thread_run(void *ptr);
 
 int load_file(Bus *bus, char *file, addr_t from);
 
-void bus_mount(Bus *bus, Memory *memory, addr_t from, char *name) {
-    if (bus_memory_attach(bus, memory, from, name) != BUS_ERR_OK) {
-        fprintf(stderr, "Cannot mount %s in bus\n", name);
-        exit(1);
-    };
-}
+enum vm_config_video decode_video_mode(OptsVideMode video);
 
 int main(int argc, char **argv) {
     Options *options = opts_parse(argc, argv);
@@ -53,127 +36,69 @@ int main(int argc, char **argv) {
         return 0;
     }
     if (options->gen_header) {
-        arch_print_header();
+        vmarch_header_print();
         return 0;
     }
     if (options->print_arch) {
-        arch_print();
+        vmarch_print();
     }
 
-    Memory *ram = memory_create(options->ram_size, MEM_MODE_RW);
-    Memory *rom = memory_create(ROM_SIZE, MEM_MODE_R);
-    Bus *bus = bus_create();
-    PIC *pic = pic_create();
-    PIT *timer = pit_create(pic, 1000 * 1000, INT_TIMER);
-    Keyboard *keyboard = keyboard_create(pic);
-    Video *video = video_create(pic, keyboard, options->video != OPT_VIDEO_MODE_NONE);
-    CPU *cpu = cpu_create(bus, pic, options->registers);
+    VM *vm = vm_create((vm_config *) &(vm_config) {
+            .ram_size = options->ram_size,
+            .register_count = options->registers,
+            .video = decode_video_mode(options->video),
+    });
 
-    bus_mount(bus, ram, 0, "RAM");
-    bus_mount(bus, keyboard_memory_get(keyboard), KEYBOARD_ADDRESS, "KB");
-    bus_mount(bus, pic_memory_get(pic)->interrupt_handlers, INTERRUPT_DESCRIPTOR_TABLE_ADDRESS, "IDT");
-    bus_mount(bus, pic_memory_get(pic)->interrupt_mask, INTERRUPT_MASK_ADDRESS, "IMask");
-    bus_mount(bus, video_memory_get(video)->metadata, VIDEO_META_ADDRESS, "VMeta");
-    if (video_memory_get(video)->buffer[0]) {
-        bus_mount(bus, video_memory_get(video)->buffer[0], VIDEO_BUFFER_0_ADDRESS, "VBuf0");
-    }
-    if (video_memory_get(video)->buffer[1]) {
-        bus_mount(bus, video_memory_get(video)->buffer[1], VIDEO_BUFFER_1_ADDRESS, "VBuf1");
-    }
-    bus_mount(bus, rom, ROM_ADDRESS, "ROM");
-
-    if (!load_file(bus, options->image, STACK_SIZE)) {
+    if (!load_file(vm_bus_get(vm), options->image, STACK_SIZE)) {
         return 1;
     }
     if (options->rom != NULL) {
-        memory_mode_set(rom, MEM_MODE_RW);
-        if (!load_file(bus, options->rom, ROM_ADDRESS)) {
+        memory_mode_set(vm_rom_get(vm), MEM_MODE_RW);
+        if (!load_file(vm_bus_get(vm), options->rom, ROM_ADDRESS)) {
             return 1;
         }
-        memory_mode_set(rom, MEM_MODE_R);
+        memory_mode_set(vm_rom_get(vm), MEM_MODE_R);
     }
 
-    cpu_print_op_enable(cpu, options->print_steps);
-    // cpu_debug_enable(cpu, false);
-    cpu_pc_set(cpu, options->pc);
-    cpu_cs_set(cpu, options->pc); // FIXME
-    cpu_idt_set(cpu, INTERRUPT_DESCRIPTOR_TABLE_ADDRESS);
+    cpu_print_op_enable(vm_cpu_get(vm), options->print_steps);
+    cpu_pc_set(vm_cpu_get(vm), options->pc);
+    cpu_cs_set(vm_cpu_get(vm), options->pc); // FIXME
+    cpu_idt_set(vm_cpu_get(vm), INTERRUPT_DESCRIPTOR_TABLE_ADDRESS);
     for (int i = 0; i < options->registers; i++) {
-        cpu_register_set(cpu, i, (word_t) options->register_values[i]);
+        cpu_register_set(vm_cpu_get(vm), i, (word_t) options->register_values[i]);
     }
 
-    if (options->print_dump) {
-        cpu_state_print(cpu, stdout);
-        bus_state_print(bus, stdout);
-        // bus_dump(bus, 0, 16, stdout);
-        bus_dump(bus, STACK_SIZE, 128, stdout);
-        bus_dump(bus, ROM_ADDRESS, 128, stdout);
-        //bus_dump(bus, VIDEO_META_ADDRESS, VIDEO_META_SIZE, stdout);
-        //bus_dump(bus, INTERRUPT_MASK_ADDRESS, INTERRUPTS_WORDS_COUNT * WORD_SIZE, stdout);
-        video_state_print(video, stdout);
+    if (options->print_state) {
+        vm_state_print(vm, stdout);
     }
 
-    VmThreadParam p = {
-            .options = options,
-            .cpu = cpu,
-            .bus = bus,
-            .video = video
-    };
-    pthread_t cpu_thread;
-    pthread_create(&cpu_thread, NULL, cpu_loop, &p);
+    vm_start(vm);
 
-    pit_start(timer);
-    video_loop(video);
-    if (options->video == OPT_VIDEO_MODE_MASTER) {
-        cpu_stop(cpu);
-    }
-    pthread_join(cpu_thread, NULL);
-
-    pit_destroy(timer);
-    opts_free(options);
-    cpu_destroy(cpu);
-    bus_destroy(bus);
-    memory_destroy(ram);
-    memory_destroy(rom);
-    video_destroy(video);
-    keyboard_destroy(keyboard);
-    pic_destroy(pic);
-}
-
-void *cpu_loop(void *ptr) {
-    Options *options = ((VmThreadParam *) ptr)->options;
-    CPU *cpu = ((VmThreadParam *) ptr)->cpu;
-    Bus *bus = ((VmThreadParam *) ptr)->bus;
-    Video *video = ((VmThreadParam *) ptr)->video;
-
-    cpu_start(cpu);
-
-    if (options->print_dump) {
-        cpu_state_print(cpu, stdout);
-        bus_dump(bus, VIDEO_META_ADDRESS, VIDEO_META_SIZE, stdout);
-        video_state_print(video, stdout);
+    if (options->print_state) {
+        vm_state_print(vm, stdout);
     }
 
     if (options->print_json) {
-        print_json(cpu, bus);
+        char *json = json_serialize(vm_json_get(vm));
+        printf("%s\n", json);
+        free(json);
     }
 
-    if (options->video == OPT_VIDEO_MODE_SLAVE) {
-        video_stop(video);
-    }
-
-    return NULL;
+    vm_destroy(vm);
 }
 
-void print_json(CPU *cpu, Bus *bus) {
-    JsonElement *root = json_object();
-    json_object_put(root, "arch", arch_json_get());
-    json_object_put(root, "cpu", cpu_state_to_json(cpu));
-    json_object_put(root, "bus", bus_state_to_json(bus));
-
-    char *json = json_serialize(root);
-    fprintf(stdout, "%s\n", json);
-    free(json);
+enum vm_config_video decode_video_mode(OptsVideMode video) {
+    switch (video) {
+        case OPT_VIDEO_MODE_NONE:
+            return VM_CONFIG_VIDEO_NONE;
+        case OPT_VIDEO_MODE_MASTER:
+            return VM_CONFIG_VIDEO_MASTER;
+        case OPT_VIDEO_MODE_SLAVE:
+            return VM_CONFIG_VIDEO_SLAVE;
+        default:
+            fprintf(stderr, "unsupported video mode: %i", video);
+            exit(1);
+    }
 }
 
 int load_file(Bus *bus, char *file, addr_t from) {

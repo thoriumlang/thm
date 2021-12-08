@@ -19,6 +19,7 @@
 #include "vmarch.h"
 #include "pic.h"
 #include "memory.h"
+#include "bus.h"
 
 pthread_cond_t pic_got_interrupt = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t pic_got_interrupt_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -39,12 +40,16 @@ bool is_active(const PIC *this, int_loc_t *loc);
 
 bool is_masked(const PIC *this, int_loc_t *loc);
 
-PIC *pic_create() {
+PIC *pic_create(Bus *bus) {
     PIC *this = malloc(sizeof(PIC));
 
     this->memory = malloc(sizeof(PICMemory));
     this->memory->interrupt_handlers = memory_create(INTERRUPTS_COUNT * ADDR_SIZE, MEM_MODE_RW);
     this->memory->interrupt_mask = memory_create(INTERRUPTS_WORDS_COUNT * WORD_SIZE, MEM_MODE_RW);
+
+    bus_memory_attach(bus, this->memory->interrupt_handlers, INTERRUPT_DESCRIPTOR_TABLE_ADDRESS, "IDT");
+    bus_memory_attach(bus, this->memory->interrupt_mask, INTERRUPT_MASK_ADDRESS, "IMask");
+
     this->active_interrupts = malloc(INTERRUPTS_WORDS_COUNT * WORD_SIZE);
 
     for (int i = 0; i < INTERRUPTS_WORDS_COUNT; i++) {
@@ -57,11 +62,7 @@ PIC *pic_create() {
     return this;
 }
 
-PICMemory *pic_memory_get(PIC *this) {
-    return this->memory;
-}
-
-void pic_interrupt_mask(PIC *this, interrupt_t interrupt){
+void pic_interrupt_mask(PIC *this, interrupt_t interrupt) {
     int_loc_t loc = find_interrupt_location(interrupt);
     word_t mask;
     memory_word_get(this->memory->interrupt_mask, loc.word_index * WORD_SIZE, &mask);

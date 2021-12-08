@@ -36,7 +36,7 @@ typedef struct CPU CPU;
 
 CPU *cpu_create(Bus *bus, PIC *pic, uint8_t reg_count);
 
-void cpu_start(CPU *cpu);
+void cpu_loop(CPU *cpu);
 
 void cpu_stop(CPU *cpu);
 
@@ -72,6 +72,6 @@ void cpu_debug_enable(CPU *cpu, bool enable);
 
 void cpu_state_print(CPU *cpu, FILE *file);
 
-JsonElement *cpu_state_to_json(CPU *cpu);
+JsonElement *cpu_json_get(CPU *cpu);
 
 #endif // C_VM_CPU_H

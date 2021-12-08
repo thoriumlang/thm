@@ -16,11 +16,7 @@ for op in `cat $FILE`; do
     OP_INDEX=`echo "$OP_INDEX + 1" | bc`
   done
 
-  echo "#ifdef OP_$(echo $FN_NAME |  tr '[:lower:]' '[:upper:]')"
   echo "        &op_$FN_NAME, // 0x`printf '%02x\n' $BYTECODE`,"
-  echo "#else"
-  echo "        NULL,"
-  echo "#endif"
   OP_INDEX=`echo "$OP_INDEX + 1" | bc`
 done
 while [[ $OP_INDEX -lt 256 ]]; do

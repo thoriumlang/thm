@@ -20,6 +20,7 @@
 #include <pthread.h>
 #include "vmarch.h"
 #include "memory.h"
+#include "bus.h"
 
 extern pthread_cond_t pic_got_interrupt;
 extern pthread_mutex_t pic_got_interrupt_lock;
@@ -33,9 +34,7 @@ typedef struct PICMemory {
 
 typedef uint8_t interrupt_t;
 
-PIC *pic_create();
-
-PICMemory *pic_memory_get(PIC *this);
+PIC *pic_create(Bus *bus);
 
 void pic_interrupt_mask(PIC *this, interrupt_t interrupt);
 

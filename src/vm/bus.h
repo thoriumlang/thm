@@ -43,7 +43,7 @@ BusError bus_word_write(Bus *bus, addr_t address, word_t word);
 
 void bus_state_print(Bus *bus, FILE *file);
 
-JsonElement *bus_state_to_json(Bus *bus);
+JsonElement *bus_json_get(Bus *bus);
 
 void bus_dump(Bus *bus, addr_t from, addr_t count, FILE *file);
 

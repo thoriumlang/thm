@@ -19,7 +19,7 @@
 #include "vmarch.h"
 #include "json.h"
 
-void arch_print() {
+void vmarch_print() {
     printf("Architecture\n");
     printf("  addr_size:             %i\n", ADDR_SIZE);
     printf("  word_size:             %i\n", WORD_SIZE);
@@ -46,7 +46,7 @@ void arch_print() {
     printf("  keyboard end:          "AXHEX"\n", KEYBOARD_ADDRESS + KEYBOARD_MEMORY_SIZE - 1);
 }
 
-void arch_print_header() {
+void vmarch_header_print() {
     printf("// addresses\n");
     printf("$__rom_start = "AXHEX"\n", ROM_ADDRESS);
     printf("$__video_meta = "AXHEX"\n", VIDEO_META_ADDRESS);
@@ -62,7 +62,7 @@ void arch_print_header() {
     printf("$__int_keyboard = 0x%02x\n", INT_KEYBOARD);
 }
 
-JsonElement *arch_json_get() {
+JsonElement *vmarch_json_get() {
     char hex[32];
     JsonElement *arch = json_object();
     json_object_put(arch, "addr_size", json_number(ADDR_SIZE));

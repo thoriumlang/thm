@@ -37,7 +37,7 @@ Options *opts_parse(int argc, char **argv) {
     opts->gen_header = 0;
     opts->print_steps = 0;
     opts->print_arch = 0;
-    opts->print_dump = 0;
+    opts->print_state = 0;
     opts->print_json = 0;
     opts->video = OPT_VIDEO_MODE_NONE;
 
@@ -47,7 +47,7 @@ Options *opts_parse(int argc, char **argv) {
             {"help",            no_argument, &opts->help_flag,   1},
             {"print-arch",      no_argument, &opts->print_arch,  1},
             {"gen-header",      no_argument, &opts->gen_header,  1},
-            {"print-dump",      no_argument, &opts->print_dump,  1},
+            {"print-state",     no_argument, &opts->print_state, 1},
             {"print-steps",     no_argument, &opts->print_steps, 1},
             {"print-json",      no_argument, &opts->print_json,  1},
             {"registers",       required_argument, NULL,         'r'},

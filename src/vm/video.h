@@ -28,9 +28,7 @@ typedef struct VideoMemory {
 
 typedef struct Video Video;
 
-Video *video_create(PIC *pic, Keyboard *keyboard, bool enable);
-
-VideoMemory *video_memory_get(Video *this);
+Video *video_create(Bus *bus, PIC *pic, Keyboard *keyboard, bool enable);
 
 void video_loop(Video *this);
 

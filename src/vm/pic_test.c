@@ -23,7 +23,7 @@
 
 static void interrupt_handler_get(void **state) {
     for (int i = 0; i < INTERRUPTS_COUNT; i++) {
-        PIC *pic = pic_create();
+        PIC *pic = pic_create(NULL);
 
         pic_interrupt_unmask(pic, i);
         pic_interrupt_trigger(pic, i);
@@ -36,7 +36,7 @@ static void interrupt_handler_get(void **state) {
 
 static void interrupt_mask_unmask(void **state) {
     for (int i = 0; i < INTERRUPTS_COUNT; i++) {
-        PIC *pic = pic_create();
+        PIC *pic = pic_create(NULL);
 
         pic_interrupt_mask(pic, i);
         pic_interrupt_trigger(pic, i);
@@ -58,3 +58,7 @@ int main() {
     cmocka_set_message_output(CM_OUTPUT_STDOUT);
     return cmocka_run_group_tests(tests, NULL, NULL);
 }
+
+// dummies
+
+BusError bus_memory_attach(Bus *bus, Memory *memory, addr_t from, char *name) { return BUS_ERR_OK; }

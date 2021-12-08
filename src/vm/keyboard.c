@@ -24,20 +24,19 @@ typedef struct Keyboard {
     Memory *memory;
 } Keyboard;
 
-Keyboard *keyboard_create(PIC *pic) {
+Keyboard *keyboard_create(Bus *bus, PIC *pic) {
     Keyboard *keyboard = malloc(sizeof(Keyboard));
     keyboard->pic = pic;
     keyboard->memory = memory_create(KEYBOARD_MEMORY_SIZE, MEM_MODE_RW);
+
+    bus_memory_attach(bus, keyboard->memory, KEYBOARD_ADDRESS, "KB");
+
     return keyboard;
 }
 
 void keyboard_destroy(Keyboard *this) {
     free(this->memory);
     free(this);
-}
-
-Memory *keyboard_memory_get(Keyboard *this) {
-    return this->memory;
 }
 
 void keyboard_key_pressed(Keyboard *this, keyboard_key key) {

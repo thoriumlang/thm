@@ -11,6 +11,7 @@ add_executable(thm
         main.c
         opts.c opts.h
         vmarch.c vmarch.h
+        vm.c vm.h
         bus.c bus.h
         cpu.c cpu.h
         ops.c ops.h
@@ -43,7 +44,7 @@ endif()
 # tests
 include(cmake/FetchCMocka.cmake)
 
-add_executable(pic_test pic_test.c pic.c memory.c)
+add_executable(pic_test pic_test.c pic.c memory.c) # todo get rid of memory.c here...
 target_compile_features(pic_test PRIVATE c_std_99)
 target_link_libraries(pic_test PRIVATE cmocka-static)
 
@@ -51,11 +52,11 @@ add_executable(memory_test memory_test.c memory.c)
 target_compile_features(memory_test PRIVATE c_std_99)
 target_link_libraries(memory_test PRIVATE cmocka-static)
 
-add_executable(bus_test bus_test.c bus.c memory.c json.c ${CCAN_JSON})
+add_executable(bus_test bus_test.c bus.c memory.c) # todo get rid of memory.c here...
 target_compile_features(bus_test PRIVATE c_std_99)
 target_link_libraries(bus_test PRIVATE cmocka-static)
 
-add_executable(cpu_test cpu_test.c cpu.c vmarch.c pic.c bus.c memory.c ops.c ops.h json.c ${CCAN_JSON})
+add_executable(cpu_test cpu_test.c cpu.c)
 target_compile_features(cpu_test PRIVATE c_std_99)
 target_link_libraries(cpu_test PRIVATE cmocka-static)
 

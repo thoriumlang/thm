@@ -14,36 +14,41 @@
  * limitations under the License.
  */
 
-#ifndef C_VM_OPTS_H
-#define C_VM_OPTS_H
+#ifndef THM_VM_H
+#define THM_VM_H
 
 #include "vmarch.h"
+#include "bus.h"
+#include "cpu.h"
+#include "video.h"
+#include "pit.h"
 
-typedef enum {
-    OPT_VIDEO_MODE_NONE, OPT_VIDEO_MODE_MASTER, OPT_VIDEO_MODE_SLAVE
-} OptsVideMode;
+typedef struct VM VM;
 
-typedef struct {
-    char *rom;
-    char *image;
+enum vm_config_video {
+    VM_CONFIG_VIDEO_NONE, VM_CONFIG_VIDEO_MASTER, VM_CONFIG_VIDEO_SLAVE
+};
+
+typedef struct vm_config {
     addr_t ram_size;
-    addr_t pc;
-    int registers;
-    int *register_values;
-    int help_flag;
-    int gen_header;
-    int print_steps;
-    int print_arch;
-    int print_state;
-    int print_json;
-    OptsVideMode video;
-} Options;
+    uint8_t register_count;
+    enum vm_config_video video;
+} vm_config;
 
-Options *opts_parse(int argc, char **argv);
+VM *vm_create(vm_config *config);
 
-void opts_free(Options *opts);
+void vm_destroy(VM *this);
 
-void opts_print_help(char *prog_name);
+void vm_start(VM *this);
 
+JsonElement *vm_json_get(VM *this);
 
-#endif //C_VM_OPTS_H
+void vm_state_print(VM *this, FILE *file);
+
+Bus *vm_bus_get(VM *this);
+
+CPU *vm_cpu_get(VM *this);
+
+Memory *vm_rom_get(VM *this);
+
+#endif //THM_VM_H
