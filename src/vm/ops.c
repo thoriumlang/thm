@@ -892,4 +892,18 @@ void op_xdbg(CPU *cpu, word_t word) {
     }
 }
 
+void op_xpse(CPU *cpu, word_t word) {
+    cpu->debug.print_op = 1;
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tXPSE\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
+    }
+}
+
+void op_xpsd(CPU *cpu, word_t word) {
+    if (cpu->debug.print_op) {
+        printf("  %lu\t"AXHEX"\tXPSD\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
+    }
+    cpu->debug.print_op = 0;
+}
+
 #include "ops_array.h"

@@ -179,6 +179,8 @@ impl<'t> Parser<'t> {
             "WFI" => self.op_void(Op::Wfi, position),
             "XBM" => self.op_b(Op::Xbm, position),
             "XDBG" => self.op_void(Op::Xdbg, position),
+            "XPSE" => self.op_void(Op::Xpse, position),
+            "XPSD" => self.op_void(Op::Xpsd, position),
             "XOR" => self.op_rr_rw(Op::XorRR, Op::XorRW, position),
             op => Err(format!("Invalid mnemonic '{}' at {}", op, position).into())
         };
@@ -678,6 +680,8 @@ mod tests {
         ret:    ("RET\n", Op::Ret),
         wfi:    ("WFI\n", Op::Wfi),
         xdbg:   ("XDBG\n", Op::Xdbg),
+        xpse:   ("XPSE\n", Op::Xpse),
+        xpsd:   ("XPSD\n", Op::Xpsd),
     }
 
     op_a_test! {
