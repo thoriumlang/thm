@@ -128,11 +128,11 @@ impl<'t> Parser<'t> {
             "word" => {
                 let identifier = match self.read_next() {
                     Some(Token::Identifier(_, str)) => str,
-                    _ => return Err(format!("Expected <identifier> for directive '#{}' at {}",name, position).into()),
+                    _ => return Err(format!("Expected <string> for directive '#{}' at {}", name, position).into()),
                 };
                 let value = match self.read_next() {
                     Some(Token::Integer(_, val)) => val,
-                    _ => return Err(format!("Expected <value> for directive '#{}' at {}",name, position).into()),
+                    _ => return Err(format!("Expected <value> for directive '#{}' at {}", name, position).into()),
                 };
 
                 if self.read_eol() {
@@ -178,6 +178,7 @@ impl<'t> Parser<'t> {
             "IRET" => self.op_void(Op::Iret, position),
             "WFI" => self.op_void(Op::Wfi, position),
             "XBM" => self.op_b(Op::Xbm, position),
+            "XBRK" => self.op_void(Op::Xbrk, position),
             "XDBG" => self.op_void(Op::Xdbg, position),
             "XPSE" => self.op_void(Op::Xpse, position),
             "XPSD" => self.op_void(Op::Xpsd, position),
@@ -200,7 +201,7 @@ impl<'t> Parser<'t> {
                 0..=255 => Some(Ok(Instruction::IB(op, v as u8))),
                 _ => None,
             },
-            Some(Token::Variable(_,name)) => match self.symbols.get(&name) {
+            Some(Token::Variable(_, name)) => match self.symbols.get(&name) {
                 Some(Token::Integer(_, v)) => match v {
                     0..=255 => Some(Ok(Instruction::IB(op, *v as u8))),
                     _ => None,
@@ -208,7 +209,7 @@ impl<'t> Parser<'t> {
                 _ => None
             },
             _ => None
-        }.unwrap_or( Err(format!("Expected <b> or <var> at {}", position).into()));
+        }.unwrap_or(Err(format!("Expected <b> or <var> at {}", position).into()));
 
         if self.read_eol() {
             return instruction;
@@ -679,6 +680,7 @@ mod tests {
         iret:   ("IRET\n", Op::Iret),
         ret:    ("RET\n", Op::Ret),
         wfi:    ("WFI\n", Op::Wfi),
+        xbrk:   ("XBRK\n", Op::Xbrk),
         xdbg:   ("XDBG\n", Op::Xdbg),
         xpse:   ("XPSE\n", Op::Xpse),
         xpsd:   ("XPSD\n", Op::Xpsd),

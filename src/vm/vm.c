@@ -81,6 +81,10 @@ void vm_start(VM *this) {
     pthread_join(cpu_thread, NULL);
 }
 
+void vm_attach_cpu_debugger(VM *this, CpuDebugger *debugger) {
+    cpu_debugger_set(this->cpu, debugger);
+}
+
 void *cpu_thread_run(void *ptr) {
     VM *vm = ((VM *) ptr);
 

@@ -22,6 +22,7 @@
 #include "cpu.h"
 #include "video.h"
 #include "pit.h"
+#include "debugger.h"
 
 typedef struct VM VM;
 
@@ -40,6 +41,8 @@ VM *vm_create(vm_config *config);
 void vm_destroy(VM *this);
 
 void vm_start(VM *this);
+
+void vm_attach_cpu_debugger(VM *this, CpuDebugger *debugger);
 
 JsonElement *vm_json_get(VM *this);
 

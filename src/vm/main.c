@@ -22,6 +22,7 @@
 #include "cpu.h"
 #include "memory.h"
 #include "vm.h"
+#include "debugger.h"
 
 void *cpu_thread_run(void *ptr);
 
@@ -48,6 +49,9 @@ int main(int argc, char **argv) {
             .register_count = options->registers,
             .video = decode_video_mode(options->video),
     });
+
+    CpuDebugger *debugger = cpu_debugger_create();
+    vm_attach_cpu_debugger(vm, debugger);
 
     if (!load_file(vm_bus_get(vm), options->image, STACK_SIZE)) {
         return 1;
@@ -84,6 +88,7 @@ int main(int argc, char **argv) {
         free(json);
     }
 
+    cpu_debugger_destroy(debugger);
     vm_destroy(vm);
 }
 

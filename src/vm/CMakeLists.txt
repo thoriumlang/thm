@@ -21,6 +21,8 @@ add_executable(thm
         keyboard.c keyboard.h
         time.c time.h
         pit.c pit.h
+        debugger_lexer.c debugger_lexer.h
+        debugger.c debugger.h
         json.c json.h ${CCAN_JSON})
 target_link_libraries(thm PRIVATE minifb)
 

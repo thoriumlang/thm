@@ -444,13 +444,13 @@ mod tests {
 
     #[test]
     fn test_identifier() {
-        let r = Lexer::from_text(" identifier ").next();
+        let r = Lexer::from_text(" string ").next();
         assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
 
         let item = r.unwrap();
         assert_eq!(true, item.is_ok(), "Expected Ok(Token::Identifier), got {:?}", item);
 
-        let expected = Token::Identifier(Position::new(1, 2), "identifier".to_string());
+        let expected = Token::Identifier(Position::new(1, 2), "string".to_string());
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }

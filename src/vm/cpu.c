@@ -23,6 +23,7 @@
 #include "bus.h"
 #include "ops.h"
 #include "pic.h"
+#include "debugger.h"
 
 op_ptr cpu_decode(CPU *cpu, word_t word);
 
@@ -33,6 +34,7 @@ CPU *cpu_create(Bus *bus, PIC *pic, uint8_t reg_count) {
     cpu->pic = pic;
     cpu->registers = malloc(sizeof(*cpu->registers) * reg_count);
     cpu->register_count = reg_count;
+    cpu->debugger = NULL;
 
     cpu_reset(cpu);
 
@@ -68,6 +70,9 @@ void cpu_loop(CPU *cpu) {
             op_ptr op = cpu_decode(cpu, word);
             if (!cpu->state.panic) {
                 if (op) {
+                    if (cpu->debug.trap == 1 && cpu->debugger != NULL) {
+                        cpu->state.running = cpu->debugger->call(cpu, word, cpu->bus, cpu->debugger->data);
+                    }
                     op(cpu, word);
                     cpu->debug.step++;
                 } else {
@@ -126,6 +131,7 @@ void cpu_reset(CPU *cpu) {
     cpu->state.panic = 0;
     cpu->debug.print_op = 0;
     cpu->debug.print_interrupts = 0;
+    cpu->debug.trap = 0;
     cpu->debug.step = 0;
 }
 
@@ -175,16 +181,20 @@ void cpu_idt_set(CPU *cpu, addr_t addr) {
     cpu->idt = addr;
 }
 
-word_t cpu_idt_get(CPU * cpu) {
+word_t cpu_idt_get(CPU *cpu) {
     return cpu->idt;
 }
 
-word_t cpu_ir_get(CPU * cpu) {
+word_t cpu_ir_get(CPU *cpu) {
     return cpu->ir;
 }
 
 void cpu_interrupt_trigger(CPU *cpu, uint8_t interrupt) {
     pic_interrupt_trigger(cpu->pic, interrupt);
+}
+
+void cpu_debugger_set(CPU *cpu, CpuDebugger *debugger) {
+    cpu->debugger = debugger;
 }
 
 void cpu_flags_update(CPU *cpu, sword_t value) {

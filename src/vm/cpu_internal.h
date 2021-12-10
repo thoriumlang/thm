@@ -17,6 +17,13 @@
 #ifndef C_VM_CPU_INTERNAL_H
 #define C_VM_CPU_INTERNAL_H
 
+typedef int (*cpu_trap_handler_ptr)(struct CPU *cpu, word_t word, Bus *bus, void *data);
+
+typedef struct CpuDebugger {
+    cpu_trap_handler_ptr call;
+    void *data;
+} CpuDebugger;
+
 typedef struct CPU {
     Bus *bus;
     PIC *pic;
@@ -33,14 +40,17 @@ typedef struct CPU {
         uint8_t negative: 1;
     } flags;
     struct {
-        uint8_t running: 1;
-        CpuError panic;
-    } state;
-    struct {
         uint8_t print_op: 1;
         uint8_t print_interrupts: 1;
+        uint8_t trap: 1;
         unsigned long step;
+        char instructions[5];
     } debug;
+    struct {
+        CpuError panic;
+        uint8_t running: 1;
+    } state;
+    CpuDebugger *debugger;
 } CPU;
 
 #include "cpu_internal_gen.h"
@@ -50,5 +60,7 @@ word_t cpu_fetch(CPU *cpu);
 word_t cpu_read_pc_word(CPU *cpu, uint8_t index);
 
 void cpu_flags_update(CPU *cpu, sword_t value);
+
+char *cpu_instruction_to_string(CPU *cpu, word_t word);
 
 #endif //C_VM_CPU_INTERNAL_H

@@ -51,11 +51,9 @@ char *register_name(uint8_t from) {
     return buf;
 }
 
-char *instruction_to_string(CPU *cpu, word_t word, ...);
-
 #define PRINT_INSTRUCTION(cpu, word) { \
    if ((cpu)->debug.print_op) { \
-        char *s = instruction_to_string((cpu), (word)); \
+        char *s = cpu_instruction_to_string((cpu), (word)); \
         printf("%s\n", s); \
         free(s); \
     } \
@@ -759,6 +757,11 @@ void op_xbm(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 }
 
+void op_xbrk(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+    cpu->debug.trap = 1;
+}
+
 void op_xdbg(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 }
@@ -775,7 +778,7 @@ void op_xpsd(CPU *cpu, word_t word) {
 
 #include "ops_array.h"
 
-char *instruction_to_string(CPU *cpu, word_t word, ...) {
+char *cpu_instruction_to_string(CPU *cpu, word_t word) {
     char *buffer = malloc(128);
     uint8_t op = ((uint8_t *) &word)[0];
     addr_t addr = cpu->pc - ADDR_SIZE;
@@ -791,6 +794,7 @@ char *instruction_to_string(CPU *cpu, word_t word, ...) {
         case RET:
         case WFI:
         case XBM:
+        case XBRK:
         case XDBG:
         case XPSE:
         case XPSD:
