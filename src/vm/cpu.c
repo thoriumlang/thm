@@ -84,15 +84,20 @@ void cpu_loop(CPU *cpu) {
 }
 
 word_t cpu_fetch(CPU *cpu) {
-    if (cpu->state.panic != CPU_ERR_OK){
+    word_t word = cpu_read_pc_word(cpu, 0);
+    cpu->pc += ADDR_SIZE;
+    return word;
+}
+
+word_t cpu_read_pc_word(CPU *cpu, uint8_t index) {
+    if (cpu->state.panic != CPU_ERR_OK) {
         return 0;
     }
     word_t word;
-    if (bus_word_read(cpu->bus, cpu->pc, &word) != BUS_ERR_OK) {
+    if (bus_word_read(cpu->bus, cpu->pc + index * WORD_SIZE, &word) != BUS_ERR_OK) {
         cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
         return 0;
     }
-    cpu->pc += ADDR_SIZE;
     return word;
 }
 

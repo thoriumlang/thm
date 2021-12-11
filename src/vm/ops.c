@@ -22,11 +22,13 @@
 
 #include <string.h>
 #include <pthread.h>
+#include <stdlib.h>
 #include "vmarch.h"
 #include "cpu.h"
 #include "cpu_internal.h"
 
-void register_name(uint8_t from, char *buf) {
+char *register_name(uint8_t from) {
+    char *buf = malloc(5);
     switch (from) {
         case REG_IR:
             strcpy(buf, "ir");
@@ -46,37 +48,39 @@ void register_name(uint8_t from, char *buf) {
         default:
             sprintf(buf, "r%i", from);
     }
+    return buf;
+}
+
+char *instruction_to_string(CPU *cpu, word_t word, ...);
+
+#define PRINT_INSTRUCTION(cpu, word) { \
+   if ((cpu)->debug.print_op) { \
+        char *s = instruction_to_string((cpu), (word)); \
+        printf("%s\n", s); \
+        free(s); \
+    } \
 }
 
 void op_nop(CPU *cpu, word_t word) {
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tNOP\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
-    }
+    PRINT_INSTRUCTION(cpu, word)
 }
 
 void op_halt(CPU *cpu, word_t word) {
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tHALT\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
-    }
+    PRINT_INSTRUCTION(cpu, word)
     cpu->state.running = 0;
 }
 
 void op_panic(CPU *cpu, word_t word) {
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tPANIC\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
-    }
+    PRINT_INSTRUCTION(cpu, word)
     if (!cpu->state.panic) {
         cpu->state.panic = CPU_ERR_PANIC;
     }
 }
 
 void op_push(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t r = ((uint8_t *) &word)[1];
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tPUSH r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, r);
-    }
-
     word_t value;
     if ((cpu->state.panic = cpu_register_get(cpu, r, &value)) == CPU_ERR_OK) {
         cpu->sp -= WORD_SIZE;
@@ -87,12 +91,10 @@ void op_push(CPU *cpu, word_t word) {
 }
 
 void op_push_rr(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t r0 = ((uint8_t *) &word)[1];
     uint8_t r1 = ((uint8_t *) &word)[2];
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tPUSH r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, r0, r1);
-    }
 
     word_t value;
     if ((cpu->state.panic = cpu_register_get(cpu, r0, &value)) == CPU_ERR_OK) {
@@ -110,13 +112,11 @@ void op_push_rr(CPU *cpu, word_t word) {
 }
 
 void op_push_rrr(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t r0 = ((uint8_t *) &word)[1];
     uint8_t r1 = ((uint8_t *) &word)[2];
     uint8_t r2 = ((uint8_t *) &word)[3];
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tPUSH r%i, r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, r0, r1, r2);
-    }
 
     word_t value;
     if ((cpu->state.panic = cpu_register_get(cpu, r0, &value)) == CPU_ERR_OK) {
@@ -140,9 +140,7 @@ void op_push_rrr(CPU *cpu, word_t word) {
 }
 
 void op_pusha(CPU *cpu, word_t word) {
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tPUSHA\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
-    }
+    PRINT_INSTRUCTION(cpu, word)
 
     for (int r = 0; r < cpu->register_count; r++) {
         word_t value;
@@ -157,12 +155,9 @@ void op_pusha(CPU *cpu, word_t word) {
 }
 
 void op_pop(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t r = ((uint8_t *) &word)[1];
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tPOP  r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, r);
-    }
-
     word_t value;
     if (bus_word_read(cpu->bus, cpu->sp, &value) != BUS_ERR_OK) {
         cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
@@ -173,12 +168,10 @@ void op_pop(CPU *cpu, word_t word) {
 }
 
 void op_pop_rr(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t r0 = ((uint8_t *) &word)[1];
     uint8_t r1 = ((uint8_t *) &word)[2];
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tPOP  r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, r0, r1);
-    }
 
     word_t value;
     if (bus_word_read(cpu->bus, cpu->sp, &value) != BUS_ERR_OK) {
@@ -197,13 +190,11 @@ void op_pop_rr(CPU *cpu, word_t word) {
 }
 
 void op_pop_rrr(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t r0 = ((uint8_t *) &word)[1];
     uint8_t r1 = ((uint8_t *) &word)[2];
     uint8_t r2 = ((uint8_t *) &word)[3];
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tPOP  r%i, r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, r0, r1, r2);
-    }
 
     word_t value;
     if (bus_word_read(cpu->bus, cpu->sp, &value) != BUS_ERR_OK) {
@@ -229,9 +220,7 @@ void op_pop_rrr(CPU *cpu, word_t word) {
 }
 
 void op_popa(CPU *cpu, word_t word) {
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tPOPA\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
-    }
+    PRINT_INSTRUCTION(cpu, word)
 
     for (int r = cpu->register_count - 1; r >= 0; r--) {
         word_t value;
@@ -246,29 +235,21 @@ void op_popa(CPU *cpu, word_t word) {
 }
 
 void op_mov_rw(CPU *cpu, word_t word) {
-    uint8_t to = ((uint8_t *) &word)[1];
+    PRINT_INSTRUCTION(cpu, word)
 
+    uint8_t to = ((uint8_t *) &word)[1];
     word_t val = cpu_fetch(cpu);
     if (cpu->state.panic != CPU_ERR_OK) {
         return;
     }
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tMOV  r%i, "WXHEX"\n", cpu->debug.step, cpu->pc - 2 * ADDR_SIZE, to, val);
-    }
     cpu->state.panic = cpu_register_set(cpu, to, val);
 }
 
-
 void op_mov_rr(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t to = ((uint8_t *) &word)[1];
     uint8_t from = ((uint8_t *) &word)[2];
-
-    if (cpu->debug.print_op) {
-        char from_name[5];
-        register_name(from, from_name);
-        printf("  %lu\t"AXHEX"\tMOV  r%i, %s\n", cpu->debug.step, cpu->pc - ADDR_SIZE, to, from_name);
-    }
 
     word_t value;
     switch (from) {
@@ -287,12 +268,10 @@ void op_mov_rr(CPU *cpu, word_t word) {
 }
 
 void op_cmp(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t a = ((uint8_t *) &word)[1];
     uint8_t b = ((uint8_t *) &word)[2];
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tCMP  r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b);
-    }
 
     word_t a_val;
     if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
@@ -306,23 +285,14 @@ void op_cmp(CPU *cpu, word_t word) {
 }
 
 void op_jseq(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     addr_t address = 0;
     addr_t pc = cpu->pc;
-    if (cpu->flags.zero == 1 || cpu->debug.print_op) {
+    if (cpu->flags.zero == 1) {
         address = cpu_fetch(cpu);
         if (cpu->state.panic != CPU_ERR_OK) {
             return;
-        }
-
-        if (cpu->debug.print_op) {
-            printf("  %lu\t"AXHEX"\tJEQ  "AXHEX"\t\t// cs="AXHEX"    z=%i -> %s\n",
-                   cpu->debug.step,
-                   cpu->pc - 2 * ADDR_SIZE,
-                   address,
-                   cpu->cs,
-                   cpu->flags.zero,
-                   cpu->flags.zero == 0 ? "no jump" : "jump"
-            );
         }
     }
 
@@ -331,22 +301,14 @@ void op_jseq(CPU *cpu, word_t word) {
 }
 
 void op_jaeq(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     addr_t address = 0;
     addr_t pc = cpu->pc;
-    if (cpu->flags.zero == 1 || cpu->debug.print_op) {
+    if (cpu->flags.zero == 1) {
         address = cpu_fetch(cpu);
         if (cpu->state.panic != CPU_ERR_OK) {
             return;
-        }
-
-        if (cpu->debug.print_op) {
-            printf("  %lu\t"AXHEX"\tJEQ  "AXHEX"\t\t// z=%i -> %s\n",
-                   cpu->debug.step,
-                   cpu->pc - 2 * ADDR_SIZE,
-                   address,
-                   cpu->flags.zero,
-                   cpu->flags.zero == 0 ? "no jump" : "jump"
-            );
         }
     }
 
@@ -355,23 +317,14 @@ void op_jaeq(CPU *cpu, word_t word) {
 }
 
 void op_jsne(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     addr_t address = 0;
     addr_t pc = cpu->pc;
-    if (cpu->flags.zero == 0 || cpu->debug.print_op) {
+    if (cpu->flags.zero == 0) {
         address = cpu_fetch(cpu);
         if (cpu->state.panic != CPU_ERR_OK) {
             return;
-        }
-
-        if (cpu->debug.print_op) {
-            printf("  %lu\t"AXHEX"\tJNE  "AXHEX"\t\t// cs="AXHEX"    z=%i -> %s\n",
-                   cpu->debug.step,
-                   cpu->pc - 2 * ADDR_SIZE,
-                   address,
-                   cpu->cs,
-                   cpu->flags.zero,
-                   cpu->flags.zero == 0 ? "jump" : "no jump"
-            );
         }
     }
 
@@ -380,22 +333,14 @@ void op_jsne(CPU *cpu, word_t word) {
 }
 
 void op_jane(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     addr_t address = 0;
     addr_t pc = cpu->pc;
-    if (cpu->flags.zero == 0 || cpu->debug.print_op) {
+    if (cpu->flags.zero == 0) {
         address = cpu_fetch(cpu);
         if (cpu->state.panic != CPU_ERR_OK) {
             return;
-        }
-
-        if (cpu->debug.print_op) {
-            printf("  %lu\t"AXHEX"\tJNE  "AXHEX"\t\t// z=%i -> %s\n",
-                   cpu->debug.step,
-                   cpu->pc - 2 * ADDR_SIZE,
-                   address,
-                   cpu->flags.zero,
-                   cpu->flags.zero == 0 ? "jump" : "no jump"
-            );
         }
     }
 
@@ -404,38 +349,32 @@ void op_jane(CPU *cpu, word_t word) {
 }
 
 void op_js(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     word_t address = cpu_fetch(cpu);
     if (cpu->state.panic != CPU_ERR_OK) {
         return;
-    }
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tJ    "AXHEX"\t\t// cs="AXHEX"\n", cpu->debug.step, cpu->pc - 2 * ADDR_SIZE, address, cpu->cs);
     }
 
     cpu->pc = cpu->cs + address;
 }
 
 void op_ja(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     word_t address = cpu_fetch(cpu);
     if (cpu->state.panic != CPU_ERR_OK) {
         return;
-    }
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tJ    "AXHEX"\n", cpu->debug.step, cpu->pc - 2 * ADDR_SIZE, address);
     }
 
     cpu->pc = address;
 }
 
 void op_stor(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t to = ((uint8_t *) &word)[1];
     uint8_t from = ((uint8_t *) &word)[2];
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tSTOR r%i, r%i\t\t", cpu->debug.step, cpu->pc - ADDR_SIZE, to, from);
-    }
 
     word_t address;
     if ((cpu->state.panic = cpu_register_get(cpu, to, &address)) != CPU_ERR_OK) {
@@ -446,29 +385,20 @@ void op_stor(CPU *cpu, word_t word) {
         return;
     }
 
-    if (cpu->debug.print_op) {
-        printf("// r%i="AXHEX"\tr%i="AXHEX"\n", from, val, to, address);
-    }
     if (bus_word_write(cpu->bus, (addr_t) address, val) != BUS_ERR_OK) {
         cpu->state.panic = CPU_ERR_CANNOT_WRITE_MEMORY;
     }
 }
 
 void op_load(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t to = ((uint8_t *) &word)[1];
     uint8_t from = ((uint8_t *) &word)[2];
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tLOAD r%i, r%i\t\t", cpu->debug.step, cpu->pc - ADDR_SIZE, to, from);
-    }
 
     word_t address;
     if ((cpu->state.panic = cpu_register_get(cpu, from, &address)) != CPU_ERR_OK) {
         return;
-    }
-
-    if (cpu->debug.print_op) {
-        printf("// r%i="AXHEX"\n", from, address);
     }
 
     word_t val;
@@ -480,12 +410,10 @@ void op_load(CPU *cpu, word_t word) {
 }
 
 void op_add_rr(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t a = ((uint8_t *) &word)[1];
     uint8_t b = ((uint8_t *) &word)[2];
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tADD  r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b);
-    }
 
     word_t a_val;
     if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
@@ -500,14 +428,12 @@ void op_add_rr(CPU *cpu, word_t word) {
 }
 
 void op_add_rw(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t a = ((uint8_t *) &word)[1];
     word_t value = cpu_fetch(cpu);
     if (cpu->state.panic != CPU_ERR_OK) {
         return;
-    }
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tADD  r%i, "WXHEX"\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, value);
     }
 
     word_t a_val;
@@ -520,12 +446,10 @@ void op_add_rw(CPU *cpu, word_t word) {
 }
 
 void op_sub_rr(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t a = ((uint8_t *) &word)[1];
     uint8_t b = ((uint8_t *) &word)[2];
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tSUB  r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b);
-    }
 
     word_t a_val;
     if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
@@ -541,14 +465,12 @@ void op_sub_rr(CPU *cpu, word_t word) {
 }
 
 void op_sub_rw(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t a = ((uint8_t *) &word)[1];
     word_t value = cpu_fetch(cpu);
     if (cpu->state.panic != CPU_ERR_OK) {
         return;
-    }
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tSUB  r%i, "WXHEX"\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, value);
     }
 
     word_t a_val;
@@ -561,12 +483,10 @@ void op_sub_rw(CPU *cpu, word_t word) {
 }
 
 void op_mul_rr(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t a = ((uint8_t *) &word)[1];
     uint8_t b = ((uint8_t *) &word)[2];
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tMUL  r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b);
-    }
 
     word_t a_val;
     if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
@@ -581,14 +501,12 @@ void op_mul_rr(CPU *cpu, word_t word) {
 }
 
 void op_mul_rw(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t a = ((uint8_t *) &word)[1];
     word_t value = cpu_fetch(cpu);
     if (cpu->state.panic != CPU_ERR_OK) {
         return;
-    }
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tMUL  r%i, "WXHEX"\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, value);
     }
 
     word_t a_val;
@@ -601,12 +519,10 @@ void op_mul_rw(CPU *cpu, word_t word) {
 }
 
 void op_and_rr(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t a = ((uint8_t *) &word)[1];
     uint8_t b = ((uint8_t *) &word)[2];
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tAND  r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b);
-    }
 
     word_t a_val;
     if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
@@ -620,14 +536,12 @@ void op_and_rr(CPU *cpu, word_t word) {
 }
 
 void op_and_rw(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t a = ((uint8_t *) &word)[1];
     word_t b_val = cpu_fetch(cpu);
     if (cpu->state.panic != CPU_ERR_OK) {
         return;
-    }
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tAND  r%i, "WXHEX"\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b_val);
     }
 
     word_t a_val;
@@ -638,12 +552,10 @@ void op_and_rw(CPU *cpu, word_t word) {
 }
 
 void op_or_rr(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t a = ((uint8_t *) &word)[1];
     uint8_t b = ((uint8_t *) &word)[2];
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tOR   r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b);
-    }
 
     word_t a_val;
     if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
@@ -657,14 +569,12 @@ void op_or_rr(CPU *cpu, word_t word) {
 }
 
 void op_or_rw(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t a = ((uint8_t *) &word)[1];
     word_t b_val = cpu_fetch(cpu);
     if (cpu->state.panic != CPU_ERR_OK) {
         return;
-    }
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tOR   r%i, "WXHEX"\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b_val);
     }
 
     word_t a_val;
@@ -675,12 +585,10 @@ void op_or_rw(CPU *cpu, word_t word) {
 }
 
 void op_xor_rr(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t a = ((uint8_t *) &word)[1];
     uint8_t b = ((uint8_t *) &word)[2];
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tXOR  r%i, r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b);
-    }
 
     word_t a_val;
     if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
@@ -694,14 +602,12 @@ void op_xor_rr(CPU *cpu, word_t word) {
 }
 
 void op_xor_rw(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t a = ((uint8_t *) &word)[1];
     word_t b_val = cpu_fetch(cpu);
     if (cpu->state.panic != CPU_ERR_OK) {
         return;
-    }
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tXOR  r%i, "WXHEX"\n", cpu->debug.step, cpu->pc - ADDR_SIZE, a, b_val);
     }
 
     word_t a_val;
@@ -712,11 +618,9 @@ void op_xor_rw(CPU *cpu, word_t word) {
 }
 
 void op_dec(CPU *cpu, word_t word) {
-    uint8_t r = ((uint8_t *) &word)[1];
+    PRINT_INSTRUCTION(cpu, word)
 
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tDEC  r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, r);
-    }
+    uint8_t r = ((uint8_t *) &word)[1];
 
     word_t r_val;
     if ((cpu->state.panic = cpu_register_get(cpu, r, &r_val)) != CPU_ERR_OK) {
@@ -727,12 +631,9 @@ void op_dec(CPU *cpu, word_t word) {
 }
 
 void op_inc(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t r = ((uint8_t *) &word)[1];
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tINC  r%i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, r);
-    }
-
     word_t r_val;
     if ((cpu->state.panic = cpu_register_get(cpu, r, &r_val)) != CPU_ERR_OK) {
         return;
@@ -742,13 +643,11 @@ void op_inc(CPU *cpu, word_t word) {
 }
 
 void op_calls(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     addr_t address = (addr_t) cpu_fetch(cpu);
     if (cpu->state.panic != CPU_ERR_OK) {
         return;
-    }
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tCALL "AXHEX"\t\t// cs="AXHEX"\n", cpu->debug.step, cpu->pc - 2 * ADDR_SIZE, address, cpu->cs);
     }
 
     cpu->sp -= WORD_SIZE;
@@ -760,13 +659,11 @@ void op_calls(CPU *cpu, word_t word) {
 }
 
 void op_calla_a(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     addr_t address = (addr_t) cpu_fetch(cpu);
     if (cpu->state.panic != CPU_ERR_OK) {
         return;
-    }
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tCALL "AXHEX"\n", cpu->debug.step, cpu->pc - 2 * ADDR_SIZE, address);
     }
 
     cpu->sp -= WORD_SIZE;
@@ -778,15 +675,12 @@ void op_calla_a(CPU *cpu, word_t word) {
 }
 
 void op_calla_r(CPU *cpu, word_t word) {
-    uint8_t r = ((uint8_t *) &word)[1];
+    PRINT_INSTRUCTION(cpu, word)
 
+    uint8_t r = ((uint8_t *) &word)[1];
     word_t address;
     if ((cpu->state.panic = cpu_register_get(cpu, r, &address)) != CPU_ERR_OK) {
         return;
-    }
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tCALL r%i\n", cpu->debug.step, cpu->pc - 2 * ADDR_SIZE, r);
     }
 
     cpu->sp -= WORD_SIZE;
@@ -798,9 +692,7 @@ void op_calla_r(CPU *cpu, word_t word) {
 }
 
 void op_ret(CPU *cpu, word_t word) {
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tRET\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
-    }
+    PRINT_INSTRUCTION(cpu, word)
 
     if (bus_word_read(cpu->bus, cpu->sp, &cpu->pc) != BUS_ERR_OK) {
         cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
@@ -810,9 +702,7 @@ void op_ret(CPU *cpu, word_t word) {
 }
 
 void op_iret(CPU *cpu, word_t word) {
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tIRET\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
-    }
+    PRINT_INSTRUCTION(cpu, word)
 
     if (bus_word_read(cpu->bus, cpu->sp, &cpu->pc) != BUS_ERR_OK) {
         cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
@@ -823,55 +713,38 @@ void op_iret(CPU *cpu, word_t word) {
 }
 
 void op_int(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t interrupt = ((uint8_t *) &word)[1];
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tINT  %i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, interrupt);
-    }
-
     cpu_interrupt_trigger(cpu, interrupt);
 }
 
 void op_mi(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t interrupt = ((uint8_t *) &word)[1];
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tMI   %i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, interrupt);
-    }
-
     pic_interrupt_mask(cpu->pic, interrupt);
 }
 
 void op_umi(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
     uint8_t interrupt = ((uint8_t *) &word)[1];
-
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tUMI  %i\n", cpu->debug.step, cpu->pc - ADDR_SIZE, interrupt);
-    }
-
     pic_interrupt_unmask(cpu->pic, interrupt);
 }
 
 void op_ind(CPU *cpu, word_t word) {
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tIND\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
-    }
-
+    PRINT_INSTRUCTION(cpu, word)
     cpu->flags.interrupts_enabled = 0;
 }
 
 void op_ine(CPU *cpu, word_t word) {
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tINE\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
-    }
-
+    PRINT_INSTRUCTION(cpu, word)
     cpu->flags.interrupts_enabled = 1;
 }
 
 void op_wfi(CPU *cpu, word_t word) {
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tWFI\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
-    }
+    PRINT_INSTRUCTION(cpu, word)
     int rc = pthread_mutex_lock(&pic_got_interrupt_lock);
     if (rc) {
         perror("pthread_mutex_lock");
@@ -883,27 +756,170 @@ void op_wfi(CPU *cpu, word_t word) {
 }
 
 void op_xbm(CPU *cpu, word_t word) {
-    // nothing here...
+    PRINT_INSTRUCTION(cpu, word)
 }
 
 void op_xdbg(CPU *cpu, word_t word) {
-    if (cpu->debug.print_op) { // todo guard with debug cli options
-        printf("  %lu\t"AXHEX"\tXDBG\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
-    }
+    PRINT_INSTRUCTION(cpu, word)
 }
 
 void op_xpse(CPU *cpu, word_t word) {
     cpu->debug.print_op = 1;
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tXPSE\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
-    }
+    PRINT_INSTRUCTION(cpu, word)
 }
 
 void op_xpsd(CPU *cpu, word_t word) {
-    if (cpu->debug.print_op) {
-        printf("  %lu\t"AXHEX"\tXPSD\n", cpu->debug.step, cpu->pc - ADDR_SIZE);
-    }
+    PRINT_INSTRUCTION(cpu, word)
     cpu->debug.print_op = 0;
 }
 
 #include "ops_array.h"
+
+char *instruction_to_string(CPU *cpu, word_t word, ...) {
+    char *buffer = malloc(128);
+    uint8_t op = ((uint8_t *) &word)[0];
+    addr_t addr = cpu->pc - ADDR_SIZE;
+    switch (op) {
+        case HALT:
+        case IRET:
+        case IND:
+        case INE:
+        case NOP:
+        case PANIC:
+        case PUSHA:
+        case POPA:
+        case RET:
+        case WFI:
+        case XBM:
+        case XDBG:
+        case XPSE:
+        case XPSD:
+            sprintf(buffer, "  %lu\t"AXHEX"\t%s", cpu->debug.step, addr, ops_name[op]);
+            break;
+        case CALLA_R:
+        case DEC:
+        case INC:
+        case POP:
+        case PUSH: {
+            char *r = register_name(((uint8_t *) &word)[1]);
+            sprintf(buffer, "  %lu\t"AXHEX"\t%s %s", cpu->debug.step, addr, ops_name[op], r);
+            free(r);
+            break;
+        }
+        case MI :
+        case UMI:
+        case INT: {
+            uint8_t b = ((uint8_t *) &word)[1];
+            sprintf(buffer, "  %lu\t"AXHEX"\t%s %i", cpu->debug.step, addr, ops_name[op], b);
+            break;
+        }
+        case ADD_RR:
+        case AND_RR:
+        case CMP:
+        case LOAD:
+        case OR_RR:
+        case MOV_RR:
+        case MUL_RR:
+        case POP_RR:
+        case PUSH_RR:
+        case SUB_RR:
+        case STOR:
+        case XOR_RR: {
+            char *r1 = register_name(((uint8_t *) &word)[1]);
+            char *r2 = register_name(((uint8_t *) &word)[2]);
+            sprintf(buffer, "  %lu\t"AXHEX"\t%s %s, %s", cpu->debug.step, addr, ops_name[op], r1, r2);
+            free(r1);
+            free(r2);
+            break;
+        }
+        case POP_RRR:
+        case PUSH_RRR: {
+            char *r1 = register_name(((uint8_t *) &word)[1]);
+            char *r2 = register_name(((uint8_t *) &word)[2]);
+            char *r3 = register_name(((uint8_t *) &word)[3]);
+            sprintf(buffer, "  %lu\t"AXHEX"\t%s %s, %s, %s", cpu->debug.step, addr, ops_name[op], r1, r2, r3);
+            free(r1);
+            free(r2);
+            free(r3);
+            break;
+        }
+        case ADD_RW:
+        case AND_RW:
+        case MOV_RW:
+        case MUL_RW:
+        case OR_RW:
+        case SUB_RW:
+        case XOR_RW: {
+            char *r = register_name(((uint8_t *) &word)[1]);
+            word_t val = cpu_read_pc_word(cpu, 0);
+            if (cpu->state.panic != CPU_ERR_OK) {
+                sprintf(buffer, "  %lu\t"AXHEX"\t%s %s, %s", cpu->debug.step, addr, ops_name[op], r, "ERR");
+            } else {
+                sprintf(buffer, "  %lu\t"AXHEX"\t%s %s, "WXHEX, cpu->debug.step, addr, ops_name[op], r, val);
+            }
+            free(r);
+            break;
+        }
+        case CALLA_A:
+        case JA: {
+            word_t val = cpu_read_pc_word(cpu, 0);
+            if (cpu->state.panic != CPU_ERR_OK) {
+                sprintf(buffer, "  %lu\t"AXHEX"\t%s %s", cpu->debug.step, addr, ops_name[op], "ERR");
+            } else {
+                sprintf(buffer, "  %lu\t"AXHEX"\t%s "AXHEX, cpu->debug.step, addr, ops_name[op], val);
+            }
+            break;
+        }
+        case CALLS:
+        case JS: {
+            word_t address = cpu_read_pc_word(cpu, 0);
+            if (cpu->state.panic != CPU_ERR_OK) {
+                sprintf(buffer, "  %lu\t"AXHEX"\t%s %s", cpu->debug.step, addr, ops_name[op], "ERR");
+            } else {
+                sprintf(buffer, "  %lu\t"AXHEX"\t%s "AXHEX"\t\t// cs="AXHEX"",
+                        cpu->debug.step,
+                        addr,
+                        ops_name[op],
+                        address, cpu->cs
+                );
+            }
+            break;
+        }
+        case JAEQ:
+        case JANE: {
+            addr_t address = cpu_read_pc_word(cpu, 0);
+            if (cpu->state.panic != CPU_ERR_OK) {
+                sprintf(buffer, "  %lu\t"AXHEX"\t%s %s", cpu->debug.step, addr, ops_name[op], "ERR");
+            } else {
+                sprintf(buffer, "  %lu\t"AXHEX"\t%s "AXHEX"\t\t// z=%i",
+                        cpu->debug.step,
+                        addr,
+                        ops_name[op],
+                        address,
+                        cpu->flags.zero
+                );
+            }
+            break;
+        }
+        case JSEQ:
+        case JSNE: {
+            addr_t address = cpu_read_pc_word(cpu, 0);
+            if (cpu->state.panic != CPU_ERR_OK) {
+                sprintf(buffer, "  %lu\t"AXHEX"\t%s %s", cpu->debug.step, addr, ops_name[op], "ERR");
+            } else {
+                sprintf(buffer, "  %lu\t"AXHEX"\t%s "AXHEX"\t\t// z=%i       cs="AXHEX"",
+                        cpu->debug.step,
+                        addr,
+                        ops_name[op],
+                        address,
+                        cpu->flags.zero,
+                        cpu->cs
+                );
+            }
+            break;
+        }
+        default:
+            sprintf(buffer, "  %lu\t"AXHEX"\t"WXHEX" ???", cpu->debug.step, addr, op);
+    }
+    return buffer;
+}

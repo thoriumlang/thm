@@ -47,6 +47,8 @@ typedef struct CPU {
 
 word_t cpu_fetch(CPU *cpu);
 
+word_t cpu_read_pc_word(CPU *cpu, uint8_t index);
+
 void cpu_flags_update(CPU *cpu, sword_t value);
 
 #endif //C_VM_CPU_INTERNAL_H
