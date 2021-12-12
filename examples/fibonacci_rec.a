@@ -15,15 +15,13 @@
 // updates: r1
 :fibonacci
     // if index == 0 -> return 0
-    MOV r1, 0
-    CMP r0, r1
+    CMP r0, 0
     JNE @not_0
     RET
 
 :not_0
     // if index == 1 -> return 1
-    MOV r1, 1
-    CMP r0, r1
+    CMP r0, 1
     JNE @not_1
     RET
 

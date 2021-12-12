@@ -17,7 +17,7 @@
 20,OrRW,8
 22,XorRR,4
 23,XorRW,8
-24,Cmp,4
+24,CmpRR,4
 25,Push,4
 26,Pop,4
 27,Jseq,8
@@ -50,3 +50,4 @@
 74,Xpse,4
 75,Xpsd,4
 76,Xbrk,4
+77,CmpRW,8

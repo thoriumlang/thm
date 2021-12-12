@@ -265,7 +265,7 @@ void op_mov_rr(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, to, value);
 }
 
-void op_cmp(CPU *cpu, word_t word) {
+void op_cmp_rr(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
     uint8_t a = ((uint8_t *) &word)[1];
@@ -279,6 +279,23 @@ void op_cmp(CPU *cpu, word_t word) {
     if ((cpu->state.panic = cpu_register_get(cpu, b, &b_val)) != CPU_ERR_OK) {
         return;
     }
+    cpu_flags_update(cpu, (sword_t) a_val - (sword_t) b_val);
+}
+
+void op_cmp_rw(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
+    uint8_t a = ((uint8_t *) &word)[1];
+
+    word_t a_val;
+    if ((cpu->state.panic = cpu_register_get(cpu, a, &a_val)) != CPU_ERR_OK) {
+        return;
+    }
+    word_t b_val = cpu_fetch(cpu);
+    if (cpu->state.panic != CPU_ERR_OK) {
+        return;
+    }
+
     cpu_flags_update(cpu, (sword_t) a_val - (sword_t) b_val);
 }
 
@@ -819,7 +836,7 @@ char *cpu_instruction_to_string(CPU *cpu, word_t word) {
         }
         case ADD_RR:
         case AND_RR:
-        case CMP:
+        case CMP_RR:
         case LOAD:
         case OR_RR:
         case MOV_RR:
@@ -849,6 +866,7 @@ char *cpu_instruction_to_string(CPU *cpu, word_t word) {
         }
         case ADD_RW:
         case AND_RW:
+        case CMP_RW:
         case MOV_RW:
         case MUL_RW:
         case OR_RW:

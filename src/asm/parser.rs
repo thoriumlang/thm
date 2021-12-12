@@ -150,7 +150,7 @@ impl<'t> Parser<'t> {
             "ADD" => self.op_rr_rw(Op::AddRR, Op::AddRW, position),
             "AND" => self.op_rr_rw(Op::AndRR, Op::AndRW, position),
             "CALL" => self.op_a_r(Op::Calls, Op::CallaA, Op::CallaR, position),
-            "CMP" => self.op_rr(Op::Cmp, position),
+            "CMP" => self.op_rr_rw(Op::CmpRR,Op::CmpRW, position),
             "DEC" => self.op_r(Op::Dec, position),
             "HALT" => self.op_void(Op::Halt, position),
             "INC" => self.op_r(Op::Inc, position),
@@ -719,7 +719,7 @@ mod tests {
         or_rr:  ("OR   r1, r0\n", Op::OrRR,   "r1", "r0"),
         sub_rr: ("SUB  r1, r0\n", Op::SubRR,  "r1", "r0"),
         mul_rr: ("MUL  r1, r0\n", Op::MulRR,  "r1", "r0"),
-        cmp:    ("CMP  r1, r0\n", Op::Cmp,    "r1", "r0"),
+        cmp_rr: ("CMP  r1, r0\n", Op::CmpRR,  "r1", "r0"),
         load:   ("LOAD r1, r0\n", Op::Load,   "r1", "r0"),
         pop_rr: ("POP  r2, r3\n", Op::PopRR,  "r2", "r3"),
         push_rr:("PUSH r2, r3\n", Op::PushRR, "r2", "r3"),
@@ -733,6 +733,7 @@ mod tests {
     }
 
     op_rw_test! {
+        cmp_rw: ("CMP  r1, 42\n", Op::CmpRW, "r1", 42),
         mov_rw: ("MOV  r1, 42\n", Op::MovRW, "r1", 42),
         add_rw: ("ADD  r1, 42\n", Op::AddRW, "r1", 42),
         and_rw: ("AND  r1, 42\n", Op::AndRW, "r1", 42),

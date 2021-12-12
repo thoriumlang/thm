@@ -75,10 +75,9 @@ $word_width = 4
     RET
 
 :keyboard_int_handler
-    MOV  r1, 0x00230001         // <p> key pressed ref.
     MOV  r0, $__keyboard_start
     LOAD r0, r0
-    CMP  r0, r1 // todo replace with cmp r, w
+    CMP  r0, 0x00230001         // <p> key pressed ref.
     JEQ  @keyboard_int_handler_key_is_p
     PUSH r0                     // keep for update last seen before exit
     J    @keyboard_int_handler_exit
