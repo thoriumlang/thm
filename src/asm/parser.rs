@@ -45,6 +45,7 @@ pub enum Instruction {
     IRW(Op, String, u32),
     IRR(Op, String, String),
     IRRR(Op, String, String, String),
+    IRRW(Op, String, String, u32),
 }
 
 impl Instruction {
@@ -58,6 +59,7 @@ impl Instruction {
             &Instruction::IRW(op, _, _) => op,
             &Instruction::IRR(op, _, _) => op,
             &Instruction::IRRR(op, _, _, _) => op,
+            &Instruction::IRRW(op, _, _, _) => op,
         };
     }
 }
@@ -150,7 +152,7 @@ impl<'t> Parser<'t> {
             "ADD" => self.op_rr_rw(Op::AddRR, Op::AddRW, position),
             "AND" => self.op_rr_rw(Op::AndRR, Op::AndRW, position),
             "CALL" => self.op_a_r(Op::Calls, Op::CallaA, Op::CallaR, position),
-            "CMP" => self.op_rr_rw(Op::CmpRR,Op::CmpRW, position),
+            "CMP" => self.op_rr_rw(Op::CmpRR, Op::CmpRW, position),
             "DEC" => self.op_r(Op::Dec, position),
             "HALT" => self.op_void(Op::Halt, position),
             "INC" => self.op_r(Op::Inc, position),
@@ -160,7 +162,7 @@ impl<'t> Parser<'t> {
             "J" => self.op_a(Op::Js, Op::Ja, position),
             "JEQ" => self.op_a(Op::Jseq, Op::Jaeq, position),
             "JNE" => self.op_a(Op::Jsne, Op::Jane, position),
-            "LOAD" => self.op_rr(Op::Load, position),
+            "LOAD" => self.op_rr_rrw(Op::Load, Op::LoadRRW, position),
             "MI" => self.op_b(Op::Mi, position),
             "MOV" => self.op_rr_rw_ra(Op::MovRR, Op::MovRW, position),
             "MUL" => self.op_rr_rw(Op::MulRR, Op::MulRW, position),
@@ -279,6 +281,51 @@ impl<'t> Parser<'t> {
                 Token::Integer(_, w) => Some(Ok(Instruction::IRW(op_ri, r1, w))),
                 Token::Variable(_, name) => match self.symbols.get(&name) {
                     Some(Token::Integer(_, w)) => Some(Ok(Instruction::IRW(op_ri, r1, *w))),
+                    _ => None
+                },
+                _ => None,
+            })
+            .unwrap_or(Err(format!("Expected <variable>, <w> or <r> at {}", position).into()));
+
+        if self.read_eol() {
+            return instruction;
+        }
+        Err(format!("Expected <eol> at {}", position).into())
+    }
+
+    fn op_rr_rrw(&mut self, op_rr: Op, op_rrw: Op, position: &Position) -> Result<Instruction> {
+        let r1 = match self.read_register() {
+            None => return Err(format!("Expected <r> at {}", position).into()),
+            Some(str) => str,
+        };
+
+        if !self.read_comma() {
+            return Err(format!("Expected ',' at {}", position).into());
+        }
+
+        let r2 = match self.read_register() {
+            None => return Err(format!("Expected <r> at {}", position).into()),
+            Some(str) => str,
+        };
+
+        let instruction = self.peek_next().and_then(|token| match token {
+            Token::Eol(_) => Some(Ok(Instruction::IRR(op_rr, r1.clone(), r2.clone()))),
+            _ => None,
+        });
+        if instruction.is_some() {
+            self.read_next();
+            return instruction.unwrap();
+        }
+
+        if !self.read_comma() {
+            return Err(format!("Expected <eol> or ',' at {}", position).into());
+        }
+
+        let instruction = self.read_next()
+            .and_then(|token| match token {
+                Token::Integer(_, w) => Some(Ok(Instruction::IRRW(op_rrw, r1,  r2, w))),
+                Token::Variable(_, name) => match self.symbols.get(&name) {
+                    Some(Token::Integer(_, w)) => Some(Ok(Instruction::IRRW(op_rrw, r1, r2,*w))),
                     _ => None
                 },
                 _ => None,
@@ -621,6 +668,30 @@ mod tests {
         }
     }
 
+    macro_rules! op_rrw_test {
+        ($($name:ident: $value:expr,)*) => {
+        $(
+            #[test]
+            fn $name() {
+                let (input, op, r0, r1, w0) = $value;
+
+                let mut lexer = Lexer::from_text(input);
+                let mut nodes = vec![];
+                let mut symbols = HashMap::new();
+                let r = Parser::from_lexer(&mut lexer, &mut nodes, &mut symbols).next();
+                assert_eq!(true, r.is_some());
+
+                let item = r.unwrap();
+                assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
+
+                let expected = Node::Instruction(Instruction::IRRW(op, r0.into(), r1.into(), w0));
+                let actual = item.unwrap();
+                assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+            }
+        )*
+        }
+    }
+
     macro_rules! op_rw_test {
         ($($name:ident: $value:expr,)*) => {
         $(
@@ -713,18 +784,22 @@ mod tests {
     }
 
     op_rr_test! {
-        mov_rr: ("MOV  r1, r0\n", Op::MovRR,  "r1", "r0"),
-        add_rr: ("ADD  r1, r0\n", Op::AddRR,  "r1", "r0"),
-        and_rr: ("AND  r1, r0\n", Op::AndRR,  "r1", "r0"),
-        or_rr:  ("OR   r1, r0\n", Op::OrRR,   "r1", "r0"),
-        sub_rr: ("SUB  r1, r0\n", Op::SubRR,  "r1", "r0"),
-        mul_rr: ("MUL  r1, r0\n", Op::MulRR,  "r1", "r0"),
-        cmp_rr: ("CMP  r1, r0\n", Op::CmpRR,  "r1", "r0"),
-        load:   ("LOAD r1, r0\n", Op::Load,   "r1", "r0"),
-        pop_rr: ("POP  r2, r3\n", Op::PopRR,  "r2", "r3"),
-        push_rr:("PUSH r2, r3\n", Op::PushRR, "r2", "r3"),
-        stor:   ("STOR r1, r0\n", Op::Stor,   "r1", "r0"),
-        xor_rr: ("XOR  r1, r0\n", Op::XorRR,  "r1", "r0"),
+        mov_rr:  ("MOV  r1, r0\n", Op::MovRR,  "r1", "r0"),
+        add_rr:  ("ADD  r1, r0\n", Op::AddRR,  "r1", "r0"),
+        and_rr:  ("AND  r1, r0\n", Op::AndRR,  "r1", "r0"),
+        or_rr:   ("OR   r1, r0\n", Op::OrRR,   "r1", "r0"),
+        sub_rr:  ("SUB  r1, r0\n", Op::SubRR,  "r1", "r0"),
+        mul_rr:  ("MUL  r1, r0\n", Op::MulRR,  "r1", "r0"),
+        cmp_rr:  ("CMP  r1, r0\n", Op::CmpRR,  "r1", "r0"),
+        load_rr: ("LOAD r1, r0\n", Op::Load,   "r1", "r0"),
+        pop_rr:  ("POP  r2, r3\n", Op::PopRR,  "r2", "r3"),
+        push_rr: ("PUSH r2, r3\n", Op::PushRR, "r2", "r3"),
+        stor:    ("STOR r1, r0\n", Op::Stor,   "r1", "r0"),
+        xor_rr:  ("XOR  r1, r0\n", Op::XorRR,  "r1", "r0"),
+    }
+
+    op_rrw_test! {
+        load_rrw: ("LOAD r1, r0, 12\n", Op::LoadRRW,   "r1", "r0", 12),
     }
 
     op_rrr_test! {

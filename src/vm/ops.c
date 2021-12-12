@@ -42,6 +42,9 @@ char *register_name(uint8_t from) {
         case REG_PC:
             strcpy(buf, "pc");
             break;
+        case REG_BP:
+            strcpy(buf, "bp");
+            break;
         case REG_SP:
             strcpy(buf, "sp");
             break;
@@ -250,17 +253,8 @@ void op_mov_rr(CPU *cpu, word_t word) {
     uint8_t from = ((uint8_t *) &word)[2];
 
     word_t value;
-    switch (from) {
-        case REG_IDT:
-            value = cpu_idt_get(cpu);
-            break;
-        case REG_IR:
-            value = cpu_ir_get(cpu);
-            break;
-        default:
-            if ((cpu->state.panic = cpu_register_get(cpu, from, &value)) != CPU_ERR_OK) {
-                return;
-            }
+    if ((cpu->state.panic = cpu_register_get(cpu, from, &value)) != CPU_ERR_OK) {
+        return;
     }
     cpu->state.panic = cpu_register_set(cpu, to, value);
 }
@@ -418,6 +412,29 @@ void op_load(CPU *cpu, word_t word) {
 
     word_t val;
     if ((bus_word_read(cpu->bus, (addr_t) address, &val)) != BUS_ERR_OK) {
+        cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
+        return;
+    }
+    cpu->state.panic = cpu_register_set(cpu, to, val);
+}
+
+void op_load_rrw(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
+    uint8_t to = ((uint8_t *) &word)[1];
+    uint8_t from = ((uint8_t *) &word)[2];
+
+    word_t address;
+    if ((cpu->state.panic = cpu_register_get(cpu, from, &address)) != CPU_ERR_OK) {
+        return;
+    }
+    word_t offset = cpu_fetch(cpu);
+    if (cpu->state.panic != CPU_ERR_OK) {
+        return;
+    }
+
+    word_t val;
+    if ((bus_word_read(cpu->bus, (addr_t) address + (addr_t) offset, &val)) != BUS_ERR_OK) {
         cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
         return;
     }

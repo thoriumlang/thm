@@ -35,6 +35,7 @@ function _test {
   && _test target/fibonacci_rec.bin 0:16 987 ".cpu.registers.general[3]" \
   && _test target/fact.bin 0:5 120 ".cpu.registers.general[3]" \
   && _test target/jumps.bin 0:0 7 ".cpu.registers.general[0]" \
-  && _test target/interrupts.bin 0:0 42 ".cpu.registers.general[0]"
+  && _test target/interrupts.bin 0:0 42 ".cpu.registers.general[0]" \
+  && _test target/call_convention.bin 0:0 3 ".cpu.registers.general[0]"
 
 exit $FAIL

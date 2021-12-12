@@ -22,13 +22,13 @@ thm: src/vm/ops_array.h src/vm/cpu_internal_gen.h target/cmake-build-debug
 src/vm/ops_array.h: bin/thm_generate_ops.sh src/common/op.csv
 	bin/thm_generate_ops.sh src/common/op.csv > src/vm/ops_array.h
 
-src/vm/cpu_internal_gen.h: bin/thm_generate_cpu_internal.sh src/common/op.csv
+src/vm/cpu_internal_gen.h: bin/thm_generate_cpu_internal.sh src/common/registers.csv
 	bin/thm_generate_cpu_internal.sh src/common/registers.csv > src/vm/cpu_internal_gen.h
 
 target/cmake-build-debug: src/vm/CMakeLists.txt
 	cmake -DCMAKE_BUILD_TYPE=Debug -Wdev -Wdeprecated -S src/vm -B target/cmake-build-debug
 
-test_thm: thm target/rom.bin target/fact.bin target/fibonacci.bin target/fibonacci_rec.bin target/jumps.bin target/interrupts.bin
+test_thm: thm target/rom.bin target/fact.bin target/fibonacci.bin target/fibonacci_rec.bin target/jumps.bin target/interrupts.bin target/call_convention.bin
 	ctest --test-dir target/cmake-build-debug --output-on-failure
 	bin/test-vm.sh target/cmake-build-debug/thm
 

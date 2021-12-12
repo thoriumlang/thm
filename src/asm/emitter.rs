@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::constants::{REG_CS, REG_IDT, REG_IR, REG_PC, REG_SP};
+use crate::constants::{REG_BP, REG_CS, REG_IDT, REG_IR, REG_PC, REG_SP};
 use crate::parser::{AddressKind, Directive, Instruction, Node};
 
 pub struct Emitter<'t> {
@@ -14,6 +14,7 @@ impl<'t> Emitter<'t> {
         let mut registers = HashMap::new();
         registers.insert("cp".to_string(), REG_PC);
         registers.insert("sp".to_string(), REG_SP);
+        registers.insert("bp".to_string(), REG_BP);
         registers.insert("cs".to_string(), REG_CS);
         registers.insert("ir".to_string(), REG_IR);
         registers.insert("idt".to_string(), REG_IDT);
@@ -49,6 +50,12 @@ impl<'t> Emitter<'t> {
                     Instruction::IRR(op, r1, r2) => bytes.append(vec![
                         op.bytecode(), *self.decode_register(r1) as u8, *self.decode_register(r2) as u8, 0,
                     ].as_mut()),
+                    Instruction::IRRW(op, r1, r2, w0) => {
+                        bytes.append(vec![
+                            op.bytecode(), *self.decode_register(r1) as u8, *self.decode_register(r2) as u8, 0,
+                        ].as_mut());
+                        bytes.extend_from_slice(&(w0.to_be_bytes()));
+                    },
                     Instruction::IRRR(op, r1, r2, r3) => bytes.append(vec![
                         op.bytecode(), *self.decode_register(r1) as u8, *self.decode_register(r2) as u8, *self.decode_register(r3) as u8,
                     ].as_mut()),

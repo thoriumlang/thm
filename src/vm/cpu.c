@@ -123,6 +123,7 @@ void cpu_reset(CPU *cpu) {
     }
     cpu->pc = STACK_SIZE;
     cpu->sp = STACK_SIZE;
+    cpu->bp = STACK_SIZE;
     cpu->cs = STACK_SIZE;
     cpu->flags.interrupts_enabled = 0;
     cpu->flags.zero = 0;
@@ -141,18 +142,60 @@ void cpu_destroy(CPU *cpu) {
 }
 
 CpuError cpu_register_get(CPU *cpu, uint8_t reg, word_t *word) {
-    if (reg >= cpu->register_count) {
-        return CPU_ERR_INVALID_REGISTER;
+    switch (reg) {
+        case REG_SP:
+            *word = cpu->sp;
+            break;
+        case REG_PC:
+            *word = cpu->pc;
+            break;
+        case REG_CS:
+            *word = cpu->cs;
+            break;
+        case REG_IDT:
+            *word = cpu->idt;
+            break;
+        case REG_IR:
+            *word = cpu->ir;
+            break;
+        case REG_BP:
+            *word = cpu->bp;
+            break;
+        default:
+            if (reg >= cpu->register_count) {
+                return CPU_ERR_INVALID_REGISTER;
+            }
+            *word = cpu->registers[reg];
     }
-    *word = cpu->registers[reg];
     return CPU_ERR_OK;
 }
 
 CpuError cpu_register_set(CPU *cpu, uint8_t reg, word_t value) {
-    if (reg >= cpu->register_count) {
-        return CPU_ERR_INVALID_REGISTER;
+    switch (reg) {
+        case REG_SP:
+            cpu->sp = value;
+            break;
+        case REG_PC:
+            cpu->pc = value;
+            break;
+        case REG_CS:
+            cpu->cs = value;
+            break;
+        case REG_IDT:
+            cpu->idt = value;
+            break;
+        case REG_IR:
+            cpu->ir = value;
+            break;
+        case REG_BP:
+            cpu->bp = value;
+            break;
+        default:
+            if (reg >= cpu->register_count) {
+                return CPU_ERR_INVALID_REGISTER;
+            }
+            cpu->registers[reg] = value;
     }
-    cpu->registers[reg] = value;
     cpu_flags_update(cpu, (sword_t) value);
     return CPU_ERR_OK;
 }
@@ -227,8 +270,8 @@ void cpu_state_print(CPU *cpu, FILE *file) {
     if (cpu->register_count % 4 != 0) {
         fprintf(file, "\n");
     }
-    fprintf(file, "                  pc            sp            cs\n");
-    fprintf(file, "                  "WHEX"      "WHEX"      "WHEX"\n", cpu->pc, cpu->sp, cpu->cs);
+    fprintf(file, "                  cs            pc            bp            sp\n");
+    fprintf(file, "                  "WHEX"      "WHEX"      "WHEX"      "WHEX"\n", cpu->cs, cpu->pc, cpu->bp, cpu->sp);
     fprintf(file, "                  ir            idt\n");
     fprintf(file, "                  "WHEX"      "WHEX"\n", cpu->ir, cpu->idt);
     fprintf(file, "                  z=%i  n=%i  i=%i\n", cpu->flags.zero, cpu->flags.negative,

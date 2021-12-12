@@ -172,7 +172,7 @@ int cpu_debugger_trap_handler(struct CPU *cpu, word_t word, Bus *bus, void *data
 
     while (true) {
         printf("\n");
-        printf("  cs="AXHEX"      sp="AXHEX"\n", cpu->cs, cpu->sp);
+        printf("  cs="AHEX"      bp="AHEX"      sp="AHEX"\n", cpu->cs, cpu->bp, cpu->sp);
         printf("* %s\n", cpu_instruction_to_string(cpu, word));
 
         char *line;

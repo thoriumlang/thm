@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::parser::{Instruction, Node};
-use crate::constants::{REG_PC, REG_SP, REG_CS, REG_IR, REG_IDT};
+use crate::constants::{REG_PC, REG_SP, REG_CS, REG_IR, REG_IDT, REG_BP};
 
 pub struct VmConfig {
     pub register_count: u8,
@@ -16,6 +16,7 @@ impl Checker {
         let mut registers = HashMap::new();
         registers.insert("pc".to_string(), REG_PC);
         registers.insert("sp".to_string(), REG_SP);
+        registers.insert("bp".to_string(), REG_BP);
         registers.insert("cs".to_string(), REG_CS);
         registers.insert("ir".to_string(), REG_IR);
         registers.insert("idt".to_string(), REG_IDT);

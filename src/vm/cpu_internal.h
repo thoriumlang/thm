@@ -31,6 +31,7 @@ typedef struct CPU {
     uint8_t register_count;
     addr_t pc;  // program counter
     addr_t sp;  // stack pointer
+    addr_t bp;  // base pointer
     addr_t cs;  // code segment
     addr_t idt; // interrupt descriptor table
     word_t ir;  // current interrupt

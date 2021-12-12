@@ -1,0 +1,22 @@
+// r0 will contain 1+2
+
+    MOV   r1, 1
+    MOV   r2, 2
+
+    PUSH  r1, r2
+    CALL  @add
+
+    HALT
+
+:add
+    PUSH  bp
+    MOV   bp, sp
+
+    LOAD  r0, bp, 8
+    LOAD  r1, bp, 12
+    ADD   r0, r1
+    PUSH  r0               // useless, to make sure sp/bp are pushed/popped correctly
+
+    MOV   sp, bp
+    POP   bp
+    RET
