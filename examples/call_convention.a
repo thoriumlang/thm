@@ -12,8 +12,8 @@
     PUSH  bp
     MOV   bp, sp
 
-    LOAD  r0, bp, 8
-    LOAD  r1, bp, 12
+    LOAD  r0, [bp + 8]
+    LOAD  r1, [bp + 12]
     ADD   r0, r1
     PUSH  r0               // useless, to make sure sp/bp are pushed/popped correctly
 

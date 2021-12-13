@@ -303,39 +303,49 @@ impl<'t> Parser<'t> {
             return Err(format!("Expected ',' at {}", position).into());
         }
 
-        let r2 = match self.read_register() {
-            None => return Err(format!("Expected <r> at {}", position).into()),
-            Some(str) => str,
-        };
-
-        let instruction = self.peek_next().and_then(|token| match token {
-            Token::Eol(_) => Some(Ok(Instruction::IRR(op_rr, r1.clone(), r2.clone()))),
-            _ => None,
-        });
-        if instruction.is_some() {
+        if let Some(Token::LBracket(_)) = self.peek_next() {
             self.read_next();
-            return instruction.unwrap();
-        }
 
-        if !self.read_comma() {
-            return Err(format!("Expected <eol> or ',' at {}", position).into());
-        }
+            let r2 = match self.read_register() {
+                None => return Err(format!("Expected <r> at {}", position).into()),
+                Some(str) => str,
+            };
 
-        let instruction = self.read_next()
-            .and_then(|token| match token {
-                Token::Integer(_, w) => Some(Ok(Instruction::IRRW(op_rrw, r1,  r2, w))),
-                Token::Variable(_, name) => match self.symbols.get(&name) {
-                    Some(Token::Integer(_, w)) => Some(Ok(Instruction::IRRW(op_rrw, r1, r2,*w))),
+            match self.read_next() {
+                Some(Token::Plus(_)) => (),
+                _ => return Err(format!("Expected '+' at {}", position).into()),
+            };
+
+            let instruction = match self.read_next() {
+                Some(Token::Integer(_, w)) => Some(Ok(Instruction::IRRW(op_rrw, r1, r2, w))),
+                Some(Token::Variable(_, name)) => match self.symbols.get(&name) {
+                    Some(Token::Integer(_, w)) => Some(Ok(Instruction::IRRW(op_rrw, r1, r2, *w))),
                     _ => None
                 },
                 _ => None,
-            })
-            .unwrap_or(Err(format!("Expected <variable>, <w> or <r> at {}", position).into()));
+            }.unwrap_or(Err(format!("Expected <w> or <variable> at {}", position).into()));
 
-        if self.read_eol() {
+            match self.read_next() {
+                Some(Token::RBracket(_)) => (),
+                _ => return Err(format!("Expected ']' at {}", position).into()),
+            }
+
+            if !self.read_eol() {
+                return Err(format!("Expected <eol> at {}", position).into());
+            }
+
             return instruction;
+        } else {
+            let instruction = match self.read_register() {
+                None => return Err(format!("Expected '[' or <r> at {}", position).into()),
+                Some(str) => Ok(Instruction::IRR(op_rr, r1, str)),
+            };
+
+            if self.read_eol() {
+                return instruction;
+            }
+            Err(format!("Expected <eol> at {}", position).into())
         }
-        Err(format!("Expected <eol> at {}", position).into())
     }
 
     fn op_rr_rw_ra(&mut self, op_rr: Op, op_rw: Op, position: &Position) -> Result<Instruction> {
@@ -799,7 +809,7 @@ mod tests {
     }
 
     op_rrw_test! {
-        load_rrw: ("LOAD r1, r0, 12\n", Op::LoadRRW,   "r1", "r0", 12),
+        load_rrw: ("LOAD r1, [r0 + 12]\n", Op::LoadRRW,   "r1", "r0", 12),
     }
 
     op_rrr_test! {

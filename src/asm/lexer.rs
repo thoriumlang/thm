@@ -28,6 +28,9 @@ impl fmt::Display for Position {
 pub enum Token {
     Address(Position, String, AddressKind),
     Comma(Position),
+    RBracket(Position),
+    LBracket(Position),
+    Plus(Position),
     Directive(Position, String),
     Equal(Position),
     Eol(Position),
@@ -52,6 +55,9 @@ impl Token {
             Token::Comma(p) => p,
             Token::Directive(p, _) => p,
             Token::Equal(p) => p,
+            Token::LBracket(p) => p,
+            Token::RBracket(p) => p,
+            Token::Plus(p) => p,
             Token::Eol(p) => p,
             Token::Identifier(p, _) => p,
             Token::Integer(p, _) => p,
@@ -281,6 +287,9 @@ impl Iterator for Lexer {
                 Some(',') => return Some(Ok(Token::Comma(position))),
                 Some('\n') => return Some(Ok(Token::Eol(position))),
                 Some('=') => return Some(Ok(Token::Equal(position))),
+                Some('[') => return Some(Ok(Token::LBracket(position))),
+                Some(']') => return Some(Ok(Token::RBracket(position))),
+                Some('+') => return Some(Ok(Token::Plus(position))),
                 Some(c) if c.is_whitespace() => continue,
                 Some(c) if Self::is_absolute_address(c) => return Some(self.identifier('\0').map(|s| Token::Address(position, s, Absolute))),
                 Some(c) if Self::is_address(c) => return Some(self.identifier('\0').map(|s| Token::Address(position, s, Segment))),
@@ -373,6 +382,45 @@ mod tests {
         assert_eq!(true, item.is_ok(), "Expected Ok(Token::Comma), got {:?}", item);
 
         let expected = Token::Comma(Position::new(1, 2));
+        let actual = item.unwrap();
+        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+    }
+
+    #[test]
+    fn test_rbracket() {
+        let r = Lexer::from_text(" ] ").next();
+        assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
+
+        let item = r.unwrap();
+        assert_eq!(true, item.is_ok(), "Expected Ok(Token::Comma), got {:?}", item);
+
+        let expected = Token::RBracket(Position::new(1, 2));
+        let actual = item.unwrap();
+        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+    }
+
+    #[test]
+    fn test_lbracket() {
+        let r = Lexer::from_text(" [ ").next();
+        assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
+
+        let item = r.unwrap();
+        assert_eq!(true, item.is_ok(), "Expected Ok(Token::Comma), got {:?}", item);
+
+        let expected = Token::LBracket(Position::new(1, 2));
+        let actual = item.unwrap();
+        assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+    }
+
+    #[test]
+    fn test_plus() {
+        let r = Lexer::from_text(" + ").next();
+        assert_eq!(true, r.is_some(), "Expected Some(...), got {:?}", r);
+
+        let item = r.unwrap();
+        assert_eq!(true, item.is_ok(), "Expected Ok(Token::Comma), got {:?}", item);
+
+        let expected = Token::Plus(Position::new(1, 2));
         let actual = item.unwrap();
         assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
     }
