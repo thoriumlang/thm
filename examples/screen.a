@@ -18,9 +18,11 @@ $word_width = 4
 
 // set &vsync_flag to 1 upon vsync interrupt
 :vsync_int_handler
+    PUSH r0, r1
     MOV  r0, 1
     MOV  r1, &vsync_flag
     STOR r1, r0
+    POP  r1, r0
     RET
 
 :configure_vsync_int_handler
@@ -34,11 +36,13 @@ $word_width = 4
     RET
 
 :timer_int_handler
+    PUSH r0, r1
     MOV  r1, &seconds
     LOAD r0, r1
     DEC  r0
     JEQ  @timer_int_handler_switch
     STOR r1, r0
+    J    @timer_int_handler_end
     RET
 :timer_int_handler_switch
     // reset counter
@@ -52,6 +56,8 @@ $word_width = 4
     MOV  r0, &color_red
     MOV  r1, &color_black
     CALL @switch_mem
+:timer_int_handler_end
+    POP  r1, r0
     RET
 :switch_mem
     PUSH r2, r3
@@ -75,6 +81,7 @@ $word_width = 4
     RET
 
 :keyboard_int_handler
+    PUSH r0, r1
     MOV  r0, $__keyboard_start
     LOAD r0, r0
     CMP  r0, 0x00230001         // <p> key pressed ref.
@@ -97,6 +104,7 @@ $word_width = 4
     POP  r0
     MOV  r1, &prev_key
     STOR r1, r0
+    POP  r1, r0
     RET
 
 :configure_keyboard_int_handler

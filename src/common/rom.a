@@ -10,17 +10,16 @@
     J     &skip_int_dispatch
 
 // int_dispatch
-    PUSHA
+    PUSH  r0
     CALL  &compute_interrupt_handler_address
     CALL  r0
-    POPA
+    POP   r0
     IRET
 
 :compute_interrupt_handler_address
     MOV   r0, ir
     MUL   r0, 4
-    MOV   r1, idt
-    ADD   r0, r1
+    ADD   r0, idt
     LOAD  r0, r0
     RET
 
