@@ -74,7 +74,7 @@ MemError memory_word_get(Memory *memory, addr_t address, word_t *word) {
 
 MemError memory_word_set(Memory *memory, addr_t address, word_t word) {
 #ifdef WITH_MEMORY_LOG_MESSAGE
-    printf("MEM Write to %i (size: %i)\n", address, memory->size);
+    printf("MEM Write to %i (size: %i)\n", address, out_memory->size);
 #endif
     if (memory->mode != MEM_MODE_RW) {
         return MEM_ERR_NOT_WRITABLE;

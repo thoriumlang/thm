@@ -71,6 +71,7 @@ void vm_start(VM *this) {
     pthread_t cpu_thread;
     pthread_create(&cpu_thread, NULL, cpu_thread_run, this);
 
+    keyboard_start(this->keyboard);
     pit_start(this->pit);
     video_loop(this->video);
 

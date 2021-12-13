@@ -26,7 +26,6 @@
 
 #define VIDEO_BIT_BUFFER 1
 #define VIDEO_BIT_ENABLED 2
-#define VIDEO_BIT_SYNC 3
 
 keyboard_keycode codes[KB_KEY_LAST + 1] = {0};
 
@@ -162,7 +161,6 @@ typedef struct Video {
     Keyboard *keyboard;
     struct mfb_window *window;
     bool enabled;
-    word_t flags_cache;
     uint32_t *buffer;
     struct {
         utime_t utime;
@@ -170,9 +168,16 @@ typedef struct Video {
         int buffer_switches;
         double fps;
     } stats;
+    pthread_cond_t meta_memory_written;
+    pthread_mutex_t meta_memory_written_lock;
+    pthread_t thread;
 } Video;
 
-bool select_buffer(Video *this, word_t flags);
+void video_kb_callback(struct mfb_window *window, mfb_key key, mfb_key_mod mod, bool isPressed);
+
+void *video_thread_run(void *ptr);
+
+void video_thread_stop(Video *this);
 
 void print_fps(Video *this);
 
@@ -185,18 +190,15 @@ Video *video_create(Bus *bus, PIC *pic, Keyboard *keyboard, bool enable) {
     this->window = 0x0;
     this->enabled = enable;
     this->memory->metadata = memory_create(VIDEO_META_SIZE, MEM_MODE_RW);
-    this->flags_cache = 0;
     this->stats.frames = 0;
     this->stats.buffer_switches = 0;
     this->stats.fps = 0;
     this->stats.utime = 0;
+    pthread_cond_init(&this->meta_memory_written, NULL);
+    pthread_mutex_init(&this->meta_memory_written_lock, NULL);
 
     bus_memory_attach(bus, this->memory->metadata, VIDEO_META_ADDRESS, "VMeta");
-
-    if (enable) {
-        this->flags_cache |= VIDEO_BIT_ENABLED;
-    }
-    memory_word_set(this->memory->metadata, 0, this->flags_cache);
+    memory_word_set(this->memory->metadata, 0, VIDEO_BIT_ENABLED);
 
     if (this->enabled) {
         this->memory->buffer[0] = memory_create(VIDEO_SCREEN_WIDTH * VIDEO_SCREEN_HEIGHT * 4, MEM_MODE_RW);
@@ -211,21 +213,8 @@ Video *video_create(Bus *bus, PIC *pic, Keyboard *keyboard, bool enable) {
         this->buffer = NULL;
     }
 
+    bus_notification_register(bus, &this->meta_memory_written, VIDEO_META_ADDRESS);
     return this;
-}
-
-void video_kb_callback(struct mfb_window *window, mfb_key key, mfb_key_mod mod, bool isPressed) {
-    if (key == KB_KEY_ESCAPE) {
-        mfb_close(window);
-    }
-
-    Video *video = (Video *) mfb_get_user_data(window);
-
-    if (isPressed) {
-        keyboard_key_pressed(video->keyboard, codes[key] << 8 | mod);
-    } else {
-        keyboard_key_released(video->keyboard, codes[key] << 8 | mod);
-    }
 }
 
 void video_loop(Video *this) {
@@ -246,6 +235,8 @@ void video_loop(Video *this) {
 
     mfb_set_keyboard_callback(this->window, video_kb_callback);
 
+    pthread_create(&this->thread, NULL, video_thread_run, this);
+
     mfb_update_state state;
     this->stats.utime = time_utime();
     this->stats.frames = 0;
@@ -256,7 +247,6 @@ void video_loop(Video *this) {
             continue;
         }
 
-        select_buffer(this, flags);
         state = mfb_update_ex(this->window, this->buffer, VIDEO_SCREEN_WIDTH, VIDEO_SCREEN_HEIGHT);
         if (state != STATE_OK) {
             this->window = 0x0;
@@ -271,6 +261,58 @@ void video_loop(Video *this) {
         print_fps(this); // todo create an cli option for that
     } while (mfb_wait_sync(this->window));
     this->window = 0x0;
+}
+
+void video_kb_callback(struct mfb_window *window, mfb_key key, mfb_key_mod mod, bool isPressed) {
+    if (key == KB_KEY_ESCAPE) {
+        mfb_close(window);
+    }
+
+    Video *video = (Video *) mfb_get_user_data(window);
+
+    if (isPressed) {
+        keyboard_key_pressed(video->keyboard, codes[key] << 8 | mod);
+    } else {
+        keyboard_key_released(video->keyboard, codes[key] << 8 | mod);
+    }
+}
+
+/**
+ * Waits for out_memory update and update video buffer accordingly.
+ * @param ptr pointer to this
+ * @return NULL
+ */
+void *video_thread_run(void *ptr) {
+    Video *this = (Video *) ptr;
+
+    word_t flags = 0;
+    memory_word_get(this->memory->metadata, 0, &flags);
+
+    while (this->window) {
+        if (pthread_mutex_lock(&this->meta_memory_written_lock)) {
+            perror("pthread_mutex_lock");
+            pthread_exit(NULL);
+        }
+        pthread_cond_wait(&this->meta_memory_written, &this->meta_memory_written_lock);
+
+        word_t new_flags = 0;
+        if (memory_word_get(this->memory->metadata, 0, &new_flags) != MEM_ERR_OK) {
+            continue;
+        }
+        if ((flags ^ new_flags) & VIDEO_BIT_BUFFER) {
+            this->buffer = memory_raw_get(this->memory->buffer[new_flags & VIDEO_BIT_BUFFER]);
+            this->stats.buffer_switches++;
+        }
+        flags = new_flags;
+
+        pthread_mutex_unlock(&this->meta_memory_written_lock);
+    }
+    return NULL;
+}
+
+void video_thread_stop(Video *this) {
+    pthread_cond_signal(&this->meta_memory_written);
+    pthread_join(this->thread, NULL);
 }
 
 void print_fps(Video *this) {
@@ -290,20 +332,6 @@ void print_fps(Video *this) {
     }
 }
 
-/**
- * updates this->buffer if needed and returns true if it was updated
- */
-inline bool select_buffer(Video *this, word_t flags) {
-    bool update_needed = (this->flags_cache ^ flags) & VIDEO_BIT_BUFFER;
-
-    if (update_needed) {
-        this->buffer = memory_raw_get(this->memory->buffer[flags & VIDEO_BIT_BUFFER]);
-        this->flags_cache ^= VIDEO_BIT_BUFFER;
-        this->stats.buffer_switches++;
-    }
-    return update_needed;
-}
-
 void video_stop(Video *this) {
     this->enabled = false;
     mfb_close(this->window);
@@ -311,6 +339,7 @@ void video_stop(Video *this) {
 
 void video_destroy(Video *this) {
     video_stop(this);
+    video_thread_stop(this);
     for (int i = 0; i < 100; i++) {
         if (this->window == 0x0) {
             break;
@@ -330,8 +359,6 @@ void video_destroy(Video *this) {
 
 void video_state_print(Video *this, FILE *file) {
     fprintf(file, "\nVideo state\n");
-    fprintf(file, "  enable:%i\n", (this->flags_cache & VIDEO_BIT_ENABLED) != 0);
-    fprintf(file, "  buffer:%i\n", (this->flags_cache & VIDEO_BIT_BUFFER) != 0);
-    fprintf(file, "  sync:%i\n", (this->flags_cache & VIDEO_BIT_SYNC) != 0);
+    fprintf(file, "  enable:%i\n", this->enabled);
     fprintf(file, "  fps: %2.0f\n", this->stats.fps);
 }

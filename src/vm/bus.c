@@ -21,10 +21,17 @@
 #include "memory.h"
 #include "bus.h"
 
+typedef struct Notification {
+    addr_t addr;
+    pthread_cond_t *cond;
+    struct Notification *next;
+} Notification;
+
 typedef struct {
     Memory *memory;
     addr_t from;
     char *name;
+    Notification *notification;
 } Zone;
 
 typedef struct Bus {
@@ -50,6 +57,7 @@ Bus *bus_create() {
 }
 
 void bus_destroy(Bus *bus) {
+    // todo free zones + notifications
     free(bus);
 }
 
@@ -75,6 +83,7 @@ BusError bus_memory_attach(Bus *bus, Memory *memory, addr_t from, char *name) {
     bus->zones[i].memory = memory;
     bus->zones[i].from = from;
     bus->zones[i].name = name;
+    bus->zones[i].notification = NULL;
 
     bus->zones_count++;
     for (i = i + 1; i < bus->zones_count; i++) {
@@ -113,6 +122,12 @@ BusError bus_word_read(Bus *bus, addr_t address, word_t *word) {
     return BUS_ERR_INVALID_ADDRESS;
 }
 
+/**
+ * Find the zone in which out_memory address resides.
+ * @param bus the bus.
+ * @param address the out_memory addres.
+ * @return  the zone, or NULL if the out_memory address does not belong to any zone.
+ */
 Zone *find_zone(Bus *bus, addr_t address) {
     for (uint8_t i = 0; i < bus->zones_count; i++) {
         Zone *zone = &bus->zones[i];
@@ -133,8 +148,16 @@ BusError bus_word_write(Bus *bus, addr_t address, word_t word) {
         printf("  Zone: %s\n", zone->name);
 #endif
         switch (memory_word_set(zone->memory, translate(zone, address), word)) {
-            case MEM_ERR_OK:
+            case MEM_ERR_OK: {
+                Notification *notification = zone->notification;
+                while (notification != NULL) {
+                    if (notification->addr == address) {
+                        pthread_cond_signal(notification->cond);
+                    }
+                    notification = notification->next;
+                }
                 return BUS_ERR_OK;
+            }
             case MEM_ERR_NOT_ALIGNED:
                 return BUS_ERR_INVALID_ADDRESS;
             case MEM_ERR_NOT_WRITABLE:
@@ -146,6 +169,28 @@ BusError bus_word_write(Bus *bus, addr_t address, word_t word) {
     return BUS_ERR_INVALID_ADDRESS;
 }
 
+void bus_notification_register(Bus *bus, pthread_cond_t *cond, addr_t addr) {
+    Zone *zone = find_zone(bus, addr);
+    if (zone == NULL) {
+        abort();
+    }
+    if (zone->notification == NULL) {
+        zone->notification = malloc(sizeof(Notification));
+        zone->notification->cond = cond;
+        zone->notification->addr = addr;
+        zone->notification->next = NULL;
+        return;
+    }
+    Notification *notification = zone->notification;
+    while (notification->next != NULL) {
+        notification = notification->next;
+    }
+    notification->next = malloc(sizeof(Notification));
+    notification->next->cond = cond;
+    notification->next->addr = addr;
+    notification->next->next = NULL;
+}
+
 addr_t translate(Zone *zone, addr_t address) {
     return address - zone->from;
 }
@@ -154,7 +199,7 @@ void bus_state_print(Bus *bus, FILE *file) {
     fprintf(file, "\nBus state\n");
     for (int z = 0; z < bus->zones_count; z++) {
         Memory *memory = bus->zones[z].memory;
-        fprintf(file, "  %s zone %02u (%s): "AXHEX" - "AXHEX" (%u bytes)\n",
+        fprintf(file, "  %s zone %02u %-8s "AXHEX" - "AXHEX" (%u bytes)\n",
                 memory_mode_to_char(memory_mode_get(memory)),
                 z,
                 bus->zones[z].name,
@@ -192,7 +237,7 @@ char *memory_mode_to_char(MemMode mode) {
         case MEM_MODE_RW:
             return "RW";
         default:
-            fprintf(stderr, "Unsupported memory mode: %u", mode);
+            fprintf(stderr, "Unsupported out_memory mode: %u", mode);
             exit(1);
     }
 }

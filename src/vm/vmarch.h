@@ -62,8 +62,12 @@ typedef uint32_t addr_t;
 #define INTERRUPT_MASK_ADDRESS             ((addr_t)(VIDEO_META_ADDRESS - INTERRUPTS_WORDS_COUNT * WORD_SIZE))
 #define INTERRUPT_DESCRIPTOR_TABLE_ADDRESS ((addr_t)(INTERRUPT_MASK_ADDRESS - INTERRUPTS_COUNT * ADDR_SIZE))
 
-#define KEYBOARD_MEMORY_SIZE               4
-#define KEYBOARD_ADDRESS                   ((addr_t)(INTERRUPT_DESCRIPTOR_TABLE_ADDRESS - KEYBOARD_MEMORY_SIZE))
+// memory from keyboard to ext.
+#define KEYBOARD_OUT_MEMORY_SIZE           4
+#define KEYBOARD_OUT_ADDRESS               ((addr_t)(INTERRUPT_DESCRIPTOR_TABLE_ADDRESS - KEYBOARD_OUT_MEMORY_SIZE))
+// memory from ext. to keyboard
+#define KEYBOARD_IN_MEMORY_SIZE            4
+#define KEYBOARD_IN_ADDRESS                ((addr_t)(KEYBOARD_OUT_ADDRESS - KEYBOARD_IN_MEMORY_SIZE))
 
 #define INT_TIMER 3
 #define INT_VSYNC 4

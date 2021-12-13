@@ -42,8 +42,10 @@ void vmarch_print() {
     printf("  idt end:               "AXHEX"\n", INTERRUPT_MASK_ADDRESS - 1);
     printf("  interrupts mask start: "AXHEX"\n", INTERRUPT_MASK_ADDRESS);
     printf("  interrupts mask end:   "AXHEX"\n", INTERRUPT_MASK_ADDRESS + INTERRUPTS_WORDS_COUNT * WORD_SIZE - 1);
-    printf("  keyboard start:        "AXHEX"\n", KEYBOARD_ADDRESS);
-    printf("  keyboard end:          "AXHEX"\n", KEYBOARD_ADDRESS + KEYBOARD_MEMORY_SIZE - 1);
+    printf("  keyboard in start:     "AXHEX"\n", KEYBOARD_IN_ADDRESS);
+    printf("  keyboard in end:       "AXHEX"\n", KEYBOARD_IN_ADDRESS + KEYBOARD_IN_MEMORY_SIZE - 1);
+    printf("  keyboard out start:    "AXHEX"\n", KEYBOARD_OUT_ADDRESS);
+    printf("  keyboard out end:      "AXHEX"\n", KEYBOARD_OUT_ADDRESS + KEYBOARD_OUT_MEMORY_SIZE - 1);
 }
 
 void vmarch_header_print() {
@@ -55,7 +57,8 @@ void vmarch_header_print() {
     printf("$__video_buffer_size = %i\n", VIDEO_BUFFER_SIZE);
     printf("$__idt_start = "AXHEX"\n", INTERRUPT_DESCRIPTOR_TABLE_ADDRESS);
     printf("$__imask_start = "AXHEX"\n", INTERRUPT_MASK_ADDRESS);
-    printf("$__keyboard_start = "AXHEX"\n\n", KEYBOARD_ADDRESS);
+    printf("$__keyboard_out = "AXHEX"\n\n", KEYBOARD_OUT_ADDRESS);
+    printf("$__keyboard_in = "AXHEX"\n\n", KEYBOARD_IN_ADDRESS);
     printf("// interrupts\n");
     printf("$__int_timer = 0x%02x\n", INT_TIMER);
     printf("$__int_vsync = 0x%02x\n", INT_VSYNC);

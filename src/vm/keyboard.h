@@ -24,6 +24,8 @@ typedef uint16_t keyboard_key;
 
 Keyboard *keyboard_create(Bus *bus, PIC *pic);
 
+void keyboard_start(Keyboard *this);
+
 void keyboard_destroy(Keyboard *this);
 
 void keyboard_key_pressed(Keyboard *this, keyboard_key key);

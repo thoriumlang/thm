@@ -82,7 +82,7 @@ $word_width = 4
 
 :keyboard_int_handler
     PUSH r0, r1
-    MOV  r0, $__keyboard_start
+    MOV  r0, $__keyboard_out
     LOAD r0, r0
     CMP  r0, 0x00230001         // <p> key pressed ref.
     JEQ  @keyboard_int_handler_key_is_p

@@ -18,6 +18,7 @@
 #define C_VM_BUS_H
 
 #include <stdio.h>
+#include <pthread.h>
 #include "vmarch.h"
 #include "memory.h"
 #include "json.h"
@@ -40,6 +41,8 @@ BusError bus_memory_attach(Bus *bus, Memory *memory, addr_t from, char *name);
 BusError bus_word_read(Bus *bus, addr_t address, word_t *word);
 
 BusError bus_word_write(Bus *bus, addr_t address, word_t word);
+
+void bus_notification_register(Bus *bus, pthread_cond_t *cond, addr_t addr);
 
 void bus_state_print(Bus *bus, FILE *file);
 
