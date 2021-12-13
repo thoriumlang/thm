@@ -72,7 +72,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "thm"
+name = "tha"
 version = "0.1.0"
 dependencies = [
  "clap",
