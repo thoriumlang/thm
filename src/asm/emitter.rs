@@ -45,7 +45,11 @@ impl<'t> Emitter<'t> {
                         bytes.append(vec![op.bytecode(), *self.decode_register(r) as u8, 0, 0].as_mut());
                         let b = value.to_be_bytes();
                         bytes.extend_from_slice(&b);
-                    }
+                    },
+                    Instruction::IW(op,  value) => {
+                        bytes.append(vec![op.bytecode(), 0, 0, 0].as_mut());
+                        bytes.extend_from_slice(&(value.to_be_bytes()));
+                    },
                     Instruction::IR(op, r) => bytes.append(vec![op.bytecode(), *self.decode_register(r) as u8, 0, 0].as_mut()),
                     Instruction::IRR(op, r1, r2) => bytes.append(vec![
                         op.bytecode(), *self.decode_register(r1) as u8, *self.decode_register(r2) as u8, 0,

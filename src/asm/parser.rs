@@ -46,6 +46,7 @@ pub enum Instruction {
     IRR(Op, String, String),
     IRRR(Op, String, String, String),
     IRRW(Op, String, String, u32),
+    IW(Op, u32),
 }
 
 impl Instruction {
@@ -60,6 +61,7 @@ impl Instruction {
             &Instruction::IRR(op, _, _) => op,
             &Instruction::IRRR(op, _, _, _) => op,
             &Instruction::IRRW(op, _, _, _) => op,
+            &Instruction::IW(op, _) => op,
         };
     }
 }
@@ -171,7 +173,7 @@ impl<'t> Parser<'t> {
             "PANIC" => self.op_void(Op::Panic, position),
             "POP" => self.op_r_rr_rrr(Op::Pop, Op::PopRR, Op::PopRRR, position),
             "POPA" => self.op_void(Op::Popa, position),
-            "PUSH" => self.op_r_rr_rrr(Op::Push, Op::PushRR, Op::PushRRR, position),
+            "PUSH" => self.op_r_rr_rrr_w(Op::Push, Op::PushRR, Op::PushRRR, Op::PushW, position),
             "PUSHA" => self.op_void(Op::Pusha, position),
             "RET" => self.op_void(Op::Ret, position),
             "STOR" => self.op_rr(Op::Stor, position),
@@ -261,6 +263,26 @@ impl<'t> Parser<'t> {
                 return Ok(Instruction::IRR(op_rr, r0, r1));
             }
             return Ok(Instruction::IR(op_r, r0));
+        }
+        Err(format!("Expected <eol> at {}", position).into())
+    }
+
+    fn op_r_rr_rrr_w(&mut self, op_r: Op, op_rr: Op, op_rrr: Op, op_w: Op, position: &Position) -> Result<Instruction> {
+        if let Some(Token::Identifier(_, _)) = self.peek_next() {
+            return self.op_r_rr_rrr(op_r, op_rr, op_rrr, position);
+        }
+
+        let instruction = match self.read_next() {
+            Some(Token::Integer(_, w)) => Some(Ok(Instruction::IW(op_w, w))),
+            Some(Token::Variable(_, v)) => match self.symbols.get(&v) {
+                Some(Token::Integer(_, w)) => Some(Ok(Instruction::IW(op_w, *w))),
+                _ => None
+            }
+            _ => None
+        }.unwrap_or(Err(format!("Expected <variable> or <w> at {}", position).into()));
+
+        if self.read_eol() {
+            return instruction;
         }
         Err(format!("Expected <eol> at {}", position).into())
     }
@@ -630,6 +652,30 @@ mod tests {
         }
     }
 
+    macro_rules! op_w_test {
+        ($($name:ident: $value:expr,)*) => {
+        $(
+            #[test]
+            fn $name() {
+                let (input, op, w) = $value;
+
+                let mut lexer = Lexer::from_text(input);
+                let mut nodes = vec![];
+                let mut symbols = HashMap::new();
+                let r = Parser::from_lexer(&mut lexer, &mut nodes, &mut symbols).next();
+                assert_eq!(true, r.is_some());
+
+                let item = r.unwrap();
+                assert_eq!(true, item.is_ok(), "Expected Ok(...), got {:?}", item);
+
+                let expected = Node::Instruction(Instruction::IW(op, w));
+                let actual = item.unwrap();
+                assert_eq!(expected, actual, "Expected {:?}, got {:?}", expected, actual);
+            }
+        )*
+        }
+    }
+
     macro_rules! op_rr_test {
         ($($name:ident: $value:expr,)*) => {
         $(
@@ -791,6 +837,10 @@ mod tests {
         push:    ("PUSH r0\n", Op::Push, "r0"),
         pop:     ("POP  r0\n", Op::Pop, "r0"),
         calla_r: ("CALL r0\n", Op::CallaR, "r0"),
+    }
+
+    op_w_test! {
+        push_w:  ("PUSH  12\n", Op::PushW, 12),
     }
 
     op_rr_test! {

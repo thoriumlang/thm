@@ -52,3 +52,4 @@
 76,Xbrk,4
 77,CmpRW,8
 78,LoadRRW,8
+79,PushW,8

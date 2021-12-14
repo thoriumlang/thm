@@ -1,9 +1,7 @@
 // r0 will contain 1+2
 
-    MOV   r1, 1
-    MOV   r2, 2
-
-    PUSH  r1, r2
+    PUSH  1
+    PUSH  2
     CALL  @add
 
     HALT

@@ -91,6 +91,19 @@ void op_push(CPU *cpu, word_t word) {
     }
 }
 
+void op_push_w(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
+    word_t val = cpu_fetch(cpu);
+    if (cpu->state.panic != CPU_ERR_OK) {
+        return;
+    }
+    cpu->sp -= WORD_SIZE;
+    if (bus_word_write(cpu->bus, cpu->sp, val) != BUS_ERR_OK) {
+        cpu->state.panic = CPU_ERR_CANNOT_WRITE_MEMORY;
+    }
+}
+
 void op_push_rr(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
