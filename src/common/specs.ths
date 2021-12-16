@@ -8,6 +8,7 @@
 # [x] means address pointed to by x
 #
 ### block comment
+COMMENT
 OpDecl          : LPAR OP MNEMONIC ( LPAR OpAttribute RPAR )* RPAR
                 | LPAR REG REG_NAME RegAttribute* RPAR
 
@@ -49,32 +50,30 @@ NMEMONIC        : [A-Z][A-Z0-9]*
 REG_NAME        : [A-Z][A-Z0-9]*
 TEXT            : 
 ###
-#
-##
 
 (op NOP (code 0)            (effect none))
 (op HALT                    (effect halts the CPU))
 (op PANIC                   (effect halts the CPU in error mode))
 (op MOV
     ((args r0,w0)           (effect `r0 = w0`)
-                            (flags n.z)
+                            (flags n,z)
                             (comments w0 may be an address in assembly code))
     ((args r0,r1)           (effect `r0 = r1`)
-                            (flags n.z)))
+                            (flags n,z)))
 (op ADD
-    ((args r0,r1)           (effect `r0 = r0 + r1`
+    ((args r0,r1)           (effect `r0 = r0 + r1`)
                             (flags n,z))
-    ((args r0,w0)           (effect `r0 = r0 + w0`
+    ((args r0,w0)           (effect `r0 = r0 + w0`)
                             (flags n,z)))
 (op SUB
-    ((args r0,r1)           (effect `r0 = r0 - r1`
+    ((args r0,r1)           (effect `r0 = r0 - r1`)
                             (flags n,z))
-    ((args r0,w0)           (effect `r0 = r0 - w0`
+    ((args r0,w0)           (effect `r0 = r0 - w0`)
                             (flags n,z)))
 (op MUL
-    ((args r0,r1)           (effect `r0 = r0 * r1`
+    ((args r0,r1)           (effect `r0 = r0 * r1`)
                             (flags n,z))
-    ((args r0,w0)           (effect `r0 = r0 * w0`
+    ((args r0,w0)           (effect `r0 = r0 * w0`)
                             (flags n,z))
 )
 # (op DIV
@@ -193,9 +192,9 @@ TEXT            :
 # ROL r0, b
 # ROL r0, r1
 
-(reg IDT (index: 250))
-(reg IR  (index: %))
-(reg SP  (index: %))
-(reg BP  (index: %))
-(reg PC  (index: %))
-(reg CS  (index: %))
+(reg IDT (index 250))
+(reg IR)
+(reg SP)
+(reg BP)
+(reg PC)
+(reg CS)
