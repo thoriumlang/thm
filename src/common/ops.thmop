@@ -1,0 +1,201 @@
+##
+# r[0-9]+ -> register
+# w[0-9]+ -> word
+# c[0-9]+ -> relative address (@addr)
+# a[0-9]+ -> absolute address (&addr)
+# b[9-0]+ -> byte
+#
+# [x] means address pointed to by x
+#
+### block comment
+OpDecl          : LPAR OP MNEMONIC ( LPAR OpAttribute RPAR )* RPAR
+                | LPAR REG REG_NAME RegAttribute* RPAR
+
+OpAttribute     : ARGS Argument ( COMMA Argument )*
+                | FLAGS Flag ( COMMA Flag )*
+                | COND Text
+                | COMMENT Text
+                | EFFECT Text
+
+Argument        : Register | Word | Byte
+Register        : REGISTER
+Word            : WORD
+Byte            : BYTE
+
+Flag            : Zero | Negative
+Zero            : ZERO
+Negative        : NEGATIVE
+
+Text            : TEXT
+
+RegAttribute    : LPAR RPAR
+
+OP              : 'op'
+REF             : 'reg'
+EFFECT          : 'effect'
+ARGS            : 'args'
+FLAGS           : 'flags'
+COMMENTS        : 'comments'
+COND            : 'cond'
+REGISTER        : r[0-9]+
+WORD            : w[0-9]+
+BYTE            : b[0-9]+
+ZERO            : 'z'
+NEGATIVE        : 'n'
+LPAR            : '('
+RPAR            : ')'
+COMMA           : ','
+NMEMONIC        : [A-Z][A-Z0-9]*
+REG_NAME        : [A-Z][A-Z0-9]*
+TEXT            : 
+###
+#
+##
+
+(op NOP (code 0)            (effect none))
+(op HALT                    (effect halts the CPU))
+(op PANIC                   (effect halts the CPU in error mode))
+(op MOV
+    ((args r0,w0)           (effect `r0 = w0`)
+                            (flags n.z)
+                            (comments w0 may be an address in assembly code))
+    ((args r0,r1)           (effect `r0 = r1`)
+                            (flags n.z)))
+(op ADD
+    ((args r0,r1)           (effect `r0 = r0 + r1`
+                            (flags n,z))
+    ((args r0,w0)           (effect `r0 = r0 + w0`
+                            (flags n,z)))
+(op SUB
+    ((args r0,r1)           (effect `r0 = r0 - r1`
+                            (flags n,z))
+    ((args r0,w0)           (effect `r0 = r0 - w0`
+                            (flags n,z)))
+(op MUL
+    ((args r0,r1)           (effect `r0 = r0 * r1`
+                            (flags n,z))
+    ((args r0,w0)           (effect `r0 = r0 * w0`
+                            (flags n,z))
+)
+# (op DIV
+#     ((args r0,r1)           (effect `r0 = floor(r0 / r1)`)
+#                             (flags n,z))
+#     ((args r0,w0)           (effect `r0 = floor(r0 / w0)`)
+#                             (flags n,z))
+#     ((args r0,r1,r2)        (effect `r0 = floor(r0 / r2); r1 = r0 % r2`
+#                             (flags n,z))
+#     ((args r0,r1,w0)        (effect `r0 = floor(r0 / w0); r1 = r0 % w0`
+#                             (flags n,z)))
+(op INC
+    ((args r0)              (effect `r0 = r0 + 1`)
+                            (flags n,z)))
+(op DEC
+    ((args r0)              (effect `r0 = r0 - 1`)
+                            (flags n,z)))
+(op AND
+    ((args r0,r1)           (effect `r0 = r0 & r1`)
+                            (flags n,z))
+    ((args r0,w0)           (effect `r0 = r0 & w0`)
+                            (flags n,z)))
+(op OR
+    ((args r0,r1)           (effect `r0 = r0 | r1`)
+                            (flags n,z))
+    ((args r0,w0)           (effect `r0 = r0 | w0`)
+                            (flags n,z)))
+(op XOR
+    ((args r0,r1)           (effect `r0 = r0 ^ r1`)
+                            (flags n,z))
+    ((args r0,w0)           (effect `r0 = r0 ^ w0`)
+                            (flags n,z)))
+# (op NOT
+#     ((args r0)              (effect `r0 = ~r0`)
+#                             (flags n,z)))
+(op CMP
+    ((args r0,r1)           (effect updates flags as if `SUB r0, r1` was executed)
+                            (flags n,z))
+    ((args r0,w0)           (effect updates flags as if `SUB r0, w0` was executed)
+                            (flags n,z)))
+(op PUSH
+    ((args r0)              (effect `[sp] = r0; sp = next(sp)`))
+    ((args r0,r1)           (effect `[sp] = r0; [next(sp)] = r1; sp + next(next(sp))`))
+    ((args r0,r1,r2)        (effect `[sp] = r0; [next(sp)] = r1; [next(next(sp))] = r2; sp + next(next(next(sp)))`))
+    ((args w0)              (effect `[sp] = w0; sp = next(sp)`)))
+(op PUSHA                   (effect pushes all r0..rn to the stack))
+(op POP
+    ((args r0)              (effect `r0 = [prev(sp)]; sp = prev(sp)`))
+    ((args r0,r1)           (effect `r0 = [prev(sp)]; r1 = [prev(prev(sp))]; sp = prev(sp)`))
+    ((args r0,r1,r2)        (effect `r0 = [prev(sp)]; r1 = [prev(prev(sp))]; r2 = [prev(prev(prev(sp)))]; sp = prev(sp)`)))
+(op POPA                    (effect pops all r0..rn from the stack))
+(op JEQ
+    ((args c0)              (effect `pc = cs + c0`)
+                            (cond `z = 1`))
+    ((args a0)              (effect `pc = a0`)
+                            (cond `z = 1`)))
+(op JNE
+    ((args c0)              (effect `pc = cs + c0`)
+                            (cond `z = 0`))
+    ((args a0)              (effect `pc = a0`)
+                            (cond `z = 0`)))
+(op J
+    ((args c0)              (effect `pc = cs + c0`))
+    ((args a0)              (effect `pc = a0`)))
+(op CALL
+    ((args c0)              (effect `PUSH pc; J cs + c0`))
+    ((args a0)              (effect `PUSH pc; J a0`))
+    ((args r0)              (effect `PUSH pc; J r0`)))
+# (op CALLEQ
+#     ((args c0)              (effect `PUSH pc; J cs + c0`)
+#                             (cond `z = 0`))
+#     ((args a0)              (effect `PUSH pc; J a0`)
+#                             (cond `z = 0`))
+#     ((args r0)              (effect `PUSH pc; J r0`)
+#                             (cond `z = 0`)))
+# (op CALLNE
+#     ((args c0)              (effect `PUSH pc; J cs + c0`)
+#                             (cond `z = 0`))
+#     ((args a0)              (effect `PUSH pc; J a0`)
+#                             (cond `z = 0`))
+#     ((args r0)              (effect `PUSH pc; J r0`)
+#                             (cond `z = 0`)))
+(op RET                     (effect `POP pc`)
+#    ((args b0)              (effect `sp = sp - b0 * size(word); POP pc`))
+)
+(op INT
+    ((args b0)              (effect triggers interrupt `b0`)))
+(op IRET                    (effect ???))
+(op STOR
+    ((args r0,r1)           (effect `[r0] = r1`))
+#    ((args r0,w0)           (effect `[r0] = w0`))
+)
+(op LOAD
+    ((args r0,r1)           (effect `r0 = [r1]`))
+    ((args r0,r1,w0)        (effect `r0 = [r1 + w0]`)))
+(op MI (args b0)            (effect masks interrupt `b0`))
+(op UMI (args b0)           (effect unmasks interrupt `b0`))
+(op IND                     (effect disable all interrupts))
+(op INE                     (effect enables all interrupts))
+(op WFI                     (effect pauses the CPU until the next interrupt is triggered))
+(op XBM                     (comment to remove))
+(op XDBG                    (comment to remove))
+(op XPSE                    (effect enables step printing))
+(op XPSD                    (effect diables step printing))
+(op XBRK                    (effect triggers VM (CPU) debugger))
+# (op SWAP
+#     ((args r0,r1)           (effect swaps `r0` and `r1` values)
+#                             (flags n,z)))
+
+# SHR r0, b
+# SHR r0, r1
+# SHL r0, b
+# SHL r0, r1
+# ROR r0, b
+# ROR r0, r1
+# ROL r0, b
+# ROL r0, r1
+
+(reg IDT (index: 250))
+(reg IR  (index: %))
+(reg SP  (index: %))
+(reg BP  (index: %))
+(reg PC  (index: %))
+(reg CS  (index: %))
