@@ -1,63 +1,10 @@
-##
-# r[0-9]+ -> register
-# w[0-9]+ -> word
-# c[0-9]+ -> relative address (@addr)
-# a[0-9]+ -> absolute address (&addr)
-# b[9-0]+ -> byte
-#
-# [x] means address pointed to by x
-#
-### block comment
-COMMENT
-OpDecl          : LPAR OP MNEMONIC ( LPAR OpAttribute RPAR )* RPAR
-                | LPAR REG REG_NAME RegAttribute* RPAR
-
-OpAttribute     : ARGS Argument ( COMMA Argument )*
-                | FLAGS Flag ( COMMA Flag )*
-                | COND Text
-                | COMMENT Text
-                | EFFECT Text
-
-Argument        : Register | Word | Byte
-Register        : REGISTER
-Word            : WORD
-Byte            : BYTE
-
-Flag            : Zero | Negative
-Zero            : ZERO
-Negative        : NEGATIVE
-
-Text            : TEXT
-
-RegAttribute    : LPAR RPAR
-
-OP              : 'op'
-REF             : 'reg'
-EFFECT          : 'effect'
-ARGS            : 'args'
-FLAGS           : 'flags'
-COMMENTS        : 'comments'
-COND            : 'cond'
-REGISTER        : r[0-9]+
-WORD            : w[0-9]+
-BYTE            : b[0-9]+
-ZERO            : 'z'
-NEGATIVE        : 'n'
-LPAR            : '('
-RPAR            : ')'
-COMMA           : ','
-NMEMONIC        : [A-Z][A-Z0-9]*
-REG_NAME        : [A-Z][A-Z0-9]*
-TEXT            : 
-###
-
 (op NOP (code 0)            (effect none))
 (op HALT                    (effect halts the CPU))
 (op PANIC                   (effect halts the CPU in error mode))
 (op MOV
     ((args r0,w0)           (effect `r0 = w0`)
                             (flags n,z)
-                            (comments w0 may be an address in assembly code))
+                            (comment w0 may be an address in assembly code))
     ((args r0,r1)           (effect `r0 = r1`)
                             (flags n,z)))
 (op ADD
@@ -126,33 +73,33 @@ TEXT            :
     ((args r0,r1,r2)        (effect `r0 = [prev(sp)]; r1 = [prev(prev(sp))]; r2 = [prev(prev(prev(sp)))]; sp = prev(sp)`)))
 (op POPA                    (effect pops all r0..rn from the stack))
 (op JEQ
-    ((args c0)              (effect `pc = cs + c0`)
+    ((args @0)              (effect `pc = cs + @0`)
                             (cond `z = 1`))
-    ((args a0)              (effect `pc = a0`)
+    ((args &0)              (effect `pc = &0`)
                             (cond `z = 1`)))
 (op JNE
-    ((args c0)              (effect `pc = cs + c0`)
+    ((args @0)              (effect `pc = cs + @0`)
                             (cond `z = 0`))
-    ((args a0)              (effect `pc = a0`)
+    ((args &0)              (effect `pc = &0`)
                             (cond `z = 0`)))
 (op J
-    ((args c0)              (effect `pc = cs + c0`))
-    ((args a0)              (effect `pc = a0`)))
+    ((args @0)              (effect `pc = cs + @0`))
+    ((args &0)              (effect `pc = &0`)))
 (op CALL
-    ((args c0)              (effect `PUSH pc; J cs + c0`))
-    ((args a0)              (effect `PUSH pc; J a0`))
+    ((args @0)              (effect `PUSH pc; J cs + @0`))
+    ((args &0)              (effect `PUSH pc; J &0`))
     ((args r0)              (effect `PUSH pc; J r0`)))
 # (op CALLEQ
-#     ((args c0)              (effect `PUSH pc; J cs + c0`)
+#     ((args @0)              (effect `PUSH pc; J cs + @0`)
 #                             (cond `z = 0`))
-#     ((args a0)              (effect `PUSH pc; J a0`)
+#     ((args &0)              (effect `PUSH pc; J &0`)
 #                             (cond `z = 0`))
 #     ((args r0)              (effect `PUSH pc; J r0`)
 #                             (cond `z = 0`)))
 # (op CALLNE
-#     ((args c0)              (effect `PUSH pc; J cs + c0`)
+#     ((args @0)              (effect `PUSH pc; J cs + @0`)
 #                             (cond `z = 0`))
-#     ((args a0)              (effect `PUSH pc; J a0`)
+#     ((args &0)              (effect `PUSH pc; J &0`)
 #                             (cond `z = 0`))
 #     ((args r0)              (effect `PUSH pc; J r0`)
 #                             (cond `z = 0`)))
@@ -169,8 +116,8 @@ TEXT            :
 (op LOAD
     ((args r0,r1)           (effect `r0 = [r1]`))
     ((args r0,r1,w0)        (effect `r0 = [r1 + w0]`)))
-(op MI (args b0)            (effect masks interrupt `b0`))
-(op UMI (args b0)           (effect unmasks interrupt `b0`))
+(op MI ((args b0)           (effect masks interrupt `b0`)))
+(op UMI ((args b0)          (effect unmasks interrupt `b0`)))
 (op IND                     (effect disable all interrupts))
 (op INE                     (effect enables all interrupts))
 (op WFI                     (effect pauses the CPU until the next interrupt is triggered))
@@ -192,9 +139,9 @@ TEXT            :
 # ROL r0, b
 # ROL r0, r1
 
-(reg IDT (index 250))
-(reg IR)
-(reg SP)
-(reg BP)
-(reg PC)
-(reg CS)
+# (reg IDT (index 250))
+# (reg IR)
+# (reg SP)
+# (reg BP)
+# (reg PC)
+# (reg CS)

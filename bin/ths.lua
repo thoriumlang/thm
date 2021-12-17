@@ -17,7 +17,43 @@ elseif ... then
     end
 end
 
+function enum(tbl)
+    for i = 1, #tbl do
+        tbl[tbl[i]] = i
+    end
+    return tbl
+end
+
+function map(f, t)
+    local t1 = {}
+    local t_len = #t
+    for i = 1, t_len do
+        t1[i] = f(t[i])
+    end
+    return t1
+end
+
+function sum(t)
+    local r = 0
+    local t_len = #t
+
+    for i = 1, t_len do
+        r = r + t[i]
+    end
+
+    return r
+end
+
+function table.copy(t)
+    local u = { }
+    for k, v in pairs(t) do
+        u[k] = v
+    end
+    return u
+end
+
 requireRel("ths-lexer")
+requireRel("ths-parser")
 
 local function read_file(path)
     local file = io.open(path, "rb") -- r read mode and b binary mode
@@ -29,37 +65,9 @@ local function read_file(path)
     return content
 end
 
-local lexer = Lexer:new(read_file(arg[1]));
-
-local ident = ""
-while (true) do
-    if token.type == TokenType.EOF then
-        break
-    elseif token.type == TokenType.LPAR then
-        io.write(ident .. "(\n")
-        ident = ident .. "  "
-    elseif token.type == TokenType.RPAR then
-        ident = ident:sub(1, #ident - 2)
-        io.write(ident .. ")\n")
-    elseif token.type == TokenType.COMMA then
-        -- io.write(ident .. ",")
-    elseif token.type == TokenType.KEYWORD then
-        io.write(ident .. "[kw: " .. token.value .. "]\n")
-    elseif token.type == TokenType.ID then
-        io.write(ident .. "[id: " .. token.value .. "]\n")
-    elseif token.type == TokenType.TEXT then
-        io.write(ident .. "[tx: " .. token.value .. "]\n")
-    elseif token.type == TokenType.NUMBER then
-        io.write(ident .. "[nr: " .. token.value .. "]\n")
-    elseif token.type == TokenType.REGISTER then
-        io.write(ident .. "[r:  " .. token.value .. "]\n")
-    elseif token.type == TokenType.WORD then
-        io.write(ident .. "[w:  " .. token.value .. "]\n")
-    elseif token.type == TokenType.BYTE then
-        io.write(ident .. "[b:  " .. token.value .. "]\n")
-    elseif token.type == TokenType.FLAG then
-        io.write(ident .. "[fg: " .. token.value .. "]\n")
-    elseif token.type == TokenType.WHITESPACE then
-        -- io.write(token.value)
-    end
+local lexer = Lexer:new(read_file(arg[1]))
+local parser = Parser:new(lexer)
+local ast = parser:parse()
+for i = 1, #ast do
+    io.write(ast[i]:toString() .. "\n")
 end

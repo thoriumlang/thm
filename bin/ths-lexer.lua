@@ -6,13 +6,6 @@
 
 Lexer = {}
 
-local function enum(tbl)
-    for i = 1, #tbl do
-        tbl[tbl[i]] = i
-    end
-    return tbl
-end
-
 local function lookupify(src)
     list = {}
     for i = 1, src:len() do
@@ -35,15 +28,21 @@ TokenType = enum {
     "BYTE",
     "FLAG",
     "WHITESPACE",
+    "CS_ADDRESS",
+    "ABSOLUTE_ADDRESS",
 }
+
+function TokenType.toString(i)
+    return TokenType[i]
+end
 
 function Lexer:new(text)
     local lexer = {
-        text = text;
-        start = 1;
-        pos = 1;
-        line = 1;
-        column = 1;
+        text = text,
+        start = 1,
+        pos = 1,
+        line = 1,
+        column = 1,
     }
     setmetatable(lexer, { __index = Lexer })
     return lexer
@@ -58,13 +57,14 @@ local chars = {
 
 local keyword = enum {
     "op",
-    "reg",
-    "effect",
-    "flags",
-    "args",
-    "comment",
-    "cond",
     "code",
+    "args",
+    "cond",
+    "flags",
+    "effect",
+    "comment",
+
+    "reg",
     "index"
 }
 
@@ -206,6 +206,10 @@ function Lexer:next()
             return makeToken(TokenType.WORD, readNumber())
         elseif char == "b" and chars.digit[look()] then
             return makeToken(TokenType.BYTE, readNumber())
+        elseif char == "@" and chars.digit[look()] then
+            return makeToken(TokenType.CS_ADDRESS, readNumber())
+        elseif char == "&" and chars.digit[look()] then
+            return makeToken(TokenType.ABSOLUTE_ADDRESS, readNumber())
         elseif chars.flags[char] then
             return makeToken(TokenType.FLAG)
         elseif chars.wordLetter[char] then
