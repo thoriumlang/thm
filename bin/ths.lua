@@ -33,7 +33,6 @@ local lexer = Lexer:new(read_file(arg[1]));
 
 local ident = ""
 while (true) do
-    local token = lexer:next(Mode.NORMAL)
     if token.type == TokenType.EOF then
         break
     elseif token.type == TokenType.LPAR then
@@ -46,8 +45,8 @@ while (true) do
         -- io.write(ident .. ",")
     elseif token.type == TokenType.KEYWORD then
         io.write(ident .. "[kw: " .. token.value .. "]\n")
-    elseif token.type == TokenType.OP then
-        io.write(ident .. "[op: " .. token.value .. "]\n")
+    elseif token.type == TokenType.ID then
+        io.write(ident .. "[id: " .. token.value .. "]\n")
     elseif token.type == TokenType.TEXT then
         io.write(ident .. "[tx: " .. token.value .. "]\n")
     elseif token.type == TokenType.NUMBER then
@@ -60,5 +59,7 @@ while (true) do
         io.write(ident .. "[b:  " .. token.value .. "]\n")
     elseif token.type == TokenType.FLAG then
         io.write(ident .. "[fg: " .. token.value .. "]\n")
+    elseif token.type == TokenType.WHITESPACE then
+        -- io.write(token.value)
     end
 end

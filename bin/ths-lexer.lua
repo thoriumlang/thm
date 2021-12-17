@@ -13,19 +13,11 @@ local function enum(tbl)
     return tbl
 end
 
-local function lookupify(src, list)
-    list = list or {}
-
-    if type(src) == 'string' then
-        for i = 1, src:len() do
-            list[src:sub(i, i)] = true
-        end
-    elseif type(src) == 'table' then
-        for i = 1, #src do
-            list[src[i]] = true
-        end
+local function lookupify(src)
+    list = {}
+    for i = 1, src:len() do
+        list[src:sub(i, i)] = true
     end
-
     return list
 end
 
@@ -34,7 +26,7 @@ TokenType = enum {
     "LPAR",
     "RPAR",
     "COMMA",
-    "OP",
+    "ID",
     "TEXT",
     "KEYWORD",
     "NUMBER",
@@ -42,6 +34,7 @@ TokenType = enum {
     "WORD",
     "BYTE",
     "FLAG",
+    "WHITESPACE",
 }
 
 function Lexer:new(text)
@@ -60,6 +53,7 @@ local chars = {
     whitespace = lookupify(" \n\t\r"),
     digit = lookupify("0123456789"),
     wordLetter = lookupify("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"),
+    flags = lookupify("nz"),
 }
 
 local keyword = enum {
@@ -74,15 +68,7 @@ local keyword = enum {
     "index"
 }
 
-Mode = enum {
-    "NORMAL",
-    "ARG",
-    "FLAG",
-}
-
-function Lexer:next(mode)
-    mode = (mode or Mode.NORMAL)
-
+function Lexer:next()
     local function look(delta)
         delta = self.pos + (delta or 0)
         return self.text:sub(delta, delta)
@@ -99,7 +85,7 @@ function Lexer:next(mode)
         return look(-1)
     end
 
-    local function skipWhitespaces()
+    local function readWhitespaces()
         while true do
             if look() == '\n' then
                 self.pos = self.pos + 1
@@ -111,7 +97,7 @@ function Lexer:next(mode)
                 break
             end
         end
-        self.start = self.pos
+        return self.text:sub(self.start, self.pos - 1)
     end
 
     local function skipBlockComment()
@@ -121,7 +107,7 @@ function Lexer:next(mode)
                 break
             end
             if chars.whitespace[look()] then
-                skipWhitespaces()
+                readWhitespaces()
             else
                 eat()
             end
@@ -188,7 +174,11 @@ function Lexer:next(mode)
     end
 
     while true do
-        skipWhitespaces()
+        local whitespaces = readWhitespaces()
+
+        if whitespaces ~= "" then
+            return makeToken(TokenType.WHITESPACE)
+        end
 
         local char = get()
 
@@ -210,18 +200,13 @@ function Lexer:next(mode)
             return makeToken(TokenType.COMMA)
         elseif chars.digit[char] then
             return makeToken(TokenType.NUMBER, readNumber())
-        elseif mode == Mode.ARG then
-            if char == "r" and chars.digit[look()] then
-                self.start = self.pos
-                return makeToken(TokenType.REGISTER, readNumber())
-            elseif char == "w" and chars.digit[look()] then
-                self.start = self.pos
-                return makeToken(TokenType.WORD, readNumber())
-            elseif char == "b" and chars.digit[look()] then
-                self.start = self.pos
-                return makeToken(TokenType.BYTE, readNumber())
-            end
-        elseif mode == Mode.FLAG then
+        elseif char == "r" and chars.digit[look()] then
+            return makeToken(TokenType.REGISTER, readNumber())
+        elseif char == "w" and chars.digit[look()] then
+            return makeToken(TokenType.WORD, readNumber())
+        elseif char == "b" and chars.digit[look()] then
+            return makeToken(TokenType.BYTE, readNumber())
+        elseif chars.flags[char] then
             return makeToken(TokenType.FLAG)
         elseif chars.wordLetter[char] then
             local word = readWord()
@@ -229,7 +214,7 @@ function Lexer:next(mode)
                 return makeToken(TokenType.KEYWORD)
             end
             if isMnemonic(word) then
-                return makeToken(TokenType.OP) --  find a better name or make it context-aware
+                return makeToken(TokenType.ID)
             end
             return makeToken(TokenType.TEXT, readText())
         else
