@@ -121,7 +121,7 @@
 (op IND                     (effect disable all interrupts))
 (op INE                     (effect enables all interrupts))
 (op WFI                     (effect pauses the CPU until the next interrupt is triggered))
-(op XBM                     (comment to remove))
+(op XBM   (code 240)        (comment to remove))
 (op XDBG                    (comment to remove))
 (op XPSE                    (effect enables step printing))
 (op XPSD                    (effect diables step printing))
@@ -138,10 +138,3 @@
 # ROR r0, r1
 # ROL r0, b
 # ROL r0, r1
-
-# (reg IDT (index 250))
-# (reg IR)
-# (reg SP)
-# (reg BP)
-# (reg PC)
-# (reg CS)
