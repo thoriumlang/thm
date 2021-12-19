@@ -66,7 +66,7 @@ mod tests {
 
     #[test]
     fn test_register_invalid_r() {
-        let nodes = vec![Node::Instruction(Instruction::IR(Op::Inc, "r32".to_string()))];
+        let nodes = vec![Node::Instruction(Instruction::IR(Op::IncR, "r32".to_string()))];
 
         let checker = Checker::new(VM_CONFIG);
         let result = checker.check(&nodes);

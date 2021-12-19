@@ -78,7 +78,7 @@ void op_panic(CPU *cpu, word_t word) {
     }
 }
 
-void op_push(CPU *cpu, word_t word) {
+void op_push_r(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
     uint8_t r = ((uint8_t *) &word)[1];
@@ -168,7 +168,7 @@ void op_pusha(CPU *cpu, word_t word) {
     }
 }
 
-void op_pop(CPU *cpu, word_t word) {
+void op_pop_r(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
     uint8_t r = ((uint8_t *) &word)[1];
@@ -306,7 +306,7 @@ void op_cmp_rw(CPU *cpu, word_t word) {
     cpu_flags_update(cpu, (sword_t) a_val - (sword_t) b_val);
 }
 
-void op_jseq(CPU *cpu, word_t word) {
+void op_jeq_s(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
     addr_t address = 0;
@@ -322,7 +322,7 @@ void op_jseq(CPU *cpu, word_t word) {
               + (cpu->flags.zero == 0) * (pc + ADDR_SIZE); // otherwise, move to next opcode
 }
 
-void op_jaeq(CPU *cpu, word_t word) {
+void op_jeq_a(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
     addr_t address = 0;
@@ -338,7 +338,7 @@ void op_jaeq(CPU *cpu, word_t word) {
               + (cpu->flags.zero == 0) * (pc + ADDR_SIZE); // otherwise, move to next opcode
 }
 
-void op_jsne(CPU *cpu, word_t word) {
+void op_jne_s(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
     addr_t address = 0;
@@ -354,7 +354,7 @@ void op_jsne(CPU *cpu, word_t word) {
               + (cpu->flags.zero == 1) * (pc + ADDR_SIZE); // otherwise, move to next word
 }
 
-void op_jane(CPU *cpu, word_t word) {
+void op_jne_a(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
     addr_t address = 0;
@@ -370,7 +370,7 @@ void op_jane(CPU *cpu, word_t word) {
               + (cpu->flags.zero == 1) * (pc + ADDR_SIZE); // otherwise, move to next word
 }
 
-void op_js(CPU *cpu, word_t word) {
+void op_j_s(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
     word_t address = cpu_fetch(cpu);
@@ -381,7 +381,7 @@ void op_js(CPU *cpu, word_t word) {
     cpu->pc = cpu->cs + address;
 }
 
-void op_ja(CPU *cpu, word_t word) {
+void op_j_a(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
     word_t address = cpu_fetch(cpu);
@@ -392,7 +392,7 @@ void op_ja(CPU *cpu, word_t word) {
     cpu->pc = address;
 }
 
-void op_stor(CPU *cpu, word_t word) {
+void op_stor_rr(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
     uint8_t to = ((uint8_t *) &word)[1];
@@ -412,7 +412,7 @@ void op_stor(CPU *cpu, word_t word) {
     }
 }
 
-void op_load(CPU *cpu, word_t word) {
+void op_load_rr(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
     uint8_t to = ((uint8_t *) &word)[1];
@@ -662,7 +662,7 @@ void op_xor_rw(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, a, a_val ^ b_val);
 }
 
-void op_dec(CPU *cpu, word_t word) {
+void op_dec_r(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
     uint8_t r = ((uint8_t *) &word)[1];
@@ -675,7 +675,7 @@ void op_dec(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, r, (word_t) ((sword_t) r_val - 1));
 }
 
-void op_inc(CPU *cpu, word_t word) {
+void op_inc_r(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
     uint8_t r = ((uint8_t *) &word)[1];
@@ -687,7 +687,7 @@ void op_inc(CPU *cpu, word_t word) {
     cpu->state.panic = cpu_register_set(cpu, r, (word_t) ((sword_t) r_val + 1));
 }
 
-void op_calls(CPU *cpu, word_t word) {
+void op_call_s(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
     addr_t address = (addr_t) cpu_fetch(cpu);
@@ -703,7 +703,7 @@ void op_calls(CPU *cpu, word_t word) {
     cpu->pc = cpu->cs + address;
 }
 
-void op_calla_a(CPU *cpu, word_t word) {
+void op_call_a(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
     addr_t address = (addr_t) cpu_fetch(cpu);
@@ -719,7 +719,7 @@ void op_calla_a(CPU *cpu, word_t word) {
     cpu->pc = address;
 }
 
-void op_calla_r(CPU *cpu, word_t word) {
+void op_call_r(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
     uint8_t r = ((uint8_t *) &word)[1];
@@ -757,21 +757,21 @@ void op_iret(CPU *cpu, word_t word) {
     cpu->flags.interrupts_enabled = 1;
 }
 
-void op_int(CPU *cpu, word_t word) {
+void op_int_b(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
     uint8_t interrupt = ((uint8_t *) &word)[1];
     cpu_interrupt_trigger(cpu, interrupt);
 }
 
-void op_mi(CPU *cpu, word_t word) {
+void op_mi_b(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
     uint8_t interrupt = ((uint8_t *) &word)[1];
     pic_interrupt_mask(cpu->pic, interrupt);
 }
 
-void op_umi(CPU *cpu, word_t word) {
+void op_umi_b(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
     uint8_t interrupt = ((uint8_t *) &word)[1];
@@ -847,19 +847,19 @@ char *cpu_instruction_to_string(CPU *cpu, word_t word) {
         case XPSD:
             sprintf(buffer, "  %lu\t"AXHEX"\t%s", cpu->debug.step, addr, ops_name[op]);
             break;
-        case CALLA_R:
-        case DEC:
-        case INC:
-        case POP:
-        case PUSH: {
+        case CALL_R:
+        case DEC_R:
+        case INC_R:
+        case POP_R:
+        case PUSH_R: {
             char *r = register_name(((uint8_t *) &word)[1]);
             sprintf(buffer, "  %lu\t"AXHEX"\t%s %s", cpu->debug.step, addr, ops_name[op], r);
             free(r);
             break;
         }
-        case MI :
-        case UMI:
-        case INT: {
+        case MI_B :
+        case UMI_B:
+        case INT_B: {
             uint8_t b = ((uint8_t *) &word)[1];
             sprintf(buffer, "  %lu\t"AXHEX"\t%s %i", cpu->debug.step, addr, ops_name[op], b);
             break;
@@ -867,14 +867,14 @@ char *cpu_instruction_to_string(CPU *cpu, word_t word) {
         case ADD_RR:
         case AND_RR:
         case CMP_RR:
-        case LOAD:
+        case LOAD_RR:
         case OR_RR:
         case MOV_RR:
         case MUL_RR:
         case POP_RR:
         case PUSH_RR:
         case SUB_RR:
-        case STOR:
+        case STOR_RR:
         case XOR_RR: {
             char *r1 = register_name(((uint8_t *) &word)[1]);
             char *r2 = register_name(((uint8_t *) &word)[2]);
@@ -912,8 +912,8 @@ char *cpu_instruction_to_string(CPU *cpu, word_t word) {
             free(r);
             break;
         }
-        case CALLA_A:
-        case JA: {
+        case CALL_A:
+        case J_A: {
             word_t val = cpu_read_pc_word(cpu, 0);
             if (cpu->state.panic != CPU_ERR_OK) {
                 sprintf(buffer, "  %lu\t"AXHEX"\t%s %s", cpu->debug.step, addr, ops_name[op], "ERR");
@@ -922,8 +922,8 @@ char *cpu_instruction_to_string(CPU *cpu, word_t word) {
             }
             break;
         }
-        case CALLS:
-        case JS: {
+        case CALL_S:
+        case J_S: {
             word_t address = cpu_read_pc_word(cpu, 0);
             if (cpu->state.panic != CPU_ERR_OK) {
                 sprintf(buffer, "  %lu\t"AXHEX"\t%s %s", cpu->debug.step, addr, ops_name[op], "ERR");
@@ -937,8 +937,8 @@ char *cpu_instruction_to_string(CPU *cpu, word_t word) {
             }
             break;
         }
-        case JAEQ:
-        case JANE: {
+        case JEQ_A:
+        case JNE_A: {
             addr_t address = cpu_read_pc_word(cpu, 0);
             if (cpu->state.panic != CPU_ERR_OK) {
                 sprintf(buffer, "  %lu\t"AXHEX"\t%s %s", cpu->debug.step, addr, ops_name[op], "ERR");
@@ -953,8 +953,8 @@ char *cpu_instruction_to_string(CPU *cpu, word_t word) {
             }
             break;
         }
-        case JSEQ:
-        case JSNE: {
+        case JEQ_S:
+        case JNE_S: {
             addr_t address = cpu_read_pc_word(cpu, 0);
             if (cpu->state.panic != CPU_ERR_OK) {
                 sprintf(buffer, "  %lu\t"AXHEX"\t%s %s", cpu->debug.step, addr, ops_name[op], "ERR");

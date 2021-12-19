@@ -108,7 +108,7 @@ mod tests {
     #[test]
     fn emit() {
         let nodes = vec![
-            Node::Instruction(Instruction::IA(Op::Jseq, "label2".to_string(), Absolute)),
+            Node::Instruction(Instruction::IA(Op::JeqA, "label2".to_string(), Absolute)),
             Node::Label("label2".to_string()),
         ];
         let addresses = AddressResolver::new(&nodes).resolve().unwrap();

@@ -9,8 +9,8 @@ tha: src/asm/op.rs src/asm/constants.rs
 test_tha: src/asm/op.rs src/asm/constants.rs
 	cargo test --bin tha
 
-src/asm/op.rs: bin/tha_generate_ops.sh src/common/op.csv
-	bin/tha_generate_ops.sh src/common/op.csv > src/asm/op.rs
+src/asm/op.rs: bin/*.lua src/common/specs.ths
+	bin/ths src/common/specs.ths
 
 src/asm/constants.rs: bin/tha_generate_constants.sh src/common/registers.csv
 	bin/tha_generate_constants.sh src/common/registers.csv > src/asm/constants.rs
@@ -20,8 +20,8 @@ thm: src/vm/ops_array.h src/vm/cpu_internal_gen.h target/cmake-build-debug
 	cmake --build target/cmake-build-debug
 	ln -fs cmake-build-debug/thm target/thm
 
-src/vm/ops_array.h: bin/thm_generate_ops.sh src/common/op.csv
-	bin/thm_generate_ops.sh src/common/op.csv > src/vm/ops_array.h
+src/vm/ops_array.h: bin/*.lua src/common/specs.ths
+	bin/ths src/common/specs.ths
 
 src/vm/cpu_internal_gen.h: bin/thm_generate_cpu_internal.sh src/common/registers.csv
 	bin/thm_generate_cpu_internal.sh src/common/registers.csv > src/vm/cpu_internal_gen.h

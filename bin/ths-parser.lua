@@ -62,6 +62,19 @@ function Arg:size()
         return 4
     end
 end
+function Arg:typeLetter()
+    if self.type == ArgType.Register then
+        return "r"
+    elseif self.type == ArgType.Byte then
+        return "b"
+    elseif self.type == ArgType.Word then
+        return "w"
+    elseif self.type == ArgType.CsRelativeAddress then
+        return "s"
+    elseif self.type == ArgType.AbsoluteAddress then
+        return "a"
+    end
+end
 
 -- Args -----------------------------------------
 Args = {}
@@ -74,6 +87,9 @@ function Args:toString()
 end
 function Args:size()
     return sum(map(Arg.size, self))
+end
+function Args:len()
+    return #self
 end
 
 -- Flag -----------------------------------------
@@ -125,6 +141,9 @@ function Instruction:toString()
     end
     string = string .. "\n  Size:   " .. 1 + self.args:size() .. " bytes"
     return string
+end
+function Instruction:size()
+    return 1 + self.args:size()
 end
 
 -- Parser ---------------------------------------
@@ -239,7 +258,6 @@ function Parser:parse()
                 table.insert(args, Arg:absoluteAddress(token.value:sub(2)))
                 next()
             else
-                print(token.value)
                 printError({ TokenType.REGISTER, TokenType.WORD, TokenType.BYTE, TokenType.ABSOLUTE_ADDRESS, TokenType.CS_ADDRESS }, token)
             end
         end
@@ -358,7 +376,7 @@ function Parser:parse()
                 if not nested and look(2).type == TokenType.LPAR then
                     instruction.abstract = true
                     next(TokenType.LPAR)
-                    table.insert(instructions, parseInstruction(table.copy(instruction), true)[1])
+                    table.insert(instructions, Instruction:new(parseInstruction(table.copy(instruction), true)[1]))
                 else
                     local pair = parsePair()
                     if pair.type == PairType.Code then
