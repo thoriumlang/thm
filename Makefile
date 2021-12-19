@@ -47,6 +47,11 @@ target/rom.bin: tha target/meta.a src/common/rom.a
 demo_screen: target/screen.bin target/rom.bin
 	target/cmake-build-debug/thm --video master --rom target/rom.bin target/screen.bin
 
+#### Doc
+doc: bin/*.lua bin/thi/*.lua src/common/instructions.thi
+	mkdir -p target/doc
+	bin/thi.lua src/common/instructions.thi doc
+
 #### Maintenance stuff
 clean_gen:
 	rm -f src/asm/op.rs

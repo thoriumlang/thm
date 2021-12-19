@@ -92,7 +92,7 @@ for _, v in ipairs(ast) do
     instructions[v.code] = v
 end
 
-local mode = (arg[3] or "source")
+local mode = (arg[2] or "source")
 
 if mode == "source" then
     -- Generate src/vm/ops_array.h ------------------
@@ -185,5 +185,76 @@ if mode == "source" then
     io.write("}\n")
     io.write("\n")
     io.write("\n")
+    io.close(file)
+elseif mode == "doc" then
+    -- Generate target/oc/index.html -----------
+    local file = io.open("target/doc/index.html", "w")
+    io.output(file)
+    io.write("<html><head><style>")
+    io.write([[
+
+table {
+    border-spacing:0;
+    border-collapse: collapse;
+}
+th {
+    text-align: left;
+}
+td {
+    padding: 0.2em;
+}
+.code {
+    font-family: monospace;
+    border-right: 1px solid gray;
+    background-color: lightgrey;
+    padding-right: 0.5em;
+}
+.args {
+    padding-left: 0.5em;
+}
+.op {
+    background-color: lightgrey;
+}
+.op, .args {
+    font-family: monospace;
+    width: 10em;
+}
+.new, .new td {
+    border-top: 1px solid black;
+    //background-color: lightgrey;
+}
+]])
+    io.write("</style>\n")
+    io.write("<script src=\"https://cdn.jsdelivr.net/npm/marked/marked.min.js\"></script>\n")
+    io.write("</head><body>\n")
+    io.write("<h1>thm instruction set</h1>\n")
+    io.write("<table>\n")
+    io.write("<tr>")
+    io.write("<th>Op</th><th></th><th>Args</th><th>Effect</th><th>Condition</th><th>Flags</th>")
+    io.write("</tr>\n")
+    local prev = ""
+    local i = 0
+    for _, v in ipairs(ast) do
+        if prev ~= v.name then
+            io.write("<tr class=\"new\">")
+            io.write("<td class=\"op\">" .. v.name:upper() .. "</td>")
+        else
+            io.write("<tr>")
+            io.write("<td class=\"op\"></td>")
+        end
+        io.write("<td class=\"code\">0x" .. string.format("%02x", v.code) .. "</td>\n")
+        io.write("<td class=\"args\">" .. table.concat(map(Arg.toString, v.args), ", ") .. "</td>")
+        io.write("<td id=\"effect_" .. i .. "\">" .. v.effect .. "</td>")
+        io.write("<td id=\"cond_"..i.."\">" .. v.cond .. "</td>")
+        io.write("<td>" .. table.concat(map(Flag.toString, v.flags), ", "))
+        io.write("<script>document.getElementById('effect_" .. i .. "').innerHTML=marked.parse(\"" ..  v.effect .. "\");</script>")
+        io.write("<script>document.getElementById('cond_" .. i .. "').innerHTML=marked.parse(\"" ..  v.cond .. "\");</script>")
+        io.write("</td>")
+        io.write("</tr>\n")
+        prev = v.name;
+        i = i + 1
+    end
+    io.write("</table>\n")
+    io.write("</body></html>")
     io.close(file)
 end

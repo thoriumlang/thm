@@ -361,6 +361,7 @@ function Parser:parse()
         instruction = (instruction or {
             name = next(TokenType.ID).value,
             args = Args:new({}),
+            flags = Flag:new({}),
             code = nil,
             effect = "n/a",
             cond = "",
