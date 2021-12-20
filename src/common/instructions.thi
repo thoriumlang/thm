@@ -63,10 +63,10 @@
                             (flags n,z)))
 (op PUSH
     ((args r0)              (effect `[sp] = r0; sp = next(sp)`))
-    ((args r0,r1)           (effect `[sp] = r0; [next(sp)] = r1; sp + next(next(sp))`))
-    ((args r0,r1,r2)        (effect `[sp] = r0; [next(sp)] = r1; [next(next(sp))] = r2; sp + next(next(next(sp)))`))
+    ((args r0,r1)           (effect `[sp] = r0; [next(sp)] = r1; sp = next(next(sp))`))
+    ((args r0,r1,r2)        (effect `[sp] = r0; [next(sp)] = r1; [next(next(sp))] = r2; sp = next(next(next(sp)))`))
     ((args w0)              (effect `[sp] = w0; sp = next(sp)`)))
-(op PUSHA                   (effect pushes all r0..rn to the stack))
+(op PUSHA                   (effect pushes all `r0..rn` to the stack))
 (op POP
     ((args r0)              (effect `r0 = [prev(sp)]; sp = prev(sp)`))
     ((args r0,r1)           (effect `r0 = [prev(sp)]; r1 = [prev(prev(sp))]; sp = prev(sp)`))
