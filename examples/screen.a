@@ -93,8 +93,7 @@ $word_width = 4
     LOAD r1, r1
     PUSH r1                     // keep for update last seen before exit
     CMP  r1, r0
-    JNE  @keyboard_int_handler_toggle
-    J    @keyboard_int_handler_exit
+    JEQ  @keyboard_int_handler_exit
 :keyboard_int_handler_toggle
     MOV  r0, &active
     LOAD r1, r0
