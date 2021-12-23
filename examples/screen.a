@@ -81,24 +81,23 @@ $word_width = 4
     RET
 
 :keyboard_int_handler
+    // XBRK
     PUSH r0, r1
-    MOV  r0, $__keyboard_out
-    LOAD r0, r0
+    LOAD r0, $__keyboard_out
     CMP  r0, 0x00230001         // <p> key pressed ref.
     JEQ  @keyboard_int_handler_key_is_p
     PUSH r0                     // keep for update last seen before exit
     J    @keyboard_int_handler_exit
 :keyboard_int_handler_key_is_p
-    MOV  r1, &prev_key
-    LOAD r1, r1
+    LOAD r1, &prev_key
     PUSH r1                     // keep for update last seen before exit
     CMP  r1, r0
     JEQ  @keyboard_int_handler_exit
 :keyboard_int_handler_toggle
     MOV  r0, &active
-    LOAD r1, r0
+    LOAD r1, &active
     XOR  r1, 1
-    STOR r0, r1
+    STOR &active, r1
 :keyboard_int_handler_exit
     POP  r0
     MOV  r1, &prev_key

@@ -3,6 +3,7 @@ use std::iter::Peekable;
 
 use crate::op::Op;
 use crate::lexer::{AddressKind as LexerAddressKind, Lexer, Position, Token};
+use crate::op::Op::StorRW;
 use crate::parser::AddressKind::{Absolute, Segment};
 
 #[derive(Debug, PartialEq)]
@@ -164,7 +165,7 @@ impl<'t> Parser<'t> {
             "J" => self.op_a(Op::JS, Op::JA, position),
             "JEQ" => self.op_a(Op::JeqS, Op::JeqA, position),
             "JNE" => self.op_a(Op::JneS, Op::JneA, position),
-            "LOAD" => self.op_rr_rrw(Op::LoadRR, Op::LoadRRW, position),
+            "LOAD" => self.op_rr_rrw_rw(Op::LoadRR, Op::LoadRRW, Op::LoadRW, position),
             "MI" => self.op_b(Op::MiB, position),
             "MOV" => self.op_rr_rw_ra(Op::MovRR, Op::MovRW, position),
             "MUL" => self.op_rr_rw(Op::MulRR, Op::MulRW, position),
@@ -176,7 +177,7 @@ impl<'t> Parser<'t> {
             "PUSH" => self.op_r_rr_rrr_w(Op::PushR, Op::PushRR, Op::PushRRR, Op::PushW, position),
             "PUSHA" => self.op_void(Op::Pusha, position),
             "RET" => self.op_void(Op::Ret, position),
-            "STOR" => self.op_rr(Op::StorRR, position),
+            "STOR" => self.op_rr_wr(Op::StorRR, StorRW, position),
             "SUB" => self.op_rr_rw(Op::SubRR, Op::SubRW, position),
             "UMI" => self.op_b(Op::UmiB, position),
             "IRET" => self.op_void(Op::Iret, position),
@@ -315,7 +316,7 @@ impl<'t> Parser<'t> {
         Err(format!("Expected <eol> at {}", position).into())
     }
 
-    fn op_rr_rrw(&mut self, op_rr: Op, op_rrw: Op, position: &Position) -> Result<Instruction> {
+    fn op_rr_rrw_rw(&mut self, op_rr: Op, op_rrw: Op, op_rw: Op, position: &Position) -> Result<Instruction> {
         let r1 = match self.read_register() {
             None => return Err(format!("Expected <r> at {}", position).into()),
             Some(str) => str,
@@ -357,11 +358,38 @@ impl<'t> Parser<'t> {
             }
 
             return instruction;
-        } else {
+        } else if let Some(Token::Identifier(_, _)) = self.peek_next() {
             let instruction = match self.read_register() {
                 None => return Err(format!("Expected '[' or <r> at {}", position).into()),
                 Some(str) => Ok(Instruction::IRR(op_rr, r1, str)),
             };
+
+            if self.read_eol() {
+                return instruction;
+            }
+            Err(format!("Expected <eol> at {}", position).into())
+        } else {
+            let instruction = self.read_next()
+                .and_then(|token| match token {
+                    Token::Address(_, addr, kind) => {
+                        match kind {
+                            LexerAddressKind::Absolute => Some(Ok(Instruction::IRA(op_rw, r1, addr, Absolute))),
+                            _ => None
+                        }
+                    }
+                    Token::Variable(_, name) => match self.symbols.get(&name) {
+                        Some(Token::Address(_, addr, kind)) => {
+                            match kind {
+                                LexerAddressKind::Absolute => Some(Ok(Instruction::IRA(op_rw, r1, addr.into(), Absolute))),
+                                _ => None
+                            }
+                        }
+                        Some(Token::Integer(_, w)) => Some(Ok(Instruction::IRW(op_rw, r1, *w))),
+                        _ => None
+                    },
+                    _ => None,
+                })
+                .unwrap_or(Err(format!("Expected <variable>, <w> or <&addr> at {}", position).into()));
 
             if self.read_eol() {
                 return instruction;
@@ -485,6 +513,47 @@ impl<'t> Parser<'t> {
         if self.read_eol() {
             return Ok(Instruction::IRR(op, r1, r2));
         }
+        Err(format!("Expected <eol> at {}", position).into())
+    }
+
+    fn op_rr_wr(&mut self, op_rr: Op, op_wr: Op, position: &Position) -> Result<Instruction> {
+        if let Some(Token::Identifier(_, _)) = self.peek_next() {
+            return self.op_rr(op_rr, position);
+        }
+
+        let mut token = self.read_next();
+        token = match token {
+            Some(Token::Integer(_, _)) => token,
+            Some(Token::Address(_, _, LexerAddressKind::Absolute)) => token,
+            Some(Token::Variable(_, _)) => token,
+            _ => None,
+        };
+
+        if token.is_none() {
+            return Err(format!("Expected <w> or <variable> or <&addr> at {}", position).into());
+        }
+
+        if !self.read_comma() {
+            return Err(format!("Expected ',' at {}", position).into());
+        }
+
+        let r1 = match self.read_register() {
+            None => return Err(format!("Expected <r> at {}", position).into()),
+            Some(str) => str,
+        };
+
+        if self.read_eol() {
+            return match token.unwrap() {
+                Token::Integer(_, w) => Ok(Instruction::IRW(op_wr, r1, w)),
+                Token::Address(_, a, _) => Ok(Instruction::IRA(op_wr, r1, a, Absolute)),
+                Token::Variable(_, name) => match self.symbols.get(&name) {
+                    Some(Token::Integer(_, w)) => Ok(Instruction::IRW(op_wr, r1, *w)),
+                    _ => Err(format!("Expected <variable> at {}", position).into()),
+                },
+                _ => Err(format!("Expected <w> or <variable> or <&addr> at {}", position))
+            };
+        }
+
         Err(format!("Expected <eol> at {}", position).into())
     }
 
@@ -881,6 +950,7 @@ mod tests {
     op_ra_test! {
         mov_ra_s: ("MOV  r1, @addr\n", Op::MovRW, "r1", "addr", Segment),
         mov_ra_a: ("MOV  r1, &addr\n", Op::MovRW, "r1", "addr", Absolute),
+        load_rw:  ("LOAD r1, &addr\n", Op::LoadRW, "r1", "addr", Absolute),
     }
 
     #[test]

@@ -412,6 +412,26 @@ void op_stor_rr(CPU *cpu, word_t word) {
     }
 }
 
+void op_stor_rw(CPU *cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
+    uint8_t from = ((uint8_t *) &word)[1];
+
+    word_t to = cpu_fetch(cpu);
+    if (cpu->state.panic != CPU_ERR_OK) {
+        return;
+    }
+
+    word_t val;
+    if ((cpu->state.panic = cpu_register_get(cpu, from, &val)) != CPU_ERR_OK) {
+        return;
+    }
+
+    if (bus_word_write(cpu->bus, (addr_t) to, val) != BUS_ERR_OK) {
+        cpu->state.panic = CPU_ERR_CANNOT_WRITE_MEMORY;
+    }
+}
+
 void op_load_rr(CPU *cpu, word_t word) {
     PRINT_INSTRUCTION(cpu, word)
 
@@ -428,6 +448,24 @@ void op_load_rr(CPU *cpu, word_t word) {
         cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
         return;
     }
+    cpu->state.panic = cpu_register_set(cpu, to, val);
+}
+
+void op_load_rw(CPU*cpu, word_t word) {
+    PRINT_INSTRUCTION(cpu, word)
+
+    uint8_t to = ((uint8_t *) &word)[1];
+    word_t from = cpu_fetch(cpu);
+    if (cpu->state.panic != CPU_ERR_OK) {
+        return;
+    }
+
+    word_t val;
+    if ((bus_word_read(cpu->bus, (addr_t) from, &val)) != BUS_ERR_OK) {
+        cpu->state.panic = CPU_ERR_CANNOT_READ_MEMORY;
+        return;
+    }
+
     cpu->state.panic = cpu_register_set(cpu, to, val);
 }
 
@@ -897,6 +935,7 @@ char *cpu_instruction_to_string(CPU *cpu, word_t word) {
         case ADD_RW:
         case AND_RW:
         case CMP_RW:
+        case LOAD_RW:
         case MOV_RW:
         case MUL_RW:
         case OR_RW:

@@ -324,9 +324,9 @@ void print_fps(Video *this) {
         this->stats.fps = (double) this->stats.frames * (double) ONE_SEC_IN_USECS / (double) elapsed_microsec;
         this->stats.utime = current_time;
 
-        printf("FPS: %2.1f ; %2.1f\n",
-               this->stats.fps,
-               (double) this->stats.buffer_switches * (double) ONE_SEC_IN_USECS / (double) elapsed_microsec);
+//        printf("FPS: %2.1f ; %2.1f\n",
+//               this->stats.fps,
+//               (double) this->stats.buffer_switches * (double) ONE_SEC_IN_USECS / (double) elapsed_microsec);
         this->stats.buffer_switches = 0;
         this->stats.frames = 0;
     }

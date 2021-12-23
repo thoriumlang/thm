@@ -4,7 +4,7 @@
 (op MOV
     ((args r0,w0)           (effect `r0 = w0`)
                             (flags n,z)
-                            (comment w0 may be an address in assembly code))
+                            (comment `w0` may be an address in assembly code))
     ((args r0,r1)           (effect `r0 = r1`)
                             (flags n,z)))
 (op ADD
@@ -111,11 +111,14 @@
 (op IRET                    (effect ???))
 (op STOR
     ((args r0,r1)           (effect `[r0] = r1`))
-#    ((args r0,w0)           (effect `[r0] = w0`))
+    ((args r0,w0)           (effect `[w0] = r0`)
+                            (comment `w0` is absolute, and may be an `&`-address in assembly code))
 )
 (op LOAD
     ((args r0,r1)           (effect `r0 = [r1]`))
-    ((args r0,r1,w0)        (effect `r0 = [r1 + w0]`)))
+    ((args r0,r1,w0)        (effect `r0 = [r1 + w0]`))
+    ((args r0,w0)           (effect `r0 = [w0]`)
+                            (comment `w0` is absolute, and may be an `&`-address in assembly code)))
 (op MI ((args b0)           (effect masks interrupt `b0`)))
 (op UMI ((args b0)          (effect unmasks interrupt `b0`)))
 (op IND                     (effect disable all interrupts))
