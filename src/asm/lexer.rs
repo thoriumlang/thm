@@ -307,7 +307,6 @@ impl Iterator for Lexer {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

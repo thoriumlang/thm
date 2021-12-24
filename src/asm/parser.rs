@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::iter::Peekable;
+use peek_nth::{IteratorExt, PeekableNth};
 
 use crate::op::Op;
 use crate::lexer::{AddressKind as LexerAddressKind, Lexer, Position, Token};
@@ -68,7 +68,7 @@ impl Instruction {
 }
 
 pub struct Parser<'t> {
-    lexer: Peekable<&'t mut Lexer>,
+    lexer: PeekableNth<&'t mut Lexer>,
     symbols: &'t mut HashMap<String, Token>,
     nodes: &'t mut Vec<Node>,
 }
@@ -78,7 +78,7 @@ type Result<T> = std::result::Result<T, String>;
 impl<'t> Parser<'t> {
     pub fn from_lexer(lexer: &'t mut Lexer, nodes: &'t mut Vec<Node>, symbols: &'t mut HashMap<String, Token>) -> Self {
         Parser {
-            lexer: lexer.peekable(),
+            lexer: lexer.peekable_nth(),
             symbols,
             nodes,
         }
@@ -105,7 +105,7 @@ impl<'t> Parser<'t> {
         let token = self.lexer.next();
         match token {
             Some(Ok(Token::Integer(_, _))) => self.symbols.insert(name, token.unwrap().unwrap()),
-            Some(Ok(Token::Address(_, _, _))) => self.symbols.insert(name, token.unwrap().unwrap()),
+            // Some(Ok(Token::Address(_, _, _))) => self.symbols.insert(name, token.unwrap().unwrap()),
             _ => return Err(format!("Expected <integer> or <addr> at {}", position).into()),
         };
 
@@ -165,7 +165,7 @@ impl<'t> Parser<'t> {
             "J" => self.op_a(Op::JS, Op::JA, position),
             "JEQ" => self.op_a(Op::JeqS, Op::JeqA, position),
             "JNE" => self.op_a(Op::JneS, Op::JneA, position),
-            "LOAD" => self.op_rr_rrw_rw(Op::LoadRR, Op::LoadRRW, Op::LoadRW, position),
+            "LOAD" => self.op_rr_rw_ra_ro(Op::LoadRR, Op::LoadRRW, Op::LoadRW, position),
             "MI" => self.op_b(Op::MiB, position),
             "MOV" => self.op_rr_rw_ra(Op::MovRR, Op::MovRW, position),
             "MUL" => self.op_rr_rw(Op::MulRR, Op::MulRW, position),
@@ -177,7 +177,7 @@ impl<'t> Parser<'t> {
             "PUSH" => self.op_r_rr_rrr_w(Op::PushR, Op::PushRR, Op::PushRRR, Op::PushW, position),
             "PUSHA" => self.op_void(Op::Pusha, position),
             "RET" => self.op_void(Op::Ret, position),
-            "STOR" => self.op_rr_wr(Op::StorRR, StorRW, position),
+            "STOR" => self.op_rr_wr_ar(Op::StorRR, StorRW, position),
             "SUB" => self.op_rr_rw(Op::SubRR, Op::SubRW, position),
             "UMI" => self.op_b(Op::UmiB, position),
             "IRET" => self.op_void(Op::Iret, position),
@@ -192,6 +192,214 @@ impl<'t> Parser<'t> {
         };
     }
 
+    fn op_a(&mut self, op_segment: Op, op_absolute: Op, position: &Position) -> Result<Instruction> {
+        let a_result = self.parse_a(position);
+        if let Ok((a1, k1)) = a_result {
+            return match k1 {
+                Absolute => Ok(Instruction::IA(op_absolute, a1, Absolute)),
+                Segment => Ok(Instruction::IA(op_segment, a1, Segment)),
+            };
+        }
+
+        Err(format!("Expected {}", a_result.err().unwrap()))
+    }
+
+    fn op_a_r(&mut self, op_segment: Op, op_absolute: Op, op_register: Op, position: &Position) -> Result<Instruction> {
+        let a_result = self.parse_a(position);
+        if let Ok((a1, k1)) = a_result {
+            return match k1 {
+                Absolute => Ok(Instruction::IA(op_absolute, a1, Absolute)),
+                Segment => Ok(Instruction::IA(op_segment, a1, Segment)),
+            };
+        }
+
+        let r_result = self.parse_r(position);
+        if let Ok(r1) = r_result {
+            return Ok(Instruction::IR(op_register, r1));
+        }
+
+        Err(format!("Expected one of the following alternatives:\n * {}\n * {}",
+                    a_result.err().unwrap(),
+                    r_result.err().unwrap(),
+        ).into())
+    }
+
+    fn op_b(&mut self, op: Op, position: &Position) -> Result<Instruction> {
+        let w_result = match self.parse_w(position) {
+            Ok(w1) => match w1 {
+                0..=255 => Ok(w1 as u8),
+                _ => Err(format!("<b> at {}", position).into()),
+            },
+            Err(e) => Err(e),
+        };
+        if let Ok(b1) = w_result {
+            return Ok(Instruction::IB(op, b1));
+        }
+
+        Err(format!("Expected {}", w_result.err().unwrap()))
+    }
+
+    fn op_r(&mut self, op: Op, position: &Position) -> Result<Instruction> {
+        match self.parse_r(position) {
+            Ok(r1) => Ok(Instruction::IR(op, r1)),
+            Err(e) => Err(format!("Expected {}", e)),
+        }
+    }
+
+    fn op_r_rr_rrr(&mut self, op_r: Op, op_rr: Op, op_rrr: Op, position: &Position) -> Result<Instruction> {
+        let r_result = self.parse_r(position);
+        if let Ok(r1) = r_result {
+            return Ok(Instruction::IR(op_r, r1));
+        }
+
+        let rr_result = self.parse_rr(position);
+        if let Ok((r1, r2)) = rr_result {
+            return Ok(Instruction::IRR(op_rr, r1, r2));
+        }
+
+        let rrr_result = self.parse_rrr(position);
+        if let Ok((r1, r2, r3)) = rrr_result {
+            return Ok(Instruction::IRRR(op_rrr, r1, r2, r3));
+        }
+
+        Err(format!("Expected one of the following alternatives:\n * {}\n * {}\n * {}",
+                    r_result.err().unwrap(),
+                    rr_result.err().unwrap(),
+                    rrr_result.err().unwrap(),
+        ).into())
+    }
+
+    fn op_r_rr_rrr_w(&mut self, op_r: Op, op_rr: Op, op_rrr: Op, op_w: Op, position: &Position) -> Result<Instruction> {
+        let r_result = self.parse_r(position);
+        if let Ok(r1) = r_result {
+            return Ok(Instruction::IR(op_r, r1));
+        }
+
+        let rr_result = self.parse_rr(position);
+        if let Ok((r1, r2)) = rr_result {
+            return Ok(Instruction::IRR(op_rr, r1, r2));
+        }
+
+        let rrr_result = self.parse_rrr(position);
+        if let Ok((r1, r2, r3)) = rrr_result {
+            return Ok(Instruction::IRRR(op_rrr, r1, r2, r3));
+        }
+
+        let w_result = self.parse_w(position);
+        if let Ok(w1) = w_result {
+            return Ok(Instruction::IW(op_w, w1));
+        }
+
+        Err(format!("Expected one of the following alternatives:\n * {}\n * {}\n * {}\n * {}",
+                    r_result.err().unwrap(),
+                    rr_result.err().unwrap(),
+                    rrr_result.err().unwrap(),
+                    w_result.err().unwrap(),
+        ).into())
+    }
+
+    fn op_rr_rw(&mut self, op_rr: Op, op_ri: Op, position: &Position) -> Result<Instruction> {
+        let rr_result = self.parse_rr(position);
+        if let Ok((r1, r2)) = rr_result {
+            return Ok(Instruction::IRR(op_rr, r1, r2));
+        }
+
+        let rw_result = self.parse_rw(position);
+        if let Ok((r1, w1)) = rw_result {
+            return Ok(Instruction::IRW(op_ri, r1, w1));
+        }
+
+        Err(format!("Expected one of the following alternatives:\n * {}\n * {}",
+                    rr_result.err().unwrap(),
+                    rw_result.err().unwrap(),
+        ).into())
+    }
+
+    // refuses <@-addr>
+    fn op_rr_wr_ar(&mut self, op_rr: Op, op_wr: Op, position: &Position) -> Result<Instruction> {
+        let rr_result = self.parse_rr(position);
+        if let Ok((r1, r2)) = rr_result {
+            return Ok(Instruction::IRR(op_rr, r1, r2));
+        }
+
+        let wr_result = self.parse_wr(position);
+        if let Ok((w1, r1)) = wr_result {
+            return Ok(Instruction::IRW(op_wr, r1, w1));
+        }
+
+        let ar_result = match self.parse_ar(position) {
+            Ok((a1, Absolute, r1)) => Ok((a1, r1)),
+            Ok((_, _, _)) => Err(format!("<&-addr> at {}", position).into()),
+            Err(e) => Err(e)
+        };
+        if let Ok((a1, r1)) = ar_result {
+            return Ok(Instruction::IRA(op_wr, r1, a1, Absolute));
+        }
+
+        Err(format!("Expected one of the following alternatives:\n * {}\n * {}\n * {}",
+                    rr_result.err().unwrap(),
+                    wr_result.err().unwrap(),
+                    ar_result.err().unwrap(),
+        ).into())
+    }
+
+    fn op_rr_rw_ra(&mut self, op_rr: Op, op_rw: Op, position: &Position) -> Result<Instruction> {
+        let rr_result = self.parse_rr(position);
+        if let Ok((r1, r2)) = rr_result {
+            return Ok(Instruction::IRR(op_rr, r1, r2));
+        }
+
+        let rw_result = self.parse_rw(position);
+        if let Ok((r1, w1)) = rw_result {
+            return Ok(Instruction::IRW(op_rw, r1, w1));
+        }
+
+        let ra_result = self.parse_ra(position);
+        if let Ok((r1, a1, k1)) = ra_result {
+            return Ok(Instruction::IRA(op_rw, r1, a1, k1));
+        }
+
+        Err(format!("Expected one of the following alternatives:\n * {}\n * {}\n * {}",
+                    rr_result.err().unwrap(),
+                    rw_result.err().unwrap(),
+                    ra_result.err().unwrap(),
+        ).into())
+    }
+
+    // refuses <@-addr>
+    fn op_rr_rw_ra_ro(&mut self, op_rr: Op, op_rrw: Op, op_rw: Op, position: &Position) -> Result<Instruction> {
+        let rr_result = self.parse_rr(position);
+        if let Ok((r1, r2)) = rr_result {
+            return Ok(Instruction::IRR(op_rr, r1, r2));
+        }
+
+        let rw_result = self.parse_rw(position);
+        if let Ok((r1, w1)) = rw_result {
+            return Ok(Instruction::IRW(op_rw, r1, w1));
+        }
+
+        let ra_result = match self.parse_ra(position) {
+            Ok((r1, a1, Absolute)) => Ok((r1, a1)),
+            Ok((_, _, _)) => Err(format!("<&-addr> at {}", position).into()),
+            Err(e) => Err(e)
+        };
+        if let Ok((r1, a1)) = ra_result {
+            return Ok(Instruction::IRA(op_rw, r1, a1, Absolute));
+        }
+
+        let ro_result = self.parse_ro(position);
+        if let Ok((r1, r2, o1)) = ro_result {
+            return Ok(Instruction::IRRW(op_rrw, r1, r2, o1));
+        }
+
+        Err(format!("Expected one of the following alternatives:\n * {}\n * {}\n * {}\n * {}",
+                    rr_result.err().unwrap(),
+                    rw_result.err().unwrap(),
+                    ra_result.err().unwrap(),
+                    ro_result.err().unwrap(),
+        ).into())
+    }
+
     fn op_void(&mut self, op: Op, position: &Position) -> Result<Instruction> {
         if self.read_eol() {
             return Ok(Instruction::I(op));
@@ -199,362 +407,327 @@ impl<'t> Parser<'t> {
         Err(format!("Expected <eol> at {}", position).into())
     }
 
-    fn op_b(&mut self, op: Op, position: &Position) -> Result<Instruction> {
-        let instruction = match self.read_next() {
-            None => None,
-            Some(Token::Integer(_, v)) => match v {
-                0..=255 => Some(Ok(Instruction::IB(op, v as u8))),
-                _ => None,
+    /// parses `<addr> <eol>`
+    fn parse_a(&mut self, position: &Position) -> Result<(String, AddressKind)> {
+        if !self.peek_address(0) {
+            return Err(format!("<addr> at {}", position).into());
+        }
+        if !self.peek_eol(1) {
+            return Err(format!("<eol> at {}", position).into());
+        }
+
+        let a1 = self.read_address().unwrap();
+        self.read_eol();
+        return Ok((a1.0, a1.1));
+    }
+
+    /// parses `<addr> ',' <r> <eol>`
+    fn parse_ar(&mut self, position: &Position) -> Result<(String, AddressKind, String)> {
+        if !self.peek_address(0) {
+            return Err(format!("<addr> at {}", position).into());
+        }
+        if !self.peek_comma(1) {
+            return Err(format!("',' at {}", position).into());
+        }
+        if !self.peek_register(2) {
+            return Err(format!("<r> at {}", position).into());
+        }
+        if !self.peek_eol(3) {
+            return Err(format!("<eol> at {}", position).into());
+        }
+
+        let a1 = self.read_address().unwrap();
+        self.read_comma();
+        let r1 = self.read_register().unwrap();
+        self.read_eol();
+        return Ok((a1.0, a1.1, r1));
+    }
+
+    /// parses `<r> <eol>`
+    fn parse_r(&mut self, position: &Position) -> Result<String> {
+        if !self.peek_register(0) {
+            return Err(format!("<r> at {}", position).into());
+        }
+        if !self.peek_eol(1) {
+            return Err(format!("<eol> at {}", position).into());
+        }
+
+        let r1 = self.read_register().unwrap();
+        self.read_eol();
+        return Ok(r1);
+    }
+
+    /// parses `<r> ',' <addr> <eol>`
+    fn parse_ra(&mut self, position: &Position) -> Result<(String, String, AddressKind)> {
+        if !self.peek_register(0) {
+            return Err(format!("<r> at {}", position).into());
+        }
+        if !self.peek_comma(1) {
+            return Err(format!("',' at {}", position).into());
+        }
+        if !self.peek_address(2) {
+            return Err(format!("<addr> at {}", position).into());
+        }
+        if !self.peek_eol(3) {
+            return Err(format!("<eol> at {}", position).into());
+        }
+
+        let r1 = self.read_register().unwrap();
+        self.read_comma();
+        let a1 = self.read_address().unwrap();
+        self.read_eol();
+        return Ok((r1, a1.0, a1.1));
+    }
+
+    /// parses `<r> ',' '[' <r> '+' <w> ']' <eol>`
+    fn parse_ro(&mut self, position: &Position) -> Result<(String, String, u32)> {
+        if !self.peek_register(0) {
+            return Err(format!("<r> at {}", position).into());
+        }
+        if !self.peek_comma(1) {
+            return Err(format!("'[' at {}", position).into());
+        }
+        if !self.peek_lbracket(2) {
+            return Err(format!("'[' at {}", position).into());
+        }
+        if !self.peek_register(3) {
+            return Err(format!("<r> at {}", position).into());
+        }
+        match self.peek(4) {
+            Some(Token::Plus(_)) => (),
+            _ => return Err(format!("'+' at {}", position).into()),
+        };
+        if !self.peek_word(5) && !self.peek_variable(3) {
+            return Err(format!("<w> or <var> at {}", position).into());
+        }
+        if !self.peek_rbracket(6) {
+            return Err(format!("']' at {}", position).into());
+        }
+        if !self.peek_eol(7) {
+            return Err(format!("<eol> at {}", position).into());
+        }
+
+        let r1 = self.read_register().unwrap();
+        self.read_comma();
+        self.read_lbracket();
+        let r2 = self.read_register().unwrap();
+        self.read_next(); // +
+        let o1 = match self.read_next().unwrap() {
+            Token::Integer(_, w) => w,
+            Token::Variable(_, name) => match self.symbols.get(&name) {
+                Some(Token::Integer(_, w)) => *w,
+                _ => return Err(format!("Unknown variable '{}' at {}", name, position).into()),
             },
-            Some(Token::Variable(_, name)) => match self.symbols.get(&name) {
-                Some(Token::Integer(_, v)) => match v {
-                    0..=255 => Some(Ok(Instruction::IB(op, *v as u8))),
-                    _ => None,
-                },
-                _ => None
+            _ => return Err(format!("Unexpected token at {}", position).into())
+        };
+        self.read_rbracket();
+        self.read_eol();
+        return Ok((r1, r2, o1));
+    }
+
+    /// parses `<r> ',' <r>`
+    fn parse_rr(&mut self, position: &Position) -> Result<(String, String)> {
+        if !self.peek_register(0) {
+            return Err(format!("<r> at {}", position).into());
+        }
+        if !self.peek_comma(1) {
+            return Err(format!("',' at {}", position).into());
+        }
+        if !self.peek_register(2) {
+            return Err(format!("<r> at {}", position).into());
+        }
+        if !self.peek_eol(3) {
+            return Err(format!("<eol> at {}", position).into());
+        }
+
+        let r1 = self.read_register().unwrap();
+        self.read_comma();
+        let r2 = self.read_register().unwrap();
+        self.read_eol();
+        return Ok((r1, r2));
+    }
+
+    /// parses `<r> ',' ( <w> | <var> ) <eol>`
+    fn parse_rw(&mut self, position: &Position) -> Result<(String, u32)> {
+        if !self.peek_register(0) {
+            return Err(format!("<r> at {}", position).into());
+        }
+        if !self.peek_comma(1) {
+            return Err(format!("',' at {}", position).into());
+        }
+        if !self.peek_word(2) && !self.peek_variable(2) {
+            return Err(format!("<w> or <var> at {}", position).into());
+        }
+        if !self.peek_eol(3) {
+            return Err(format!("<eol> at {}", position).into());
+        }
+
+        let r1 = self.read_register().unwrap();
+        self.read_comma();
+        let w1 = match self.read_next().unwrap() {
+            Token::Integer(_, w) => w,
+            Token::Variable(_, name) => match self.symbols.get(&name) {
+                Some(Token::Integer(_, w)) => *w,
+                _ => return Err(format!("Unknown variable '{}' at {}", name, position).into()),
             },
-            _ => None
-        }.unwrap_or(Err(format!("Expected <b> or <var> at {}", position).into()));
-
-        if self.read_eol() {
-            return instruction;
-        }
-        Err(format!("Expected <eol> at {}", position).into())
-    }
-
-    fn op_r(&mut self, op: Op, position: &Position) -> Result<Instruction> {
-        let r = match self.read_register() {
-            None => return Err(format!("Expected <r> at {}", position).into()),
-            Some(str) => str,
+            _ => return Err(format!("Unexpected token at {}", position).into())
         };
-        if self.read_eol() {
-            return Ok(Instruction::IR(op, r));
-        }
-        Err(format!("Expected <eol> at {}", position).into())
+        self.read_eol();
+        return Ok((r1, w1));
     }
 
-    fn op_r_rr_rrr(&mut self, op_r: Op, op_rr: Op, op_rrr: Op, position: &Position) -> Result<Instruction> {
-        let r0 = match self.read_register() {
-            None => return Err(format!("Expected <r> at {}", position).into()),
-            Some(str) => str,
+    /// parses `<r> ',' <r> ',' <r> <eol>`
+    fn parse_rrr(&mut self, position: &Position) -> Result<(String, String, String)> {
+        if !self.peek_register(0) {
+            return Err(format!("<r> at {}", position).into());
+        }
+        if !self.peek_comma(1) {
+            return Err(format!("',' at {}", position).into());
+        }
+        if !self.peek_register(2) {
+            return Err(format!("<r> at {}", position).into());
+        }
+        if !self.peek_comma(3) {
+            return Err(format!("',' at {}", position).into());
+        }
+        if !self.peek_register(4) {
+            return Err(format!("<r> at {}", position).into());
+        }
+        if !self.peek_eol(5) {
+            return Err(format!("<eol> at {}", position).into());
+        }
+
+        let r1 = self.read_register().unwrap();
+        self.read_comma();
+        let r2 = self.read_register().unwrap();
+        self.read_comma();
+        let r3 = self.read_register().unwrap();
+        self.read_eol();
+        return Ok((r1, r2, r3));
+    }
+
+    /// parses `( <w> | <var> ) <eol>`
+    fn parse_w(&mut self, position: &Position) -> Result<u32> {
+        if !self.peek_word(0) && !self.peek_variable(0) {
+            return Err(format!("<w> or <var> at {}", position).into());
+        }
+        if !self.peek_eol(1) {
+            return Err(format!("<eol> at {}", position).into());
+        }
+
+        let w1 = match self.read_next().unwrap() {
+            Token::Integer(_, w) => w,
+            Token::Variable(_, name) => match self.symbols.get(&name) {
+                Some(Token::Integer(_, w)) => *w,
+                _ => return Err(format!("Unknown variable '{}' at {}", name, position).into()),
+            },
+            _ => return Err(format!("Unexpected token at {}", position).into())
         };
-        let mut r1: Option<String> = None;
-        let mut r2: Option<String> = None;
-
-        if let Some(Token::Comma(_)) = self.peek_next() {
-            self.read_next();
-            r1 = match self.read_register() {
-                None => return Err(format!("Expected <r> at {}", position).into()),
-                Some(str) => Some(str),
-            };
-        }
-        if let Some(Token::Comma(_)) = self.peek_next() {
-            self.read_next();
-            r2 = match self.read_register() {
-                None => return Err(format!("Expected <r> at {}", position).into()),
-                Some(str) => Some(str),
-            };
-        }
-
-        if self.read_eol() {
-            if let Some(r1) = r1 {
-                if let Some(r2) = r2 {
-                    return Ok(Instruction::IRRR(op_rrr, r0, r1, r2));
-                }
-                return Ok(Instruction::IRR(op_rr, r0, r1));
-            }
-            return Ok(Instruction::IR(op_r, r0));
-        }
-        Err(format!("Expected <eol> at {}", position).into())
+        self.read_eol();
+        return Ok(w1);
     }
 
-    fn op_r_rr_rrr_w(&mut self, op_r: Op, op_rr: Op, op_rrr: Op, op_w: Op, position: &Position) -> Result<Instruction> {
-        if let Some(Token::Identifier(_, _)) = self.peek_next() {
-            return self.op_r_rr_rrr(op_r, op_rr, op_rrr, position);
+    /// parses `( <w> | <var> ) ',' <r> <eol>`
+    fn parse_wr(&mut self, position: &Position) -> Result<(u32, String)> {
+        if !self.peek_word(0) && !self.peek_variable(0) {
+            return Err(format!("<w> or <var> at {}", position).into());
+        }
+        if !self.peek_comma(1) {
+            return Err(format!("',' at {}", position).into());
+        }
+        if !self.peek_register(2) {
+            return Err(format!("<r> at {}", position).into());
+        }
+        if !self.peek_eol(3) {
+            return Err(format!("<eol> at {}", position).into());
         }
 
-        let instruction = match self.read_next() {
-            Some(Token::Integer(_, w)) => Some(Ok(Instruction::IW(op_w, w))),
-            Some(Token::Variable(_, v)) => match self.symbols.get(&v) {
-                Some(Token::Integer(_, w)) => Some(Ok(Instruction::IW(op_w, *w))),
-                _ => None
-            }
-            _ => None
-        }.unwrap_or(Err(format!("Expected <variable> or <w> at {}", position).into()));
-
-        if self.read_eol() {
-            return instruction;
-        }
-        Err(format!("Expected <eol> at {}", position).into())
-    }
-
-    fn op_rr_rw(&mut self, op_rr: Op, op_ri: Op, position: &Position) -> Result<Instruction> {
-        let r1 = match self.read_register() {
-            None => return Err(format!("Expected <r> at {}", position).into()),
-            Some(str) => str,
+        let w1 = match self.read_next().unwrap() {
+            Token::Integer(_, w) => w,
+            Token::Variable(_, name) => match self.symbols.get(&name) {
+                Some(Token::Integer(_, w)) => *w,
+                _ => return Err(format!("Unknown variable '{}' at {}", name, position).into()),
+            },
+            _ => return Err(format!("Unexpected token at {}", position).into())
         };
-
-        if !self.read_comma() {
-            return Err(format!("Expected ',' at {}", position).into());
-        }
-
-        let instruction = self.read_next()
-            .and_then(|token| match token {
-                Token::Identifier(_, r2) => Some(Ok(Instruction::IRR(op_rr, r1, r2))),
-                Token::Integer(_, w) => Some(Ok(Instruction::IRW(op_ri, r1, w))),
-                Token::Variable(_, name) => match self.symbols.get(&name) {
-                    Some(Token::Integer(_, w)) => Some(Ok(Instruction::IRW(op_ri, r1, *w))),
-                    _ => None
-                },
-                _ => None,
-            })
-            .unwrap_or(Err(format!("Expected <variable>, <w> or <r> at {}", position).into()));
-
-        if self.read_eol() {
-            return instruction;
-        }
-        Err(format!("Expected <eol> at {}", position).into())
+        self.read_comma();
+        let r1 = self.read_register().unwrap();
+        self.read_eol();
+        return Ok((w1, r1));
     }
 
-    fn op_rr_rrw_rw(&mut self, op_rr: Op, op_rrw: Op, op_rw: Op, position: &Position) -> Result<Instruction> {
-        let r1 = match self.read_register() {
-            None => return Err(format!("Expected <r> at {}", position).into()),
-            Some(str) => str,
-        };
+    // --- peek
 
-        if !self.read_comma() {
-            return Err(format!("Expected ',' at {}", position).into());
-        }
-
-        if let Some(Token::LBracket(_)) = self.peek_next() {
-            self.read_next();
-
-            let r2 = match self.read_register() {
-                None => return Err(format!("Expected <r> at {}", position).into()),
-                Some(str) => str,
-            };
-
-            match self.read_next() {
-                Some(Token::Plus(_)) => (),
-                _ => return Err(format!("Expected '+' at {}", position).into()),
-            };
-
-            let instruction = match self.read_next() {
-                Some(Token::Integer(_, w)) => Some(Ok(Instruction::IRRW(op_rrw, r1, r2, w))),
-                Some(Token::Variable(_, name)) => match self.symbols.get(&name) {
-                    Some(Token::Integer(_, w)) => Some(Ok(Instruction::IRRW(op_rrw, r1, r2, *w))),
-                    _ => None
-                },
-                _ => None,
-            }.unwrap_or(Err(format!("Expected <w> or <variable> at {}", position).into()));
-
-            match self.read_next() {
-                Some(Token::RBracket(_)) => (),
-                _ => return Err(format!("Expected ']' at {}", position).into()),
-            }
-
-            if !self.read_eol() {
-                return Err(format!("Expected <eol> at {}", position).into());
-            }
-
-            return instruction;
-        } else if let Some(Token::Identifier(_, _)) = self.peek_next() {
-            let instruction = match self.read_register() {
-                None => return Err(format!("Expected '[' or <r> at {}", position).into()),
-                Some(str) => Ok(Instruction::IRR(op_rr, r1, str)),
-            };
-
-            if self.read_eol() {
-                return instruction;
-            }
-            Err(format!("Expected <eol> at {}", position).into())
-        } else {
-            let instruction = self.read_next()
-                .and_then(|token| match token {
-                    Token::Address(_, addr, kind) => {
-                        match kind {
-                            LexerAddressKind::Absolute => Some(Ok(Instruction::IRA(op_rw, r1, addr, Absolute))),
-                            _ => None
-                        }
-                    }
-                    Token::Variable(_, name) => match self.symbols.get(&name) {
-                        Some(Token::Address(_, addr, kind)) => {
-                            match kind {
-                                LexerAddressKind::Absolute => Some(Ok(Instruction::IRA(op_rw, r1, addr.into(), Absolute))),
-                                _ => None
-                            }
-                        }
-                        Some(Token::Integer(_, w)) => Some(Ok(Instruction::IRW(op_rw, r1, *w))),
-                        _ => None
-                    },
-                    _ => None,
-                })
-                .unwrap_or(Err(format!("Expected <variable>, <w> or <&addr> at {}", position).into()));
-
-            if self.read_eol() {
-                return instruction;
-            }
-            Err(format!("Expected <eol> at {}", position).into())
-        }
-    }
-
-    fn op_rr_rw_ra(&mut self, op_rr: Op, op_rw: Op, position: &Position) -> Result<Instruction> {
-        let r1 = match self.read_register() {
-            None => return Err(format!("Expected <r> at {}", position).into()),
-            Some(str) => str,
-        };
-
-        if !self.read_comma() {
-            return Err(format!("Expected ',' at {}", position).into());
-        }
-
-        let instruction = self.read_next()
-            .and_then(|token| match token {
-                Token::Address(_, addr, kind) => {
-                    match kind {
-                        LexerAddressKind::Segment => Some(Ok(Instruction::IRA(op_rw, r1, addr, Segment))),
-                        LexerAddressKind::Absolute => Some(Ok(Instruction::IRA(op_rw, r1, addr, Absolute)))
-                    }
-                }
-                Token::Identifier(_, r2) => Some(Ok(Instruction::IRR(op_rr, r1, r2))),
-                Token::Integer(_, w) => Some(Ok(Instruction::IRW(op_rw, r1, w))),
-                Token::Variable(_, name) => match self.symbols.get(&name) {
-                    Some(Token::Integer(_, w)) => Some(Ok(Instruction::IRW(op_rw, r1, *w))),
-                    Some(Token::Address(_, addr, kind)) => {
-                        match kind {
-                            LexerAddressKind::Segment => Some(Ok(Instruction::IRA(op_rw, r1, addr.into(), Segment))),
-                            LexerAddressKind::Absolute => Some(Ok(Instruction::IRA(op_rw, r1, addr.into(), Absolute)))
-                        }
-                    }
-                    _ => None
-                },
-                _ => None,
-            })
-            .unwrap_or(Err(format!("Expected <variable>, <w> or <r> at {}", position).into()));
-
-        if self.read_eol() {
-            return instruction;
-        }
-        Err(format!("Expected <eol> at {}", position).into())
-    }
-
-    fn op_a(&mut self, op_segment: Op, op_absolute: Op, position: &Position) -> Result<Instruction> {
-        let instruction = self.read_next()
-            .and_then(|token| match token {
-                Token::Address(_, addr, kind) => {
-                    match kind {
-                        LexerAddressKind::Segment => Some(Ok(Instruction::IA(op_segment, addr, Segment))),
-                        LexerAddressKind::Absolute => Some(Ok(Instruction::IA(op_absolute, addr, Absolute)))
-                    }
-                }
-                Token::Variable(_, name) => match self.symbols.get(&name) {
-                    Some(Token::Address(_, addr, kind)) => {
-                        match kind {
-                            LexerAddressKind::Segment => Some(Ok(Instruction::IA(op_segment, addr.into(), Segment))),
-                            LexerAddressKind::Absolute => Some(Ok(Instruction::IA(op_absolute, addr.into(), Absolute))),
-                        }
-                    }
-                    _ => None
-                },
-                _ => None,
-            })
-            .unwrap_or(Err(format!("Expected <variable>, <w> or <addr> at {}", position).into()));
-
-        if self.read_eol() {
-            return instruction;
-        }
-        Err(format!("Expected <eol> at {}", position).into())
-    }
-
-    fn op_a_r(&mut self, op_segment: Op, op_absolute: Op, op_register: Op, position: &Position) -> Result<Instruction> {
-        let instruction = self.read_next()
-            .and_then(|token| match token {
-                Token::Address(_, addr, kind) => {
-                    match kind {
-                        LexerAddressKind::Segment => Some(Ok(Instruction::IA(op_segment, addr, Segment))),
-                        LexerAddressKind::Absolute => Some(Ok(Instruction::IA(op_absolute, addr, Absolute)))
-                    }
-                }
-                Token::Identifier(_, r) => Some(Ok(Instruction::IR(op_register, r.into()))),
-                Token::Variable(_, name) => match self.symbols.get(&name) {
-                    Some(Token::Address(_, addr, kind)) => {
-                        match kind {
-                            LexerAddressKind::Segment => Some(Ok(Instruction::IA(op_segment, addr.into(), Segment))),
-                            LexerAddressKind::Absolute => Some(Ok(Instruction::IA(op_absolute, addr.into(), Absolute))),
-                        }
-                    }
-                    _ => None
-                },
-                _ => None,
-            })
-            .unwrap_or(Err(format!("Expected <variable>, <w> or <addr> at {}", position).into()));
-
-        if self.read_eol() {
-            return instruction;
-        }
-        Err(format!("Expected <eol> at {}", position).into())
-    }
-
-    fn op_rr(&mut self, op: Op, position: &Position) -> Result<Instruction> {
-        let r1 = match self.read_register() {
-            None => return Err(format!("Expected <r> at {}", position).into()),
-            Some(str) => str,
-        };
-
-        if !self.read_comma() {
-            return Err(format!("Expected ',' at {}", position).into());
-        }
-
-        let r2 = match self.read_register() {
-            None => return Err(format!("Expected <r> at {}", position).into()),
-            Some(str) => str
-        };
-
-        if self.read_eol() {
-            return Ok(Instruction::IRR(op, r1, r2));
-        }
-        Err(format!("Expected <eol> at {}", position).into())
-    }
-
-    fn op_rr_wr(&mut self, op_rr: Op, op_wr: Op, position: &Position) -> Result<Instruction> {
-        if let Some(Token::Identifier(_, _)) = self.peek_next() {
-            return self.op_rr(op_rr, position);
-        }
-
-        let mut token = self.read_next();
-        token = match token {
-            Some(Token::Integer(_, _)) => token,
-            Some(Token::Address(_, _, LexerAddressKind::Absolute)) => token,
-            Some(Token::Variable(_, _)) => token,
+    fn peek(&mut self, n: usize) -> Option<&Token> {
+        match self.lexer.peek_nth(n) {
+            Some(Ok(token)) => Some(token),
             _ => None,
-        };
-
-        if token.is_none() {
-            return Err(format!("Expected <w> or <variable> or <&addr> at {}", position).into());
         }
+    }
 
-        if !self.read_comma() {
-            return Err(format!("Expected ',' at {}", position).into());
+    fn peek_comma(&mut self, n: usize) -> bool {
+        match self.lexer.peek_nth(n) {
+            Some(Ok(Token::Comma(_))) => true,
+            _ => false,
         }
+    }
 
-        let r1 = match self.read_register() {
-            None => return Err(format!("Expected <r> at {}", position).into()),
-            Some(str) => str,
-        };
-
-        if self.read_eol() {
-            return match token.unwrap() {
-                Token::Integer(_, w) => Ok(Instruction::IRW(op_wr, r1, w)),
-                Token::Address(_, a, _) => Ok(Instruction::IRA(op_wr, r1, a, Absolute)),
-                Token::Variable(_, name) => match self.symbols.get(&name) {
-                    Some(Token::Integer(_, w)) => Ok(Instruction::IRW(op_wr, r1, *w)),
-                    _ => Err(format!("Expected <variable> at {}", position).into()),
-                },
-                _ => Err(format!("Expected <w> or <variable> or <&addr> at {}", position))
-            };
+    fn peek_lbracket(&mut self, n: usize) -> bool {
+        match self.lexer.peek_nth(n) {
+            Some(Ok(Token::LBracket(_))) => true,
+            _ => false,
         }
+    }
 
-        Err(format!("Expected <eol> at {}", position).into())
+    fn peek_rbracket(&mut self, n: usize) -> bool {
+        match self.lexer.peek_nth(n) {
+            Some(Ok(Token::RBracket(_))) => true,
+            _ => false,
+        }
+    }
+
+    fn peek_variable(&mut self, n: usize) -> bool {
+        match self.lexer.peek_nth(n) {
+            Some(Ok(Token::Variable(_, _))) => true,
+            _ => false,
+        }
+    }
+
+    fn peek_register(&mut self, n: usize) -> bool {
+        match self.lexer.peek_nth(n) {
+            Some(Ok(Token::Identifier(_, _))) => true,
+            _ => false,
+        }
+    }
+
+    fn peek_word(&mut self, n: usize) -> bool {
+        match self.lexer.peek_nth(n) {
+            Some(Ok(Token::Integer(_, _))) => true,
+            _ => false,
+        }
+    }
+
+    fn peek_address(&mut self, n: usize) -> bool {
+        match self.lexer.peek_nth(n) {
+            Some(Ok(Token::Address(_, _, _))) => true,
+            _ => false,
+        }
+    }
+
+    fn peek_eol(&mut self, n: usize) -> bool {
+        match self.lexer.peek_nth(n) {
+            Some(Ok(Token::Eol(_))) => true,
+            _ => false
+        }
+    }
+
+    // --- read
+
+    fn read_next(&mut self) -> Option<Token> {
+        match self.lexer.next() {
+            Some(Ok(t)) => Some(t),
+            _ => None
+        }
     }
 
     fn read_comma(&mut self) -> bool {
@@ -564,24 +737,17 @@ impl<'t> Parser<'t> {
         }
     }
 
-    fn read_eol(&mut self) -> bool {
-        match self.read_next() {
-            Some(Token::Eol(_)) => true,
-            _ => false
-        }
-    }
-
-    fn read_next(&mut self) -> Option<Token> {
+    fn read_lbracket(&mut self) -> bool {
         match self.lexer.next() {
-            Some(Ok(t)) => Some(t),
-            _ => None
+            Some(Ok(Token::LBracket(_))) => true,
+            _ => false,
         }
     }
 
-    fn peek_next(&mut self) -> Option<&Token> {
-        match self.lexer.peek() {
-            Some(Ok(t)) => Some(t),
-            _ => None
+    fn read_rbracket(&mut self) -> bool {
+        match self.lexer.next() {
+            Some(Ok(Token::RBracket(_))) => true,
+            _ => false,
         }
     }
 
@@ -589,6 +755,21 @@ impl<'t> Parser<'t> {
         match self.lexer.next() {
             Some(Ok(Token::Identifier(_, r))) => Some(r),
             _ => None,
+        }
+    }
+
+    fn read_address(&mut self) -> Option<(String, AddressKind)> {
+        match self.lexer.next() {
+            Some(Ok(Token::Address(_, a, LexerAddressKind::Absolute))) => Some((a, Absolute)),
+            Some(Ok(Token::Address(_, a, LexerAddressKind::Segment))) => Some((a, Segment)),
+            _ => None,
+        }
+    }
+
+    fn read_eol(&mut self) -> bool {
+        match self.read_next() {
+            Some(Token::Eol(_)) => true,
+            _ => false
         }
     }
 }
@@ -920,10 +1101,10 @@ mod tests {
         sub_rr:  ("SUB  r1, r0\n", Op::SubRR,  "r1", "r0"),
         mul_rr:  ("MUL  r1, r0\n", Op::MulRR,  "r1", "r0"),
         cmp_rr:  ("CMP  r1, r0\n", Op::CmpRR,  "r1", "r0"),
-        load_rr: ("LOAD r1, r0\n", Op::LoadRR,   "r1", "r0"),
+        load_rr: ("LOAD r1, r0\n", Op::LoadRR, "r1", "r0"),
         pop_rr:  ("POP  r2, r3\n", Op::PopRR,  "r2", "r3"),
         push_rr: ("PUSH r2, r3\n", Op::PushRR, "r2", "r3"),
-        stor:    ("STOR r1, r0\n", Op::StorRR,   "r1", "r0"),
+        stor_rr: ("STOR r1, r0\n", Op::StorRR, "r1", "r0"),
         xor_rr:  ("XOR  r1, r0\n", Op::XorRR,  "r1", "r0"),
     }
 

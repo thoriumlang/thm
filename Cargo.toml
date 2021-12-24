@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 clap = "2.34.0"
+peek-nth = "0.2.0"
 
 [[bin]]
 name = "tha"
