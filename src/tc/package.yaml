@@ -1,0 +1,39 @@
+name:                tc
+version:             0.1.0.0
+github:              "thoriumlang/thm"
+license:             Apache-2.0
+author:              "Christophe Pollet"
+maintainer:          "cpollet@users.noreply.github.com"
+copyright:           "2021 Christophe Pollet"
+
+extra-source-files:
+- README.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/thoriumlang/thm/src/tc>
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  source-dirs: src
+
+executables:
+  tc-exe:
+    main:                Main.hs
+    source-dirs:         app
+    dependencies:
+    - tc
+
+tests:
+  tc-test:
+    main:                Spec.hs
+    source-dirs:         test
+    dependencies:
+    - tc

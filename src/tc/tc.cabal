@@ -1,0 +1,57 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           tc
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/thoriumlang/thm/src/tc>
+homepage:       https://github.com/thoriumlang/thm#readme
+bug-reports:    https://github.com/thoriumlang/thm/issues
+author:         Christophe Pollet
+maintainer:     cpollet@users.noreply.github.com
+copyright:      2021 Christophe Pollet
+license:        Apache-2.0
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/thoriumlang/thm
+
+library
+  exposed-modules:
+      Lib
+  other-modules:
+      Paths_tc
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+  default-language: Haskell2010
+
+executable tc-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_tc
+  hs-source-dirs:
+      app
+  build-depends:
+      base >=4.7 && <5
+    , tc
+  default-language: Haskell2010
+
+test-suite tc-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_tc
+  hs-source-dirs:
+      test
+  build-depends:
+      base >=4.7 && <5
+    , tc
+  default-language: Haskell2010
