@@ -1,9 +1,9 @@
 use std::collections::HashMap;
+use std::ops::Add;
 use peek_nth::{IteratorExt, PeekableNth};
 
 use crate::op::Op;
 use crate::lexer::{AddressKind as LexerAddressKind, Lexer, Position, Token};
-use crate::op::Op::StorRW;
 use crate::parser::AddressKind::{Absolute, Segment};
 
 #[derive(Debug, PartialEq)]
@@ -30,13 +30,13 @@ pub enum Directive {
     Word(String, i32),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum AddressKind {
     Absolute,
     Segment,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Instruction {
     I(Op),
     IA(Op, String, AddressKind),
@@ -152,76 +152,193 @@ impl<'t> Parser<'t> {
 
     fn parse_instruction(&mut self, op: &str, position: &Position) -> Result<Instruction> {
         return match op {
-            "ADD" => self.op_rr_rw(Op::AddRR, Op::AddRW, position),
-            "AND" => self.op_rr_rw(Op::AndRR, Op::AndRW, position),
-            "CALL" => self.op_a_r(Op::CallS, Op::CallA, Op::CallR, position),
-            "CMP" => self.op_rr_rw(Op::CmpRR, Op::CmpRW, position),
-            "DEC" => self.op_r(Op::DecR, position),
-            "HALT" => self.op_void(Op::Halt, position),
-            "INC" => self.op_r(Op::IncR, position),
-            "IND" => self.op_void(Op::Ind, position),
-            "INE" => self.op_void(Op::Ine, position),
-            "INT" => self.op_b(Op::IntB, position),
-            "J" => self.op_a(Op::JS, Op::JA, position),
-            "JEQ" => self.op_a(Op::JeqS, Op::JeqA, position),
-            "JNE" => self.op_a(Op::JneS, Op::JneA, position),
-            "LOAD" => self.op_rr_rw_ra_ro(Op::LoadRR, Op::LoadRRW, Op::LoadRW, position),
-            "MI" => self.op_b(Op::MiB, position),
-            "MOV" => self.op_rr_rw_ra(Op::MovRR, Op::MovRW, position),
-            "MUL" => self.op_rr_rw(Op::MulRR, Op::MulRW, position),
-            "NOP" => self.op_void(Op::Nop, position),
-            "OR" => self.op_rr_rw(Op::OrRR, Op::OrRW, position),
-            "PANIC" => self.op_void(Op::Panic, position),
-            "POP" => self.op_r_rr_rrr(Op::PopR, Op::PopRR, Op::PopRRR, position),
-            "POPA" => self.op_void(Op::Popa, position),
-            "PUSH" => self.op_r_rr_rrr_w(Op::PushR, Op::PushRR, Op::PushRRR, Op::PushW, position),
-            "PUSHA" => self.op_void(Op::Pusha, position),
-            "RET" => self.op_void(Op::Ret, position),
-            "STOR" => self.op_rr_wr_ar(Op::StorRR, StorRW, position),
-            "SUB" => self.op_rr_rw(Op::SubRR, Op::SubRW, position),
-            "UMI" => self.op_b(Op::UmiB, position),
-            "IRET" => self.op_void(Op::Iret, position),
-            "WFI" => self.op_void(Op::Wfi, position),
-            "XBM" => self.op_b(Op::Xbm, position),
-            "XBRK" => self.op_void(Op::Xbrk, position),
-            "XDBG" => self.op_void(Op::Xdbg, position),
-            "XPSE" => self.op_void(Op::Xpse, position),
-            "XPSD" => self.op_void(Op::Xpsd, position),
-            "XOR" => self.op_rr_rw(Op::XorRR, Op::XorRW, position),
+            "ADD" => self.parse_op(position, &[
+                (Op::AddRR, Self::op_rr as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::AddRW, Self::op_rw as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "AND" => self.parse_op(position, &[
+                (Op::AndRR, Self::op_rr as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::AndRW, Self::op_rw as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "CALL" => self.parse_op(position, &[
+                (Op::CallS, Self::op_as as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::CallA, Self::op_aa as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::CallR, Self::op_r as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "CMP" => self.parse_op(position, &[
+                (Op::CmpRR, Self::op_rr as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::CmpRW, Self::op_rw as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "DEC" => self.parse_op(position, &[
+                (Op::DecR, Self::op_r as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "HALT" => self.parse_op(position, &[
+                (Op::Halt, Self::op_void as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "INC" => self.parse_op(position, &[
+                (Op::IncR, Self::op_r as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "IND" => self.parse_op(position, &[
+                (Op::Ind, Self::op_void as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "INE" => self.parse_op(position, &[
+                (Op::Ine, Self::op_void as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "INT" => self.parse_op(position, &[
+                (Op::IntB, Self::op_b as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "J" => self.parse_op(position, &[
+                (Op::JA, Self::op_aa as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::JS, Self::op_as as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "JEQ" => self.parse_op(position, &[
+                (Op::JeqA, Self::op_aa as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::JeqS, Self::op_as as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "JNE" => self.parse_op(position, &[
+                (Op::JneA, Self::op_aa as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::JneS, Self::op_as as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "LOAD" => self.parse_op(position, &[
+                (Op::LoadRR, Self::op_rr as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::LoadRW, Self::op_rw as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::LoadRW, Self::op_raa as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::LoadRRW, Self::op_ro as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "MI" => self.parse_op(position, &[
+                (Op::MiB, Self::op_b as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "MOV" => self.parse_op(position, &[
+                (Op::MovRR, Self::op_rr as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::MovRW, Self::op_rw as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::MovRW, Self::op_raa as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::MovRW, Self::op_ras as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "MUL" => self.parse_op(position, &[
+                (Op::MulRR, Self::op_rr as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::MulRW, Self::op_rw as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "NOP" => self.parse_op(position, &[
+                (Op::Nop, Self::op_void as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "OR" => self.parse_op(position, &[
+                (Op::OrRR, Self::op_rr as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::OrRW, Self::op_rw as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "PANIC" => self.parse_op(position, &[
+                (Op::Panic, Self::op_void as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "POP" => self.parse_op(position, &[
+                (Op::PopR, Self::op_r as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::PopRR, Self::op_rr as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::PopRRR, Self::op_rrr as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "POPA" => self.parse_op(position, &[
+                (Op::Popa, Self::op_void as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "PUSH" => self.parse_op(position, &[
+                (Op::PushR, Self::op_r as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::PushRR, Self::op_rr as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::PushRRR, Self::op_rrr as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::PushW, Self::op_w as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "PUSHA" => self.parse_op(position, &[
+                (Op::Pusha, Self::op_void as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "RET" => self.parse_op(position, &[
+                (Op::Ret, Self::op_void as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "STOR" => self.parse_op(position, &[
+                (Op::StorRR, Self::op_rr as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::StorRW, Self::op_wr as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::StorRW, Self::op_aar as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "SUB" => self.parse_op(position, &[
+                (Op::SubRR, Self::op_rr as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::SubRW, Self::op_rw as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "UMI" => self.parse_op(position, &[
+                (Op::UmiB, Self::op_b as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "IRET" => self.parse_op(position, &[
+                (Op::Iret, Self::op_void as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "WFI" => self.parse_op(position, &[
+                (Op::Wfi, Self::op_void as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "XBM" => self.parse_op(position, &[
+                (Op::Xbm, Self::op_b as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "XBRK" => self.parse_op(position, &[
+                (Op::Xbrk, Self::op_void as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "XDBG" => self.parse_op(position, &[
+                (Op::Xdbg, Self::op_void as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "XPSE" => self.parse_op(position, &[
+                (Op::Xpse, Self::op_void as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "XPSD" => self.parse_op(position, &[
+                (Op::Xpsd, Self::op_void as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
+            "XOR" => self.parse_op(position, &[
+                (Op::XorRR, Self::op_rr as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+                (Op::XorRW, Self::op_rw as fn(&mut Self, Op, &Position) -> Result<Instruction>),
+            ]),
             op => Err(format!("Invalid mnemonic '{}' at {}", op, position).into())
         };
     }
 
-    fn op_a(&mut self, op_segment: Op, op_absolute: Op, position: &Position) -> Result<Instruction> {
-        let a_result = self.parse_a(position);
-        if let Ok((a1, k1)) = a_result {
-            return match k1 {
-                Absolute => Ok(Instruction::IA(op_absolute, a1, Absolute)),
-                Segment => Ok(Instruction::IA(op_segment, a1, Segment)),
-            };
+    fn parse_op<F>(&mut self, position: &Position, fs: &[(Op, F)]) -> Result<Instruction>
+        where F: Fn(&mut Self, Op, &Position) -> Result<Instruction>
+    {
+        let results: Vec<Result<Instruction>> = fs.iter()
+            .map(|op| op.1(self, op.0, position))
+            .collect();
+
+        let success: Vec<&Instruction> = results.iter()
+            .filter(|e| e.is_ok())
+            .map(|e| e.as_ref().unwrap())
+            .collect();
+
+        fn merge_errors(results: Vec<Result<Instruction>>) -> String {
+            let mut str = String::new();
+            for result in results {
+                str = str.add(" * ");
+                str = str.add(result.err().unwrap().as_str());
+                str = str.add("\n");
+            }
+            return str;
         }
 
-        Err(format!("Expected {}", a_result.err().unwrap()))
+        match success.len() {
+            0 => Err(format!("Expected one of the following alternatives:\n{}",
+                             merge_errors(results)
+            ).into()),
+            1 => Ok((**success.get(0).unwrap()).clone()),
+            _ => Err(format!("No unique alternative at {}", position).into()),
+        }
     }
 
-    fn op_a_r(&mut self, op_segment: Op, op_absolute: Op, op_register: Op, position: &Position) -> Result<Instruction> {
-        let a_result = self.parse_a(position);
-        if let Ok((a1, k1)) = a_result {
-            return match k1 {
-                Absolute => Ok(Instruction::IA(op_absolute, a1, Absolute)),
-                Segment => Ok(Instruction::IA(op_segment, a1, Segment)),
-            };
+    fn op_aa(&mut self, op: Op, position: &Position) -> Result<Instruction> {
+        match self.parse_aa(position) {
+            Ok(a1) => Ok(Instruction::IA(op, a1, Absolute)),
+            Err(e) => Err(e),
         }
+    }
 
-        let r_result = self.parse_r(position);
-        if let Ok(r1) = r_result {
-            return Ok(Instruction::IR(op_register, r1));
+    fn op_as(&mut self, op: Op, position: &Position) -> Result<Instruction> {
+        match self.parse_as(position) {
+            Ok(a1) => Ok(Instruction::IA(op, a1, Segment)),
+            Err(e) => Err(e),
         }
+    }
 
-        Err(format!("Expected one of the following alternatives:\n * {}\n * {}",
-                    a_result.err().unwrap(),
-                    r_result.err().unwrap(),
-        ).into())
+    fn op_aar(&mut self, op: Op, position: &Position) -> Result<Instruction> {
+        match self.parse_aar(position) {
+            Ok((a1, r1)) => Ok(Instruction::IRA(op, r1, a1, Absolute)),
+            Err(e) => Err(e),
+        }
     }
 
     fn op_b(&mut self, op: Op, position: &Position) -> Result<Instruction> {
@@ -242,162 +359,50 @@ impl<'t> Parser<'t> {
     fn op_r(&mut self, op: Op, position: &Position) -> Result<Instruction> {
         match self.parse_r(position) {
             Ok(r1) => Ok(Instruction::IR(op, r1)),
-            Err(e) => Err(format!("Expected {}", e)),
+            Err(e) => Err(e),
         }
     }
 
-    fn op_r_rr_rrr(&mut self, op_r: Op, op_rr: Op, op_rrr: Op, position: &Position) -> Result<Instruction> {
-        let r_result = self.parse_r(position);
-        if let Ok(r1) = r_result {
-            return Ok(Instruction::IR(op_r, r1));
-        }
-
-        let rr_result = self.parse_rr(position);
-        if let Ok((r1, r2)) = rr_result {
-            return Ok(Instruction::IRR(op_rr, r1, r2));
-        }
-
-        let rrr_result = self.parse_rrr(position);
-        if let Ok((r1, r2, r3)) = rrr_result {
-            return Ok(Instruction::IRRR(op_rrr, r1, r2, r3));
-        }
-
-        Err(format!("Expected one of the following alternatives:\n * {}\n * {}\n * {}",
-                    r_result.err().unwrap(),
-                    rr_result.err().unwrap(),
-                    rrr_result.err().unwrap(),
-        ).into())
-    }
-
-    fn op_r_rr_rrr_w(&mut self, op_r: Op, op_rr: Op, op_rrr: Op, op_w: Op, position: &Position) -> Result<Instruction> {
-        let r_result = self.parse_r(position);
-        if let Ok(r1) = r_result {
-            return Ok(Instruction::IR(op_r, r1));
-        }
-
-        let rr_result = self.parse_rr(position);
-        if let Ok((r1, r2)) = rr_result {
-            return Ok(Instruction::IRR(op_rr, r1, r2));
-        }
-
-        let rrr_result = self.parse_rrr(position);
-        if let Ok((r1, r2, r3)) = rrr_result {
-            return Ok(Instruction::IRRR(op_rrr, r1, r2, r3));
-        }
-
-        let w_result = self.parse_w(position);
-        if let Ok(w1) = w_result {
-            return Ok(Instruction::IW(op_w, w1));
-        }
-
-        Err(format!("Expected one of the following alternatives:\n * {}\n * {}\n * {}\n * {}",
-                    r_result.err().unwrap(),
-                    rr_result.err().unwrap(),
-                    rrr_result.err().unwrap(),
-                    w_result.err().unwrap(),
-        ).into())
-    }
-
-    fn op_rr_rw(&mut self, op_rr: Op, op_ri: Op, position: &Position) -> Result<Instruction> {
-        let rr_result = self.parse_rr(position);
-        if let Ok((r1, r2)) = rr_result {
-            return Ok(Instruction::IRR(op_rr, r1, r2));
-        }
-
-        let rw_result = self.parse_rw(position);
-        if let Ok((r1, w1)) = rw_result {
-            return Ok(Instruction::IRW(op_ri, r1, w1));
-        }
-
-        Err(format!("Expected one of the following alternatives:\n * {}\n * {}",
-                    rr_result.err().unwrap(),
-                    rw_result.err().unwrap(),
-        ).into())
-    }
-
-    // refuses <@-addr>
-    fn op_rr_wr_ar(&mut self, op_rr: Op, op_wr: Op, position: &Position) -> Result<Instruction> {
-        let rr_result = self.parse_rr(position);
-        if let Ok((r1, r2)) = rr_result {
-            return Ok(Instruction::IRR(op_rr, r1, r2));
-        }
-
-        let wr_result = self.parse_wr(position);
-        if let Ok((w1, r1)) = wr_result {
-            return Ok(Instruction::IRW(op_wr, r1, w1));
-        }
-
-        let ar_result = match self.parse_ar(position) {
-            Ok((a1, Absolute, r1)) => Ok((a1, r1)),
-            Ok((_, _, _)) => Err(format!("<&-addr> at {}", position).into()),
+    fn op_raa(&mut self, op: Op, position: &Position) -> Result<Instruction> {
+        match self.parse_raa(position) {
+            Ok((r1, a1)) => Ok(Instruction::IRA(op, r1, a1, Absolute)),
             Err(e) => Err(e)
-        };
-        if let Ok((a1, r1)) = ar_result {
-            return Ok(Instruction::IRA(op_wr, r1, a1, Absolute));
         }
-
-        Err(format!("Expected one of the following alternatives:\n * {}\n * {}\n * {}",
-                    rr_result.err().unwrap(),
-                    wr_result.err().unwrap(),
-                    ar_result.err().unwrap(),
-        ).into())
     }
 
-    fn op_rr_rw_ra(&mut self, op_rr: Op, op_rw: Op, position: &Position) -> Result<Instruction> {
-        let rr_result = self.parse_rr(position);
-        if let Ok((r1, r2)) = rr_result {
-            return Ok(Instruction::IRR(op_rr, r1, r2));
-        }
-
-        let rw_result = self.parse_rw(position);
-        if let Ok((r1, w1)) = rw_result {
-            return Ok(Instruction::IRW(op_rw, r1, w1));
-        }
-
-        let ra_result = self.parse_ra(position);
-        if let Ok((r1, a1, k1)) = ra_result {
-            return Ok(Instruction::IRA(op_rw, r1, a1, k1));
-        }
-
-        Err(format!("Expected one of the following alternatives:\n * {}\n * {}\n * {}",
-                    rr_result.err().unwrap(),
-                    rw_result.err().unwrap(),
-                    ra_result.err().unwrap(),
-        ).into())
-    }
-
-    // refuses <@-addr>
-    fn op_rr_rw_ra_ro(&mut self, op_rr: Op, op_rrw: Op, op_rw: Op, position: &Position) -> Result<Instruction> {
-        let rr_result = self.parse_rr(position);
-        if let Ok((r1, r2)) = rr_result {
-            return Ok(Instruction::IRR(op_rr, r1, r2));
-        }
-
-        let rw_result = self.parse_rw(position);
-        if let Ok((r1, w1)) = rw_result {
-            return Ok(Instruction::IRW(op_rw, r1, w1));
-        }
-
-        let ra_result = match self.parse_ra(position) {
-            Ok((r1, a1, Absolute)) => Ok((r1, a1)),
-            Ok((_, _, _)) => Err(format!("<&-addr> at {}", position).into()),
+    fn op_ras(&mut self, op: Op, position: &Position) -> Result<Instruction> {
+        match self.parse_ras(position) {
+            Ok((r1, a1)) => Ok(Instruction::IRA(op, r1, a1, Segment)),
             Err(e) => Err(e)
-        };
-        if let Ok((r1, a1)) = ra_result {
-            return Ok(Instruction::IRA(op_rw, r1, a1, Absolute));
         }
+    }
 
-        let ro_result = self.parse_ro(position);
-        if let Ok((r1, r2, o1)) = ro_result {
-            return Ok(Instruction::IRRW(op_rrw, r1, r2, o1));
+    fn op_ro(&mut self, op: Op, position: &Position) -> Result<Instruction> {
+        match self.parse_ro(position) {
+            Ok((r1, r2, o1)) => Ok(Instruction::IRRW(op, r1, r2, o1)),
+            Err(e) => Err(e),
         }
+    }
 
-        Err(format!("Expected one of the following alternatives:\n * {}\n * {}\n * {}\n * {}",
-                    rr_result.err().unwrap(),
-                    rw_result.err().unwrap(),
-                    ra_result.err().unwrap(),
-                    ro_result.err().unwrap(),
-        ).into())
+    fn op_rr(&mut self, op: Op, position: &Position) -> Result<Instruction> {
+        match self.parse_rr(position) {
+            Ok((r1, r2)) => Ok(Instruction::IRR(op, r1, r2)),
+            Err(e) => Err(e),
+        }
+    }
+
+    fn op_rw(&mut self, op: Op, position: &Position) -> Result<Instruction> {
+        match self.parse_rw(position) {
+            Ok((r1, w1)) => Ok(Instruction::IRW(op, r1, w1)),
+            Err(e) => Err(e)
+        }
+    }
+
+    fn op_rrr(&mut self, op: Op, position: &Position) -> Result<Instruction> {
+        match self.parse_rrr(position) {
+            Ok((r1, r2, r3)) => Ok(Instruction::IRRR(op, r1, r2, r3)),
+            Err(e) => Err(e),
+        }
     }
 
     fn op_void(&mut self, op: Op, position: &Position) -> Result<Instruction> {
@@ -407,10 +412,26 @@ impl<'t> Parser<'t> {
         Err(format!("Expected <eol> at {}", position).into())
     }
 
-    /// parses `<addr> <eol>`
-    fn parse_a(&mut self, position: &Position) -> Result<(String, AddressKind)> {
-        if !self.peek_address(0) {
-            return Err(format!("<addr> at {}", position).into());
+    fn op_w(&mut self, op: Op, position: &Position) -> Result<Instruction> {
+        match self.parse_w(position) {
+            Ok(w1) => Ok(Instruction::IW(op, w1)),
+            Err(e) => Err(e),
+        }
+    }
+
+    fn op_wr(&mut self, op: Op, position: &Position) -> Result<Instruction> {
+        match self.parse_wr(position) {
+            Ok((w1, r1)) => Ok(Instruction::IRW(op, r1, w1)),
+            Err(e) => Err(e),
+        }
+    }
+
+    // --- parse
+
+    /// parses `<&-addr> <eol>`
+    fn parse_aa(&mut self, position: &Position) -> Result<String> {
+        if !self.peek_abs_address(0) {
+            return Err(format!("<&-addr> at {}", position).into());
         }
         if !self.peek_eol(1) {
             return Err(format!("<eol> at {}", position).into());
@@ -418,13 +439,27 @@ impl<'t> Parser<'t> {
 
         let a1 = self.read_address().unwrap();
         self.read_eol();
-        return Ok((a1.0, a1.1));
+        return Ok(a1.0);
     }
 
-    /// parses `<addr> ',' <r> <eol>`
-    fn parse_ar(&mut self, position: &Position) -> Result<(String, AddressKind, String)> {
-        if !self.peek_address(0) {
-            return Err(format!("<addr> at {}", position).into());
+    /// parses `<@-addr> <eol>`
+    fn parse_as(&mut self, position: &Position) -> Result<String> {
+        if !self.peek_seg_address(0) {
+            return Err(format!("<@-addr> at {}", position).into());
+        }
+        if !self.peek_eol(1) {
+            return Err(format!("<eol> at {}", position).into());
+        }
+
+        let a1 = self.read_address().unwrap();
+        self.read_eol();
+        return Ok(a1.0);
+    }
+
+    /// parses `<&-addr> ',' <r> <eol>`
+    fn parse_aar(&mut self, position: &Position) -> Result<(String, String)> {
+        if !self.peek_abs_address(0) {
+            return Err(format!("<&-addr> at {}", position).into());
         }
         if !self.peek_comma(1) {
             return Err(format!("',' at {}", position).into());
@@ -440,7 +475,7 @@ impl<'t> Parser<'t> {
         self.read_comma();
         let r1 = self.read_register().unwrap();
         self.read_eol();
-        return Ok((a1.0, a1.1, r1));
+        return Ok((a1.0, r1));
     }
 
     /// parses `<r> <eol>`
@@ -457,16 +492,16 @@ impl<'t> Parser<'t> {
         return Ok(r1);
     }
 
-    /// parses `<r> ',' <addr> <eol>`
-    fn parse_ra(&mut self, position: &Position) -> Result<(String, String, AddressKind)> {
+    /// parses `<r> ',' <&-addr> <eol>`
+    fn parse_raa(&mut self, position: &Position) -> Result<(String, String)> {
         if !self.peek_register(0) {
-            return Err(format!("<r> at {}", position).into());
+            return Err(format!("<r> ',' <&-addr> <eol> at {}", position).into());
         }
         if !self.peek_comma(1) {
-            return Err(format!("',' at {}", position).into());
+            return Err(format!("',' <&-addr> <eol> at {}", position).into());
         }
-        if !self.peek_address(2) {
-            return Err(format!("<addr> at {}", position).into());
+        if !self.peek_abs_address(2) {
+            return Err(format!("<&-addr> <eol> at {}", position).into());
         }
         if !self.peek_eol(3) {
             return Err(format!("<eol> at {}", position).into());
@@ -476,32 +511,54 @@ impl<'t> Parser<'t> {
         self.read_comma();
         let a1 = self.read_address().unwrap();
         self.read_eol();
-        return Ok((r1, a1.0, a1.1));
+        return Ok((r1, a1.0));
+    }
+
+    /// parses `<r> ',' <@-addr> <eol>`
+    fn parse_ras(&mut self, position: &Position) -> Result<(String, String)> {
+        if !self.peek_register(0) {
+            return Err(format!("<r> ',' <@-addr> <eol> at {}", position).into());
+        }
+        if !self.peek_comma(1) {
+            return Err(format!("',' <@-addr> <eol> at {}", position).into());
+        }
+        if !self.peek_seg_address(2) {
+            return Err(format!("<@-addr> <eol> at {}", position).into());
+        }
+        if !self.peek_eol(3) {
+            return Err(format!("<eol> at {}", position).into());
+        }
+
+        let r1 = self.read_register().unwrap();
+        self.read_comma();
+        let a1 = self.read_address().unwrap();
+        self.read_eol();
+        return Ok((r1, a1.0));
     }
 
     /// parses `<r> ',' '[' <r> '+' <w> ']' <eol>`
     fn parse_ro(&mut self, position: &Position) -> Result<(String, String, u32)> {
         if !self.peek_register(0) {
-            return Err(format!("<r> at {}", position).into());
+            return Err(format!("<r> ',' '[' <r> '+' ( <w> | <var> ) ']' <eol> at {}", position).into());
         }
         if !self.peek_comma(1) {
-            return Err(format!("'[' at {}", position).into());
+            return Err(format!("',' '[' <r> '+' ( <w> | <var> ) ']' <eol> at {}", position).into());
         }
         if !self.peek_lbracket(2) {
-            return Err(format!("'[' at {}", position).into());
+            return Err(format!("'[' <r> '+' ( <w> | <var> ) ']' <eol> at {}", position).into());
         }
         if !self.peek_register(3) {
-            return Err(format!("<r> at {}", position).into());
+            return Err(format!("<r> '+' ( <w> | <var> ) ']' <eol> at {}", position).into());
         }
         match self.peek(4) {
             Some(Token::Plus(_)) => (),
-            _ => return Err(format!("'+' at {}", position).into()),
+            _ => return Err(format!("'+' ( <w> | <var> ) ']' <eol> at {}", position).into()),
         };
         if !self.peek_word(5) && !self.peek_variable(3) {
-            return Err(format!("<w> or <var> at {}", position).into());
+            return Err(format!("( <w> | <var> ) ']' <eol> at {}", position).into());
         }
         if !self.peek_rbracket(6) {
-            return Err(format!("']' at {}", position).into());
+            return Err(format!("']' <eol> at {}", position).into());
         }
         if !self.peek_eol(7) {
             return Err(format!("<eol> at {}", position).into());
@@ -528,13 +585,13 @@ impl<'t> Parser<'t> {
     /// parses `<r> ',' <r>`
     fn parse_rr(&mut self, position: &Position) -> Result<(String, String)> {
         if !self.peek_register(0) {
-            return Err(format!("<r> at {}", position).into());
+            return Err(format!("<r> ',' <r> <eol> at {}", position).into());
         }
         if !self.peek_comma(1) {
-            return Err(format!("',' at {}", position).into());
+            return Err(format!("',' <r> <eol> at {}", position).into());
         }
         if !self.peek_register(2) {
-            return Err(format!("<r> at {}", position).into());
+            return Err(format!("<r> <eol> at {}", position).into());
         }
         if !self.peek_eol(3) {
             return Err(format!("<eol> at {}", position).into());
@@ -550,13 +607,13 @@ impl<'t> Parser<'t> {
     /// parses `<r> ',' ( <w> | <var> ) <eol>`
     fn parse_rw(&mut self, position: &Position) -> Result<(String, u32)> {
         if !self.peek_register(0) {
-            return Err(format!("<r> at {}", position).into());
+            return Err(format!("<r> ',' ( <w> | <var> ) <eol> at {}", position).into());
         }
         if !self.peek_comma(1) {
-            return Err(format!("',' at {}", position).into());
+            return Err(format!("',' ( <w> | <var> ) <eol> at {}", position).into());
         }
         if !self.peek_word(2) && !self.peek_variable(2) {
-            return Err(format!("<w> or <var> at {}", position).into());
+            return Err(format!("( <w> | <var> ) <eol> at {}", position).into());
         }
         if !self.peek_eol(3) {
             return Err(format!("<eol> at {}", position).into());
@@ -707,9 +764,16 @@ impl<'t> Parser<'t> {
         }
     }
 
-    fn peek_address(&mut self, n: usize) -> bool {
+    fn peek_abs_address(&mut self, n: usize) -> bool {
         match self.lexer.peek_nth(n) {
-            Some(Ok(Token::Address(_, _, _))) => true,
+            Some(Ok(Token::Address(_, _, LexerAddressKind::Absolute))) => true,
+            _ => false,
+        }
+    }
+
+    fn peek_seg_address(&mut self, n: usize) -> bool {
+        match self.lexer.peek_nth(n) {
+            Some(Ok(Token::Address(_, _, LexerAddressKind::Segment))) => true,
             _ => false,
         }
     }
