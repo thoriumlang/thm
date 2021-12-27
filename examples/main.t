@@ -27,7 +27,13 @@
 // !
 // ==
 // !=
+// >
+// >=
+// <
+// <=
 // ::      cast
+// @ address of
+// $ dereference
 
 // comment
 /* multiline */
