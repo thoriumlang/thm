@@ -4,7 +4,8 @@ cmake_minimum_required(VERSION 3.20)
 
 set(CMAKE_C_STANDARD 11)
 add_executable(tc
-        main.c)
+        main.c
+        lexer.c lexer.h)
 
 SET(VM_DEBUG_MEMORY FALSE CACHE BOOL "Print memory access messages")
 

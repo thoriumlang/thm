@@ -16,6 +16,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include "lexer.h"
 
 void repl();
 
@@ -34,6 +35,16 @@ void repl() {
             break;
         }
 
-        printf("%s", buffer);
+        Lexer *lexer = lexer_create(buffer);
+        while (true) {
+            Token token = lexer_next(lexer);
+            printf("  %s: <%.*s>\n", token_type_to_string(token.type), token.length, token.start);
+            if (token.type == TOKEN_EOF) {
+                break;
+            }
+        }
+        printf("\n");
+
+        lexer_destroy(lexer);
     }
 }
