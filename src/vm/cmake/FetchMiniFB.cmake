@@ -3,7 +3,7 @@ include(FetchContent)
 FetchContent_Declare(
         minifb
         GIT_REPOSITORY https://github.com/emoon/minifb.git
-        GIT_TAG        6f527f6
+        GIT_TAG        master
         GIT_SHALLOW    1
 )
 

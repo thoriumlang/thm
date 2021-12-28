@@ -1,4 +1,4 @@
-// types: word, byte
+// types: word, byte, void
 // pointer: prefix with '@'
 // function decl: 'fn'
 // const decl: 'const'
@@ -6,7 +6,7 @@
 // 'public' to export symbol (any) - prefixed to with the symbol's definition
 // define extern symbol: 'extern'
 // define non-cacheable symbols: 'volatile'
-
+// define type alias with 'alias'
 // address of variable: @var
 // value at address:    $var
 // ascii-z quotes: "", escape: \"
@@ -63,9 +63,11 @@ bitflag my_bits {
     flag2,
 }
 
-public fn main(argc: word, argv: @@byte): word {
-}
-fn local() { ... }
+public fn main = (argc: word, argv: @@byte): word { ...}
+<=>
+public fn main(argc: word, argv: @@byte): word { ... }
+
+alias main = fn(word, @@byte): word
 
 const my_const: word = xxx;
 var my_var: byte = xxx;

@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.20)
-project(thm C)
 
 include(cmake/FetchCCANJson.cmake)
 include(cmake/FetchMiniFB.cmake)
@@ -62,8 +61,10 @@ add_executable(cpu_test cpu_test.c cpu.c)
 target_compile_features(cpu_test PRIVATE c_std_99)
 target_link_libraries(cpu_test PRIVATE cmocka-static)
 
-enable_testing()
 add_test(NAME memory_test COMMAND memory_test)
 add_test(NAME pic_test COMMAND pic_test)
 add_test(NAME bus_test COMMAND bus_test)
 add_test(NAME cpu_test COMMAND bus_test)
+
+add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS thm)
+
