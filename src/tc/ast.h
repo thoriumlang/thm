@@ -39,6 +39,13 @@ typedef struct {
 } AstNodeVariable;
 
 typedef struct {
+    bool pub;
+    bool ext;
+    AstNodeIdentifier *name;
+    AstNodeType *type;
+} AstNodeConst;
+
+typedef struct {
     AstNodeIdentifier *name;
     AstNodeType *type;
 } AstNodeParameter;
@@ -57,6 +64,7 @@ typedef struct {
 
 typedef struct {
     List *variables;
+    List *constants;
     List *functions;
 } AstRoot;
 
@@ -83,5 +91,9 @@ void ast_node_function_destroy(AstNodeFunction *this);
 AstNodeParameters *ast_node_parameters_create();
 
 AstNodeParameter *ast_node_parameter_create(AstNodeIdentifier *identifier, AstNodeType *type);
+
+AstNodeConst *ast_node_const_create();
+
+void ast_node_const_destroy(AstNodeConst *this);
 
 #endif //THM_AST_H

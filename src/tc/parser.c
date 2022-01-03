@@ -45,6 +45,8 @@ static AstNodeVariable *parse_variable(Parser *this);
 
 static AstNodeFunction *parse_function(Parser *this);
 
+static AstNodeConst *parse_const(Parser *this);
+
 Parser *parser_create(Lexer *lexer) {
     Parser *parser = malloc(sizeof(Parser));
     parser->lexer = lexer;
@@ -117,8 +119,13 @@ AstRoot *parser_parse(Parser *this) {
             if (function != NULL) {
                 list_add(root->functions, function);
             }
+        } else if (check_within(this, TOKEN_CONST, 2)) {
+            AstNodeConst *constant = parse_const(this);
+            if (constant != NULL) {
+                list_add(root->constants, constant);
+            }
         } else {
-            print_expected_error(this, "variable or function definition");
+            print_expected_error(this, "constant, variable or function definition");
             advance(this);
         }
     }
@@ -291,6 +298,55 @@ static AstNodeFunction *parse_function(Parser *this) {
     } else if (this->error_recovery) {
         this->error_recovery = false;
         ast_node_function_destroy(node);
+        return NULL;
+    } else {
+        return node;
+    }
+}
+
+// <const> := ( <PUBLIC> | <EXTERN> )? <CONST> <IDENTIFIER> <:> <type> <=> <expr> <;>
+static AstNodeConst *parse_const(Parser *this) {
+    AstNodeConst *node = ast_node_const_create();
+
+    switch (peek(this, 0)->type) {
+        case TOKEN_PUBLIC:
+            advance(this);
+            node->pub = true;
+            break;
+        case TOKEN_EXTERN:
+            advance(this);
+            node->ext = true;
+            break;
+        default:
+            // nothing
+            break;
+    }
+
+    if (!match(this, TOKEN_CONST)) {
+        print_token_expected_error(this, 1, TOKEN_CONST);
+    }
+
+    node->name = parse_identifier(this);
+
+    if (!match(this, TOKEN_COLON)) {
+        print_token_expected_error(this, 1, TOKEN_COLON);
+    }
+
+    node->type = parse_type(this);
+
+    if (!match(this, TOKEN_EQUAL)) {
+        print_token_expected_error(this, 1, TOKEN_EQUAL);
+    }
+
+    // todo expr
+
+    if (!match(this, TOKEN_SEMICOLON)) {
+        print_token_expected_error(this, 1, TOKEN_SEMICOLON);
+        ast_node_const_destroy(node);
+        return NULL;
+    } else if (this->error_recovery) {
+        this->error_recovery = false;
+        ast_node_const_destroy(node);
         return NULL;
     } else {
         return node;

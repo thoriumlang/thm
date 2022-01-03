@@ -22,6 +22,7 @@
 AstRoot *ast_root_create() {
     AstRoot *node = malloc(sizeof(AstRoot));
     node->variables = list_create();
+    node->constants = list_create();
     node->functions = list_create();
     return node;
 }
@@ -138,5 +139,22 @@ AstNodeParameter *ast_node_parameter_create(AstNodeIdentifier *identifier, AstNo
         ast_node_type_destroy(type);
     }
     return NULL;
+}
+
+AstNodeConst *ast_node_const_create() {
+    AstNodeConst *node = malloc(sizeof(AstNodeConst));
+    node->ext = false;
+    node->pub = false;
+    return node;
+}
+
+void ast_node_const_destroy(AstNodeConst *this) {
+    if (this->name != NULL) {
+        ast_node_identifier_destroy(this->name);
+    }
+    if (this->type != NULL) {
+        ast_node_type_destroy(this->type);
+    }
+    free(this);
 }
 

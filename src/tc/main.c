@@ -69,6 +69,18 @@ void repl() {
                    variable->type->identifier->name);
             free(ptr_str);
         }
+        for (size_t i = 0; i < list_size(root->constants); i++) {
+            AstNodeConst *constant = list_get(root->constants, i);
+            char *ptr_str = malloc(sizeof(char) * constant->type->ptr + 1);
+            str_repeat(ptr_str, "@", constant->type->ptr);
+            printf("(%s%sconst %s : %s%s)\n",
+                   constant->pub ? "public " : "",
+                   constant->ext ? "external " : "",
+                   constant->name->name,
+                   ptr_str,
+                   constant->type->identifier->name);
+            free(ptr_str);
+        }
         for (size_t i = 0; i < list_size(root->functions); i++) {
             AstNodeFunction *function = list_get(root->functions, i);
 

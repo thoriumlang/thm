@@ -63,7 +63,7 @@ bitflag my_bits {
     flag2,
 }
 
-public fn main = (argc: word, argv: @@byte): word { ...}
+public const main = (argc: word, argv: @@byte) -> word { ...}
 <=>
 public fn main(argc: word, argv: @@byte): word { ... }
 
