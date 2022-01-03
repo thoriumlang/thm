@@ -8,7 +8,13 @@ include_directories(utils/headers)
 set(CMAKE_C_STANDARD 11)
 add_executable(tc
         main.c
-        lexer.c lexer.h)
+        lexer.c lexer.h
+        parser.c parser.h
+        ast.c ast.h
+        utils/headers/list.h
+        utils/headers/queue.h)
+target_link_libraries(tc PRIVATE utils)
+
 
 SET(VM_DEBUG_MEMORY FALSE CACHE BOOL "Print memory access messages")
 
