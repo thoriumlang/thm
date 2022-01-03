@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.20)
 
 # set(CMAKE_VERBOSE_MAKEFILE on)
 
+add_subdirectory(utils)
+include_directories(utils/headers)
+
 set(CMAKE_C_STANDARD 11)
 add_executable(tc
         main.c

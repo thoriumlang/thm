@@ -43,7 +43,7 @@ if (VM_DEBUG_MEMORY)
 endif()
 
 # tests
-include(cmake/FetchCMocka.cmake)
+include(../cmake/FetchCMocka.cmake)
 
 add_executable(pic_test pic_test.c pic.c memory.c) # todo get rid of out_memory.c here...
 target_compile_features(pic_test PRIVATE c_std_99)
