@@ -28,14 +28,8 @@ AstRoot *ast_root_create() {
 }
 
 void ast_root_destroy(AstRoot *this) {
-    for (size_t i = 0; i < list_size(this->variables); i++) {
-        ast_node_variable_destroy(list_get(this->variables, i));
-    }
+    list_destroy(this->constants);
     list_destroy(this->variables);
-
-    for (size_t i = 0; i < list_size(this->functions); i++) {
-        ast_node_function_destroy(list_get(this->functions, i));
-    }
     list_destroy(this->functions);
     free(this);
 }
