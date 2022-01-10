@@ -16,6 +16,7 @@
 
 #include <stdlib.h>
 #include <printf.h>
+#include <stdio.h>
 #include "headers/queue.h"
 
 typedef struct Queue {
@@ -41,19 +42,25 @@ void queue_destroy(Queue *this) {
     while ((item = queue_dequeue(this)) != NULL) {
         free(item);
     }
+    free(this->items);
     free(this);
 }
 
 void queue_enqueue(Queue *this, void *item) {
     if (this->items_count == this->size) {
         this->size = this->size * 2;
-        this->items = realloc(this->items, this->size);
-        int i = 0;
-        while (this->tail <= this->head) {
-            this->items[i] = this->items[this->tail];
-            i++;
-            this->tail++;
+
+        void **new_items = malloc(this->size * sizeof(void*));
+        size_t new_head = 0;
+
+        void *old_item;
+        while ((old_item = queue_dequeue(this)) != NULL) {
+            new_items[new_head++] = old_item;
         }
+
+        free(this->items);
+        this->items = new_items;
+        this->items_count = new_head;
         this->head = this->items_count;
         this->tail = 0;
     }

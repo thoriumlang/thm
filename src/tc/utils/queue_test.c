@@ -20,6 +20,19 @@
 #include <cmocka.h>
 #include "headers/queue.h"
 
+static void enqueue_grows(void **state) {
+    Queue *queue = queue_create(1);
+    int item = 1;
+
+    queue_enqueue(queue, &item);
+    queue_enqueue(queue, &item);
+    queue_enqueue(queue, &item);
+    queue_enqueue(queue, &item);
+    queue_enqueue(queue, &item);
+
+    assert_int_equal(5, queue_size(queue));
+}
+
 static void enqueue_dequeue(void **state) {
     Queue *queue = queue_create(1);
     int item = 1;
@@ -29,6 +42,9 @@ static void enqueue_dequeue(void **state) {
     int *actual = queue_dequeue(queue);
 
     assert_int_equal(1, *actual);
+
+    actual = queue_dequeue(queue);
+    assert_null(actual);
 }
 
 static void enqueue_then_dequeue(void **state) {
@@ -117,6 +133,7 @@ static void peek(void **state) {
 int main() {
     const struct CMUnitTest tests[] =
             {
+                    cmocka_unit_test(enqueue_grows),
                     cmocka_unit_test(enqueue_dequeue),
                     cmocka_unit_test(enqueue_then_dequeue),
                     cmocka_unit_test(mixed_enqueue_and_dequeue),
