@@ -55,11 +55,16 @@ typedef struct {
 } AstNodeParameters;
 
 typedef struct {
+    List *stmts; // of AstNodeStmt
+} AstNodeStatements;
+
+typedef struct {
     bool pub;
     bool ext;
     AstNodeType *type;
     AstNodeIdentifier *name;
     AstNodeParameters *parameters;
+    AstNodeStatements *statements;
 } AstNodeFunction;
 
 typedef struct {
@@ -68,9 +73,29 @@ typedef struct {
     List *functions;
 } AstRoot;
 
-AstRoot *ast_root_create();
+typedef enum {
+    IF,
+    WHILE,
+} EStmtKind;
 
-void ast_root_destroy(AstRoot *this);
+typedef struct {
+    // condition
+    AstNodeStatements *true_block;
+    AstNodeStatements *false_block;
+} AstNodeIfStmt;
+
+typedef struct {
+    // condition
+    AstNodeStatements *block;
+} AstNodeWhileStmt;
+
+typedef struct {
+    EStmtKind kind;
+    union {
+        AstNodeIfStmt *ifStmt;
+        AstNodeWhileStmt *whileStmt;
+    };
+} AstNodeStmt;
 
 AstNodeIdentifier *ast_node_identifier_create(Token token);
 
@@ -80,11 +105,19 @@ AstNodeType *ast_node_type_create(int ptr, AstNodeIdentifier *identifier);
 
 void ast_node_type_destroy(AstNodeType *this);
 
+AstRoot *ast_root_create();
+
+void ast_root_destroy(AstRoot *this);
+
 AstNodeVariable *ast_node_variable_create();
+
+void ast_node_variable_print(AstNodeVariable *this);
 
 void ast_node_variable_destroy(AstNodeVariable *this);
 
 AstNodeFunction *ast_node_function_create();
+
+void ast_node_function_print(AstNodeFunction *this, int ident);
 
 void ast_node_function_destroy(AstNodeFunction *this);
 
@@ -94,6 +127,16 @@ AstNodeParameter *ast_node_parameter_create(AstNodeIdentifier *identifier, AstNo
 
 AstNodeConst *ast_node_const_create();
 
+void ast_node_const_print(AstNodeConst *this);
+
 void ast_node_const_destroy(AstNodeConst *this);
+
+AstNodeStatements *ast_node_stmts_create();
+
+AstNodeStmt *ast_node_if_stmt_create();
+
+void ast_node_stmt_print(AstNodeStmt *this, int indent);
+
+void ast_node_stmt_destroy(AstNodeStmt *this);
 
 #endif //THM_AST_H

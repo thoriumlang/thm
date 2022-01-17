@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 3.20)
 set(CMAKE_C_STANDARD 11)
 add_library(utils STATIC
         list.c headers/list.h
+        str.c headers/str.h
         queue.c headers/queue.h)
 
 SET(VM_DEBUG_MEMORY FALSE CACHE BOOL "Print memory access messages")

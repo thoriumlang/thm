@@ -17,25 +17,16 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <string.h>
 #include "lexer.h"
 #include "parser.h"
 #include "ast.h"
+#include "str.h"
 
 void repl();
 
 int main(int argc, char **argv) {
     repl();
     return 0;
-}
-
-void str_repeat(char *dst, const char *str, size_t count) {
-    if (count < 1) {
-        return;
-    }
-    for (size_t i = count; i > 0; i--) {
-        strcat(dst, str);
-    }
 }
 
 void repl() {
@@ -52,70 +43,23 @@ void repl() {
         Parser *parser = parser_create(lexer);
         AstRoot *root = parser_parse(parser);
 
+        parser_destroy(parser);
+        lexer_destroy(lexer);
+
         if (root == NULL) {
             continue;
         }
 
         for (size_t i = 0; i < list_size(root->variables); i++) {
-            AstNodeVariable *variable = list_get(root->variables, i);
-            char *ptr_str = malloc(sizeof(char) * variable->type->ptr + 1);
-            str_repeat(ptr_str, "@", variable->type->ptr);
-            printf("(%s%s%svar %s : %s%s)\n",
-                   variable->pub ? "public " : "",
-                   variable->ext ? "external " : "",
-                   variable->vol ? "volatile " : "",
-                   variable->name->name,
-                   ptr_str,
-                   variable->type->identifier->name);
-            free(ptr_str);
+            ast_node_variable_print(list_get(root->variables, i));
         }
         for (size_t i = 0; i < list_size(root->constants); i++) {
-            AstNodeConst *constant = list_get(root->constants, i);
-            char *ptr_str = malloc(sizeof(char) * constant->type->ptr + 1);
-            str_repeat(ptr_str, "@", constant->type->ptr);
-            printf("(%s%sconst %s : %s%s)\n",
-                   constant->pub ? "public " : "",
-                   constant->ext ? "external " : "",
-                   constant->name->name,
-                   ptr_str,
-                   constant->type->identifier->name);
-            free(ptr_str);
+            ast_node_const_print(list_get(root->constants, i));
         }
         for (size_t i = 0; i < list_size(root->functions); i++) {
-            AstNodeFunction *function = list_get(root->functions, i);
-
-            printf("(%s%sfn %s(",
-                   function->pub ? "public " : "",
-                   function->ext ? "external " : "",
-                   function->name->name
-            );
-
-            for (size_t i = 0; i < list_size(function->parameters->parameters); i++) {
-                if (i > 0) {
-                    printf(", ");
-                }
-
-                AstNodeParameter *parameter = list_get(function->parameters->parameters, i);
-                char *ptr_str = malloc(sizeof(char) * parameter->type->ptr + 1);
-                str_repeat(ptr_str, "@", parameter->type->ptr);
-
-                printf("%s: %s%s",
-                       parameter->name->name,
-                       ptr_str,
-                       parameter->type->identifier->name);
-                free(ptr_str);
-            }
-
-            char *ptr_str = malloc(sizeof(char) * function->type->ptr + 1);
-            str_repeat(ptr_str, "@", function->type->ptr);
-            printf(") : %s%s {})\n",
-                   ptr_str,
-                   function->type->identifier->name);
-            free(ptr_str);
+            ast_node_function_print(list_get(root->functions, i), 0);
         }
 
         ast_root_destroy(root);
-        parser_destroy(parser);
-        lexer_destroy(lexer);
     }
 }

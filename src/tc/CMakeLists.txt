@@ -12,7 +12,8 @@ add_executable(tc
         parser.c parser.h
         ast.c ast.h
         utils/headers/list.h
-        utils/headers/queue.h)
+        utils/headers/queue.h
+        utils/headers/str.h)
 target_link_libraries(tc PRIVATE utils)
 
 
