@@ -76,6 +76,7 @@ typedef struct {
 typedef enum {
     IF,
     WHILE,
+    ASSIGNMENT,
 } EStmtKind;
 
 typedef struct {
@@ -90,10 +91,16 @@ typedef struct {
 } AstNodeStmtWhile;
 
 typedef struct {
+    AstNodeIdentifier *identifier;
+    // expression
+} AstNodeStmtAssignment;
+
+typedef struct {
     EStmtKind kind;
     union {
         AstNodeStmtIf *ifStmt;
         AstNodeStmtWhile *whileStmt;
+        AstNodeStmtAssignment *assignmentStmt;
     };
 } AstNodeStmt;
 
@@ -132,6 +139,8 @@ void ast_node_const_print(AstNodeConst *this);
 void ast_node_const_destroy(AstNodeConst *this);
 
 AstNodeStatements *ast_node_stmts_create();
+
+AstNodeStmt *ast_node_stmt_assignment_create();
 
 AstNodeStmt *ast_node_stmt_if_create();
 
