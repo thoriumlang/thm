@@ -82,18 +82,18 @@ typedef struct {
     // condition
     AstNodeStatements *true_block;
     AstNodeStatements *false_block;
-} AstNodeIfStmt;
+} AstNodeStmtIf;
 
 typedef struct {
     // condition
     AstNodeStatements *block;
-} AstNodeWhileStmt;
+} AstNodeStmtWhile;
 
 typedef struct {
     EStmtKind kind;
     union {
-        AstNodeIfStmt *ifStmt;
-        AstNodeWhileStmt *whileStmt;
+        AstNodeStmtIf *ifStmt;
+        AstNodeStmtWhile *whileStmt;
     };
 } AstNodeStmt;
 
@@ -133,9 +133,9 @@ void ast_node_const_destroy(AstNodeConst *this);
 
 AstNodeStatements *ast_node_stmts_create();
 
-AstNodeStmt *ast_node_if_stmt_create();
+AstNodeStmt *ast_node_stmt_if_create();
 
-AstNodeStmt *ast_node_while_stmt_create();
+AstNodeStmt *ast_node_stmt_while_create();
 
 void ast_node_stmt_print(AstNodeStmt *this, int indent);
 

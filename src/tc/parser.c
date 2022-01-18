@@ -318,7 +318,7 @@ static AstNodeFunction *parse_function(Parser *this) {
 
 // <ifStmt> := <IF> <(> <expr> <)> <{> <statements> <}> ( <ELSE> ( <ifStmt> | <{> <statements> <}> ) )?
 static AstNodeStmt *parse_stmt_if(Parser *this) {
-    AstNodeStmt *node = ast_node_if_stmt_create();
+    AstNodeStmt *node = ast_node_stmt_if_create();
 
     expect(this, TOKEN_IF);
     expect(this, TOKEN_LPAR);
@@ -362,7 +362,7 @@ static AstNodeStmt *parse_stmt_if(Parser *this) {
 
 // <whileStmt> := <WHILE> <(> <expr> <)> <{> <statements> <}>
 static AstNodeStmt *parse_stmt_while(Parser *this) {
-    AstNodeStmt *node = ast_node_while_stmt_create();
+    AstNodeStmt *node = ast_node_stmt_while_create();
 
     expect(this, TOKEN_WHILE);
     expect(this, TOKEN_LPAR);

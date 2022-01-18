@@ -221,30 +221,30 @@ static void ast_node_stmts_destroy(AstNodeStatements *this) {
     free(this);
 }
 
-AstNodeStmt *ast_node_if_stmt_create() {
+AstNodeStmt *ast_node_stmt_if_create() {
     AstNodeStmt *node = malloc(sizeof(AstNodeStmt));
     node->kind = IF;
-    node->ifStmt = malloc(sizeof(AstNodeIfStmt));
+    node->ifStmt = malloc(sizeof(AstNodeStmtIf));
     node->ifStmt->true_block = ast_node_stmts_create();
     node->ifStmt->false_block = ast_node_stmts_create();
     return node;
 }
 
-static void ast_node_if_stmt_destroy(AstNodeIfStmt *this) {
+static void ast_node_stmt_if_destroy(AstNodeStmtIf *this) {
     ast_node_stmts_destroy(this->true_block);
     ast_node_stmts_destroy(this->false_block);
     free(this);
 }
 
-AstNodeStmt *ast_node_while_stmt_create() {
+AstNodeStmt *ast_node_stmt_while_create() {
     AstNodeStmt *node = malloc(sizeof(AstNodeStmt));
     node->kind = WHILE;
-    node->whileStmt = malloc(sizeof(AstNodeWhileStmt));
+    node->whileStmt = malloc(sizeof(AstNodeStmtWhile));
     node->whileStmt->block = ast_node_stmts_create();
     return node;
 }
 
-static void ast_node_while_stmt_destroy(AstNodeWhileStmt *this) {
+static void ast_node_while_stmt_destroy(AstNodeStmtWhile *this) {
     ast_node_stmts_destroy(this->block);
     free(this);
 }
@@ -252,7 +252,7 @@ static void ast_node_while_stmt_destroy(AstNodeWhileStmt *this) {
 void ast_node_stmt_destroy(AstNodeStmt *this) {
     switch (this->kind) {
         case IF:
-            ast_node_if_stmt_destroy(this->ifStmt);
+            ast_node_stmt_if_destroy(this->ifStmt);
             break;
         case WHILE:
             ast_node_while_stmt_destroy(this->whileStmt);
@@ -260,7 +260,7 @@ void ast_node_stmt_destroy(AstNodeStmt *this) {
     }
 }
 
-void ast_node_if_stmt_print(AstNodeIfStmt *this, int ident) {
+void ast_node_stmt_if_print(AstNodeStmtIf *this, int ident) {
     char *ident_str = calloc(ident * 2 + 1, sizeof(char));
     str_repeat(ident_str, " ", ident * 2);
     printf("%sif (<?>) {\n", ident_str);
@@ -278,7 +278,7 @@ void ast_node_if_stmt_print(AstNodeIfStmt *this, int ident) {
     }
 }
 
-void ast_node_while_stmt_print(AstNodeWhileStmt *this, int ident) {
+void ast_node_stmt_while_print(AstNodeStmtWhile *this, int ident) {
     char *ident_str = calloc(ident * 2 + 1, sizeof(char));
     str_repeat(ident_str, " ", ident * 2);
     printf("%swhile (<?>) {\n", ident_str);
@@ -291,10 +291,10 @@ void ast_node_while_stmt_print(AstNodeWhileStmt *this, int ident) {
 void ast_node_stmt_print(AstNodeStmt *this, int ident) {
     switch (this->kind) {
         case IF:
-            ast_node_if_stmt_print(this->ifStmt, ident);
+            ast_node_stmt_if_print(this->ifStmt, ident);
             break;
         case WHILE:
-            ast_node_while_stmt_print(this->whileStmt, ident);
+            ast_node_stmt_while_print(this->whileStmt, ident);
             break;
         default:
             printf("<unknown statement>;\n");
