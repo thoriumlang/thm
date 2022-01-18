@@ -268,13 +268,11 @@ void ast_node_if_stmt_print(AstNodeIfStmt *this, int ident) {
         ast_node_stmt_print(list_get(this->true_block->stmts, i), ident + 1);
     }
 
-    printf("%s ...\n", ident_str);
-
     printf("%s}\n", ident_str);
-    if (list_size(this->false_block->stmts)>0) {
+    if (list_size(this->false_block->stmts) > 0) {
         printf("%selse {\n", ident_str);
         for (size_t i = 0; i < list_size(this->false_block->stmts); i++) {
-            ast_node_stmt_print(list_get(this->false_block->stmts, i), ident+1);
+            ast_node_stmt_print(list_get(this->false_block->stmts, i), ident + 1);
         }
         printf("%s}\n", ident_str);
     }

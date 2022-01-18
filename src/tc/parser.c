@@ -240,13 +240,14 @@ static AstNodeParameter *parse_parameter(Parser *this) {
 static AstNodeParameters *parse_parameters(Parser *this) {
     AstNodeParameters *node = ast_node_parameters_create();
 
+    AstNodeParameter *parameter;
     if (!check(this, TOKEN_RPAR)) {
-        AstNodeParameter *parameter = parse_parameter(this);
+        parameter = parse_parameter(this);
         if (parameter != NULL) {
             list_add(node->parameters, parameter);
         }
         while (match(this, TOKEN_COMMA)) {
-            AstNodeParameter *parameter = parse_parameter(this);
+            parameter = parse_parameter(this);
             if (parameter != NULL) {
                 list_add(node->parameters, parameter);
             }
