@@ -135,6 +135,8 @@ AstNodeStatements *ast_node_stmts_create();
 
 AstNodeStmt *ast_node_if_stmt_create();
 
+AstNodeStmt *ast_node_while_stmt_create();
+
 void ast_node_stmt_print(AstNodeStmt *this, int indent);
 
 void ast_node_stmt_destroy(AstNodeStmt *this);

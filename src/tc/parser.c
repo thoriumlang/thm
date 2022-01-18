@@ -359,7 +359,34 @@ static AstNodeStmt *parse_stmt_if(Parser *this) {
     }
 }
 
-// <stmt> := ( <;> | <ifStmt> )
+// <whileStmt> := <WHILE> <(> <expr> <)> <{> <statements> <}>
+static AstNodeStmt *parse_stmt_while(Parser *this) {
+    AstNodeStmt *node = ast_node_while_stmt_create();
+
+    expect(this, TOKEN_WHILE);
+    expect(this, TOKEN_LPAR);
+
+    // todo expr
+
+    expect(this, TOKEN_RPAR);
+    expect(this, TOKEN_LBRACE);
+
+    node->whileStmt->block = parse_stmts(this);
+
+    if (!match(this, TOKEN_RBRACE)) {
+        print_token_expected_error(this, 1, TOKEN_RBRACE);
+        ast_node_stmt_destroy(node);
+        return NULL;
+    } else if (this->error_recovery) {
+        this->error_recovery = false;
+        ast_node_stmt_destroy(node);
+        return NULL;
+    } else {
+        return node;
+    }
+}
+
+// <stmt> := ( <;> | <ifStmt> | <whileStmt> )
 static AstNodeStmt *parse_stmt(Parser *this) {
     switch (peek(this, 0)->type) {
         case TOKEN_SEMICOLON: // just eat it as an empty statement
@@ -367,6 +394,8 @@ static AstNodeStmt *parse_stmt(Parser *this) {
             return NULL;
         case TOKEN_IF:
             return parse_stmt_if(this);
+        case TOKEN_WHILE:
+            return parse_stmt_while(this);
         default:
             print_expected_error(this, "<statement>");
             return NULL;
@@ -386,9 +415,6 @@ static AstNodeStatements *parse_stmts(Parser *this) {
 
     return node;
 }
-
-// <whileStmt> := <WHILE> <(> <expr> <)> <{> <statements> <}>
-//static AstNodeStmt *parse_stmt_while() {}
 
 // <const> := ( <PUBLIC> | <EXTERN> )? <CONST> <IDENTIFIER> <:> <type> <=> <expr> <;>
 static AstNodeConst *parse_const(Parser *this) {
