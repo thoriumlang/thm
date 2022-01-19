@@ -139,6 +139,18 @@ void ast_node_function_destroy(AstNodeFunction *this);
 
 typedef struct AstNodeStmt AstNodeStmt;
 
+#pragma region AstNodeStmtConst
+
+typedef struct {
+    AstNodeIdentifier *identifier;
+    AstNodeType *type;
+    // expression
+} AstNodeStmtConst;
+
+AstNodeStmt *ast_node_stmt_const_create();
+
+#pragma endregion
+
 #pragma region AstNodeStmtVar
 
 typedef struct {
@@ -188,6 +200,7 @@ AstNodeStmt *ast_node_stmt_while_create();
 #pragma region AstNodeStmt
 
 typedef enum {
+    CONST,
     VAR,
     ASSIGNMENT,
     IF,
@@ -197,6 +210,7 @@ typedef enum {
 typedef struct AstNodeStmt {
     EStmtKind kind;
     union {
+        AstNodeStmtConst *constStmt;
         AstNodeStmtVar *varStmt;
         AstNodeStmtAssignment *assignmentStmt;
         AstNodeStmtIf *ifStmt;

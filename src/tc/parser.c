@@ -369,6 +369,31 @@ static AstNodeFunction *parse_function(Parser *this) {
     }
 }
 
+// <constStmt> := <CONST> <identifier> <:> <type> <=> <expr> <;>
+static AstNodeStmt *parse_stmt_const(Parser *this) {
+    AstNodeStmt *node = ast_node_stmt_const_create();
+
+    expect(this, TOKEN_CONST);
+    node->constStmt->identifier = parse_identifier(this);
+    expect(this, TOKEN_COLON);
+    node->constStmt->type = parse_type(this);
+    expect(this, TOKEN_EQUAL);
+
+    // todo expr
+
+    if (!match(this, TOKEN_SEMICOLON)) {
+        print_token_expected_error(this, 1, TOKEN_SEMICOLON);
+        ast_node_stmt_destroy(node);
+        return NULL;
+    } else if (this->error_recovery) {
+        this->error_recovery = false;
+        ast_node_stmt_destroy(node);
+        return NULL;
+    } else {
+        return node;
+    }
+}
+
 // <varStmt> := <VAR> <identifier> <:> <type> ( <=> <expr> )? <;>
 static AstNodeStmt *parse_stmt_var(Parser *this) {
     AstNodeStmt *node = ast_node_stmt_var_create();
@@ -394,11 +419,6 @@ static AstNodeStmt *parse_stmt_var(Parser *this) {
         return node;
     }
 }
-
-// <constStmt> := <CONST> <identifier> <:> <type> <=> <expr> <;>
-//static AstNodeStmt *parse_stmt_const(Parser *this) {
-//    // todo implement
-//}
 
 // <assignmentStmt> := <identifier> <=> <expr> <;>
 static AstNodeStmt *parse_stmt_assignment(Parser *this) {
@@ -500,14 +520,16 @@ static AstNodeStmt *parse_stmt(Parser *this) {
         case TOKEN_SEMICOLON: // just eat it as an empty statement
             advance(this);
             return NULL;
+        case TOKEN_CONST:
+            return parse_stmt_const(this);
+        case TOKEN_VAR:
+            return parse_stmt_var(this);
+        case TOKEN_IDENTIFIER:
+            return parse_stmt_assignment(this);
         case TOKEN_IF:
             return parse_stmt_if(this);
         case TOKEN_WHILE:
             return parse_stmt_while(this);
-        case TOKEN_IDENTIFIER:
-            return parse_stmt_assignment(this);
-        case TOKEN_VAR:
-            return parse_stmt_var(this);
         default:
             print_expected_error(this, "<statement>");
             return NULL;

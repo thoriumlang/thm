@@ -245,6 +245,30 @@ static AstNodeStmt *ast_node_stmt_create(EStmtKind kind) {
     return node;
 }
 
+#pragma region AstNodeStmtConst
+
+AstNodeStmt *ast_node_stmt_const_create() {
+    AstNodeStmt *node = ast_node_stmt_create(CONST);
+    node->constStmt = malloc(sizeof(AstNodeStmtConst));
+    return node;
+}
+
+static void ast_node_stmt_const_destroy(AstNodeStmtConst *this) {
+    ast_node_identifier_destroy(this->identifier);
+    ast_node_type_destroy(this->type);
+    free(this);
+}
+
+static void ast_node_stmt_const_print(AstNodeStmtConst *this, int ident) {
+    char *ident_str = calloc(ident * 2 + 1, sizeof(char));
+    str_repeat(ident_str, " ", ident * 2);
+    printf("%sconst %s: ", ident_str, this->identifier->name);
+    ast_node_type_print(this->type);
+    printf(" = <?>;\n");
+}
+
+#pragma endregion
+
 #pragma region AstNodeStmtVar
 
 AstNodeStmt *ast_node_stmt_var_create() {
@@ -356,6 +380,9 @@ static void ast_node_stmt_while_print(AstNodeStmtWhile *this, int ident) {
 
 void ast_node_stmt_destroy(AstNodeStmt *this) {
     switch (this->kind) {
+        case CONST:
+            ast_node_stmt_const_destroy(this->constStmt);
+            break;
         case VAR:
             ast_node_stmt_var_destroy(this->varStmt);
             break;
@@ -373,6 +400,9 @@ void ast_node_stmt_destroy(AstNodeStmt *this) {
 
 void ast_node_stmt_print(AstNodeStmt *this, int ident) {
     switch (this->kind) {
+        case CONST:
+            ast_node_stmt_const_print(this->constStmt, ident);
+            break;
         case VAR:
             ast_node_stmt_var_print(this->varStmt, ident);
             break;
