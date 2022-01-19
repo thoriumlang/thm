@@ -21,6 +21,8 @@
 #include "lexer.h"
 #include "str.h"
 
+#pragma region AstNodeIdentifier
+
 AstNodeIdentifier *ast_node_identifier_create(Token token) {
     AstNodeIdentifier *node = malloc(sizeof(AstNodeIdentifier));
     node->name = malloc(token.length * sizeof(char) + 1);
@@ -36,6 +38,10 @@ void ast_node_identifier_destroy(AstNodeIdentifier *this) {
     free(this);
 }
 
+#pragma endregion
+
+#pragma region AstNodeType
+
 AstNodeType *ast_node_type_create(int ptr, AstNodeIdentifier *identifier) {
     if (identifier == NULL) {
         return NULL;
@@ -48,13 +54,6 @@ AstNodeType *ast_node_type_create(int ptr, AstNodeIdentifier *identifier) {
     return node;
 }
 
-void ast_node_type_print(AstNodeType *this) {
-    for (int i = 0; i < this->ptr; i++) {
-        printf("@");
-    }
-    printf("%s", this->identifier->name);
-}
-
 void ast_node_type_destroy(AstNodeType *this) {
     if (this->identifier != NULL) {
         ast_node_identifier_destroy(this->identifier);
@@ -62,20 +61,16 @@ void ast_node_type_destroy(AstNodeType *this) {
     free(this);
 }
 
-AstRoot *ast_root_create() {
-    AstRoot *node = malloc(sizeof(AstRoot));
-    node->variables = list_create();
-    node->constants = list_create();
-    node->functions = list_create();
-    return node;
+void ast_node_type_print(AstNodeType *this) {
+    for (int i = 0; i < this->ptr; i++) {
+        printf("@");
+    }
+    printf("%s", this->identifier->name);
 }
 
-void ast_root_destroy(AstRoot *this) {
-    list_destroy(this->constants);
-    list_destroy(this->variables);
-    list_destroy(this->functions);
-    free(this);
-}
+#pragma endregion
+
+#pragma region AstNodeVariable
 
 AstNodeVariable *ast_node_variable_create() {
     AstNodeVariable *node = malloc(sizeof(AstNodeVariable));
@@ -83,6 +78,16 @@ AstNodeVariable *ast_node_variable_create() {
     node->ext = false;
     node->vol = false;
     return node;
+}
+
+void ast_node_variable_destroy(AstNodeVariable *this) {
+    if (this->name != NULL) {
+        ast_node_identifier_destroy(this->name);
+    }
+    if (this->type != NULL) {
+        ast_node_type_destroy(this->type);
+    }
+    free(this);
 }
 
 void ast_node_variable_print(AstNodeVariable *this) {
@@ -95,7 +100,18 @@ void ast_node_variable_print(AstNodeVariable *this) {
     printf(" = <?>;\n");
 }
 
-void ast_node_variable_destroy(AstNodeVariable *this) {
+#pragma endregion
+
+#pragma region AstNodeConst
+
+AstNodeConst *ast_node_const_create() {
+    AstNodeConst *node = malloc(sizeof(AstNodeConst));
+    node->ext = false;
+    node->pub = false;
+    return node;
+}
+
+void ast_node_const_destroy(AstNodeConst *this) {
     if (this->name != NULL) {
         ast_node_identifier_destroy(this->name);
     }
@@ -104,6 +120,41 @@ void ast_node_variable_destroy(AstNodeVariable *this) {
     }
     free(this);
 }
+
+void ast_node_const_print(AstNodeConst *this) {
+    printf("%s%sconst %s: ",
+           this->pub ? "public " : "",
+           this->ext ? "external " : "",
+           this->name->name);
+    ast_node_type_print(this->type);
+    printf(" = <?>;\n");
+}
+
+#pragma endregion
+
+#pragma region AstNodeParameter
+
+AstNodeParameter *ast_node_parameter_create(AstNodeIdentifier *identifier, AstNodeType *type) {
+    if (identifier != NULL && type != NULL) {
+        AstNodeParameter *node = malloc(sizeof(AstNodeParameter));
+        node->name = identifier;
+        node->type = type;
+        return node;
+    }
+    if (identifier != NULL) {
+        ast_node_identifier_destroy(identifier);
+    }
+    if (type != NULL) {
+        ast_node_type_destroy(type);
+    }
+    return NULL;
+}
+
+// todo implement destroy method
+
+#pragma endregion
+
+#pragma region AstNodeParameters
 
 AstNodeParameters *ast_node_parameters_create() {
     AstNodeParameters *node = malloc(sizeof(AstNodeParameters));
@@ -118,12 +169,43 @@ void ast_node_parameters_destroy(AstNodeParameters *this) {
     free(this);
 }
 
+#pragma endregion
+
+#pragma region AstNodeStatements
+
+AstNodeStatements *ast_node_stmts_create() {
+    AstNodeStatements *node = malloc(sizeof(AstNodeStatements));
+    node->stmts = list_create();
+    return node;
+}
+
+void ast_node_stmts_destroy(AstNodeStatements *this) {
+    list_destroy(this->stmts);
+    free(this);
+}
+
+#pragma endregion
+
+#pragma region AstNodeFunction
 
 AstNodeFunction *ast_node_function_create() {
     AstNodeFunction *node = malloc(sizeof(AstNodeFunction));
     node->pub = false;
     node->ext = false;
     return node;
+}
+
+void ast_node_function_destroy(AstNodeFunction *this) {
+    if (this->name != NULL) {
+        ast_node_identifier_destroy(this->name);
+    }
+    if (this->type != NULL) {
+        ast_node_type_destroy(this->type);
+    }
+    if (this->parameters != NULL) {
+        ast_node_parameters_destroy(this->parameters);
+    }
+    free(this);
 }
 
 void ast_node_function_print(AstNodeFunction *this, int ident) {
@@ -155,77 +237,15 @@ void ast_node_function_print(AstNodeFunction *this, int ident) {
     printf("}\n");
 }
 
-void ast_node_function_destroy(AstNodeFunction *this) {
-    if (this->name != NULL) {
-        ast_node_identifier_destroy(this->name);
-    }
-    if (this->type != NULL) {
-        ast_node_type_destroy(this->type);
-    }
-    if (this->parameters != NULL) {
-        ast_node_parameters_destroy(this->parameters);
-    }
-    free(this);
-}
-
-AstNodeParameter *ast_node_parameter_create(AstNodeIdentifier *identifier, AstNodeType *type) {
-    if (identifier != NULL && type != NULL) {
-        AstNodeParameter *node = malloc(sizeof(AstNodeParameter));
-        node->name = identifier;
-        node->type = type;
-        return node;
-    }
-    if (identifier != NULL) {
-        ast_node_identifier_destroy(identifier);
-    }
-    if (type != NULL) {
-        ast_node_type_destroy(type);
-    }
-    return NULL;
-}
-
-AstNodeConst *ast_node_const_create() {
-    AstNodeConst *node = malloc(sizeof(AstNodeConst));
-    node->ext = false;
-    node->pub = false;
-    return node;
-}
-
-void ast_node_const_print(AstNodeConst *this) {
-    printf("%s%sconst %s: ",
-           this->pub ? "public " : "",
-           this->ext ? "external " : "",
-           this->name->name);
-    ast_node_type_print(this->type);
-    printf(" = <?>;\n");
-}
-
-void ast_node_const_destroy(AstNodeConst *this) {
-    if (this->name != NULL) {
-        ast_node_identifier_destroy(this->name);
-    }
-    if (this->type != NULL) {
-        ast_node_type_destroy(this->type);
-    }
-    free(this);
-}
-
-AstNodeStatements *ast_node_stmts_create() {
-    AstNodeStatements *node = malloc(sizeof(AstNodeStatements));
-    node->stmts = list_create();
-    return node;
-}
-
-static void ast_node_stmts_destroy(AstNodeStatements *this) {
-    list_destroy(this->stmts);
-    free(this);
-}
+#pragma endregion
 
 static AstNodeStmt *ast_node_stmt_create(EStmtKind kind) {
     AstNodeStmt *node = malloc(sizeof(AstNodeStmt));
     node->kind = kind;
     return node;
 }
+
+#pragma region AstNodeStmtVar
 
 AstNodeStmt *ast_node_stmt_var_create() {
     AstNodeStmt *node = ast_node_stmt_create(VAR);
@@ -239,16 +259,38 @@ static void ast_node_stmt_var_destroy(AstNodeStmtVar *this) {
     free(this);
 }
 
+static void ast_node_stmt_var_print(AstNodeStmtVar *this, int ident) {
+    char *ident_str = calloc(ident * 2 + 1, sizeof(char));
+    str_repeat(ident_str, " ", ident * 2);
+    printf("%svar %s: ", ident_str, this->identifier->name);
+    ast_node_type_print(this->type);
+    printf(" = <?>;\n");
+}
+
+#pragma endregion
+
+#pragma region AstNodeStmtAssignment
+
 AstNodeStmt *ast_node_stmt_assignment_create() {
     AstNodeStmt *node = ast_node_stmt_create(ASSIGNMENT);
     node->assignmentStmt = malloc(sizeof(AstNodeStmtAssignment));
     return node;
 }
 
-void ast_node_stmt_assignment_destroy(AstNodeStmtAssignment *this) {
+static void ast_node_stmt_assignment_destroy(AstNodeStmtAssignment *this) {
     ast_node_identifier_destroy(this->identifier);
     free(this);
 }
+
+static void ast_node_stmt_assignment_print(AstNodeStmtAssignment *this, int ident) {
+    char *ident_str = calloc(ident * 2 + 1, sizeof(char));
+    str_repeat(ident_str, " ", ident * 2);
+    printf("%s%s = <?>;\n", ident_str, this->identifier->name);
+}
+
+#pragma endregion
+
+#pragma region AstNodeStmtIf
 
 AstNodeStmt *ast_node_stmt_if_create() {
     AstNodeStmt *node = ast_node_stmt_create(IF);
@@ -264,50 +306,7 @@ static void ast_node_stmt_if_destroy(AstNodeStmtIf *this) {
     free(this);
 }
 
-AstNodeStmt *ast_node_stmt_while_create() {
-    AstNodeStmt *node = ast_node_stmt_create(WHILE);
-    node->whileStmt = malloc(sizeof(AstNodeStmtWhile));
-    node->whileStmt->block = ast_node_stmts_create();
-    return node;
-}
-
-static void ast_node_while_stmt_destroy(AstNodeStmtWhile *this) {
-    ast_node_stmts_destroy(this->block);
-    free(this);
-}
-
-void ast_node_stmt_destroy(AstNodeStmt *this) {
-    switch (this->kind) {
-        case VAR:
-            ast_node_stmt_var_destroy(this->varStmt);
-            break;
-        case ASSIGNMENT:
-            ast_node_stmt_assignment_destroy(this->assignmentStmt);
-            break;
-        case IF:
-            ast_node_stmt_if_destroy(this->ifStmt);
-            break;
-        case WHILE:
-            ast_node_while_stmt_destroy(this->whileStmt);
-            break;
-    }
-}
-
-void ast_node_stmt_var_print(AstNodeStmtVar *this, int ident) {
-    char *ident_str = calloc(ident * 2 + 1, sizeof(char));
-    str_repeat(ident_str, " ", ident * 2);
-    printf("%svar %s: ", ident_str, this->identifier->name);
-    ast_node_type_print(this->type);
-    printf(" = <?>;\n");
-}
-
-void ast_node_stmt_assignment_print(AstNodeStmtAssignment *this, int ident) {
-    char *ident_str = calloc(ident * 2 + 1, sizeof(char));
-    str_repeat(ident_str, " ", ident * 2);
-    printf("%s%s = <?>;\n", ident_str, this->identifier->name);
-}
-
-void ast_node_stmt_if_print(AstNodeStmtIf *this, int ident) {
+static void ast_node_stmt_if_print(AstNodeStmtIf *this, int ident) {
     char *ident_str = calloc(ident * 2 + 1, sizeof(char));
     str_repeat(ident_str, " ", ident * 2);
     printf("%sif (<?>) {\n", ident_str);
@@ -325,7 +324,23 @@ void ast_node_stmt_if_print(AstNodeStmtIf *this, int ident) {
     }
 }
 
-void ast_node_stmt_while_print(AstNodeStmtWhile *this, int ident) {
+#pragma endregion
+
+#pragma region AstNodeStmtWhile
+
+AstNodeStmt *ast_node_stmt_while_create() {
+    AstNodeStmt *node = ast_node_stmt_create(WHILE);
+    node->whileStmt = malloc(sizeof(AstNodeStmtWhile));
+    node->whileStmt->block = ast_node_stmts_create();
+    return node;
+}
+
+static void ast_node_while_stmt_destroy(AstNodeStmtWhile *this) {
+    ast_node_stmts_destroy(this->block);
+    free(this);
+}
+
+static void ast_node_stmt_while_print(AstNodeStmtWhile *this, int ident) {
     char *ident_str = calloc(ident * 2 + 1, sizeof(char));
     str_repeat(ident_str, " ", ident * 2);
     printf("%swhile (<?>) {\n", ident_str);
@@ -333,6 +348,27 @@ void ast_node_stmt_while_print(AstNodeStmtWhile *this, int ident) {
         ast_node_stmt_print(list_get(this->block->stmts, i), ident + 1);
     }
     printf("%s}\n", ident_str);
+}
+
+#pragma endregion
+
+#pragma region AstNodeStmt
+
+void ast_node_stmt_destroy(AstNodeStmt *this) {
+    switch (this->kind) {
+        case VAR:
+            ast_node_stmt_var_destroy(this->varStmt);
+            break;
+        case ASSIGNMENT:
+            ast_node_stmt_assignment_destroy(this->assignmentStmt);
+            break;
+        case IF:
+            ast_node_stmt_if_destroy(this->ifStmt);
+            break;
+        case WHILE:
+            ast_node_while_stmt_destroy(this->whileStmt);
+            break;
+    }
 }
 
 void ast_node_stmt_print(AstNodeStmt *this, int ident) {
@@ -355,3 +391,23 @@ void ast_node_stmt_print(AstNodeStmt *this, int ident) {
     }
 }
 
+#pragma endregion
+
+#pragma region AstRoot
+
+AstRoot *ast_root_create() {
+    AstRoot *node = malloc(sizeof(AstRoot));
+    node->variables = list_create();
+    node->constants = list_create();
+    node->functions = list_create();
+    return node;
+}
+
+void ast_root_destroy(AstRoot *this) {
+    list_destroy(this->constants);
+    list_destroy(this->variables);
+    list_destroy(this->functions);
+    free(this);
+}
+
+#pragma endregion

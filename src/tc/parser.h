@@ -30,5 +30,4 @@ void parser_destroy(Parser *this);
 
 AstRoot *parser_parse(Parser *this);
 
-
 #endif //THM_PARSER_H
