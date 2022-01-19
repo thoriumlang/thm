@@ -221,21 +221,37 @@ static void ast_node_stmts_destroy(AstNodeStatements *this) {
     free(this);
 }
 
-AstNodeStmt *ast_node_stmt_assignment_create() {
+static AstNodeStmt *ast_node_stmt_create(EStmtKind kind) {
     AstNodeStmt *node = malloc(sizeof(AstNodeStmt));
-    node->kind = ASSIGNMENT;
+    node->kind = kind;
+    return node;
+}
+
+AstNodeStmt *ast_node_stmt_var_create() {
+    AstNodeStmt *node = ast_node_stmt_create(VAR);
+    node->varStmt = malloc(sizeof(AstNodeStmtVar));
+    return node;
+}
+
+static void ast_node_stmt_var_destroy(AstNodeStmtVar *this) {
+    ast_node_identifier_destroy(this->identifier);
+    ast_node_type_destroy(this->type);
+    free(this);
+}
+
+AstNodeStmt *ast_node_stmt_assignment_create() {
+    AstNodeStmt *node = ast_node_stmt_create(ASSIGNMENT);
     node->assignmentStmt = malloc(sizeof(AstNodeStmtAssignment));
     return node;
 }
 
 void ast_node_stmt_assignment_destroy(AstNodeStmtAssignment *this) {
-    ast_node_identifier_destroy(&this->identifier);
+    ast_node_identifier_destroy(this->identifier);
     free(this);
 }
 
 AstNodeStmt *ast_node_stmt_if_create() {
-    AstNodeStmt *node = malloc(sizeof(AstNodeStmt));
-    node->kind = IF;
+    AstNodeStmt *node = ast_node_stmt_create(IF);
     node->ifStmt = malloc(sizeof(AstNodeStmtIf));
     node->ifStmt->true_block = ast_node_stmts_create();
     node->ifStmt->false_block = ast_node_stmts_create();
@@ -249,8 +265,7 @@ static void ast_node_stmt_if_destroy(AstNodeStmtIf *this) {
 }
 
 AstNodeStmt *ast_node_stmt_while_create() {
-    AstNodeStmt *node = malloc(sizeof(AstNodeStmt));
-    node->kind = WHILE;
+    AstNodeStmt *node = ast_node_stmt_create(WHILE);
     node->whileStmt = malloc(sizeof(AstNodeStmtWhile));
     node->whileStmt->block = ast_node_stmts_create();
     return node;
@@ -263,16 +278,33 @@ static void ast_node_while_stmt_destroy(AstNodeStmtWhile *this) {
 
 void ast_node_stmt_destroy(AstNodeStmt *this) {
     switch (this->kind) {
+        case VAR:
+            ast_node_stmt_var_destroy(this->varStmt);
+            break;
+        case ASSIGNMENT:
+            ast_node_stmt_assignment_destroy(this->assignmentStmt);
+            break;
         case IF:
             ast_node_stmt_if_destroy(this->ifStmt);
             break;
         case WHILE:
             ast_node_while_stmt_destroy(this->whileStmt);
             break;
-        case ASSIGNMENT:
-            ast_node_stmt_assignment_destroy(this->assignmentStmt);
-            break;
     }
+}
+
+void ast_node_stmt_var_print(AstNodeStmtVar *this, int ident) {
+    char *ident_str = calloc(ident * 2 + 1, sizeof(char));
+    str_repeat(ident_str, " ", ident * 2);
+    printf("%svar %s: ", ident_str, this->identifier->name);
+    ast_node_type_print(this->type);
+    printf(" = <?>;\n");
+}
+
+void ast_node_stmt_assignment_print(AstNodeStmtAssignment *this, int ident) {
+    char *ident_str = calloc(ident * 2 + 1, sizeof(char));
+    str_repeat(ident_str, " ", ident * 2);
+    printf("%s%s = <?>;\n", ident_str, this->identifier->name);
 }
 
 void ast_node_stmt_if_print(AstNodeStmtIf *this, int ident) {
@@ -303,22 +335,19 @@ void ast_node_stmt_while_print(AstNodeStmtWhile *this, int ident) {
     printf("%s}\n", ident_str);
 }
 
-void ast_node_stmt_assignment_print(AstNodeStmtAssignment *this, int ident) {
-    char *ident_str = calloc(ident * 2 + 1, sizeof(char));
-    str_repeat(ident_str, " ", ident * 2);
-    printf("%s%s = <?>;\n", ident_str, this->identifier->name);
-}
-
 void ast_node_stmt_print(AstNodeStmt *this, int ident) {
     switch (this->kind) {
+        case VAR:
+            ast_node_stmt_var_print(this->varStmt, ident);
+            break;
+        case ASSIGNMENT:
+            ast_node_stmt_assignment_print(this->assignmentStmt, ident);
+            break;
         case IF:
             ast_node_stmt_if_print(this->ifStmt, ident);
             break;
         case WHILE:
             ast_node_stmt_while_print(this->whileStmt, ident);
-            break;
-        case ASSIGNMENT:
-            ast_node_stmt_assignment_print(this->assignmentStmt, ident);
             break;
         default:
             printf("<unknown statement>;\n");

@@ -74,10 +74,22 @@ typedef struct {
 } AstRoot;
 
 typedef enum {
+    VAR,
+    ASSIGNMENT,
     IF,
     WHILE,
-    ASSIGNMENT,
 } EStmtKind;
+
+typedef struct {
+    AstNodeIdentifier *identifier;
+    AstNodeType *type;
+    // expression
+}AstNodeStmtVar;
+
+typedef struct {
+    AstNodeIdentifier *identifier;
+    // expression
+} AstNodeStmtAssignment;
 
 typedef struct {
     // condition
@@ -91,16 +103,12 @@ typedef struct {
 } AstNodeStmtWhile;
 
 typedef struct {
-    AstNodeIdentifier *identifier;
-    // expression
-} AstNodeStmtAssignment;
-
-typedef struct {
     EStmtKind kind;
     union {
+        AstNodeStmtVar *varStmt;
+        AstNodeStmtAssignment *assignmentStmt;
         AstNodeStmtIf *ifStmt;
         AstNodeStmtWhile *whileStmt;
-        AstNodeStmtAssignment *assignmentStmt;
     };
 } AstNodeStmt;
 
@@ -139,6 +147,8 @@ void ast_node_const_print(AstNodeConst *this);
 void ast_node_const_destroy(AstNodeConst *this);
 
 AstNodeStatements *ast_node_stmts_create();
+
+AstNodeStmt *ast_node_stmt_var_create();
 
 AstNodeStmt *ast_node_stmt_assignment_create();
 

@@ -152,7 +152,7 @@ static AstNodeIdentifier *parse_identifier(Parser *this) {
     return ast_node_identifier_create(advance(this));
 }
 
-// <type> := <@>* <IDENTIFIER>
+// <type> := <@>* <identifier>
 static AstNodeType *parse_type(Parser *this) {
     if (!check(this, TOKEN_IDENTIFIER) && !check(this, TOKEN_AT)) {
         print_token_expected_error(this, 2, TOKEN_IDENTIFIER, TOKEN_AT);
@@ -171,7 +171,7 @@ static AstNodeType *parse_type(Parser *this) {
     return ast_node_type_create(ptr, identifier);
 }
 
-// <variable> := ( <PUBLIC> | <EXTERN> )? <VOLATILE>? <VAR> <IDENTIFIER> <:> <type> <;>
+// <variable> := ( <PUBLIC> | <EXTERN> )? <VOLATILE>? <VAR> <identifier> <:> <type> <;>
 static AstNodeVariable *parse_variable(Parser *this) {
     AstNodeVariable *node = ast_node_variable_create();
 
@@ -387,7 +387,7 @@ static AstNodeStmt *parse_stmt_while(Parser *this) {
     }
 }
 
-// <assignmentStmt> := <identifier> <=> <expr > <;>
+// <assignmentStmt> := <identifier> <=> <expr> <;>
 static AstNodeStmt *parse_stmt_assignment(Parser *this) {
     AstNodeStmt *node = ast_node_stmt_assignment_create();
 
@@ -410,6 +410,37 @@ static AstNodeStmt *parse_stmt_assignment(Parser *this) {
     }
 }
 
+// <varStmt> := <VAR> <identifier> <:> <type> ( <=> <expr> )? <;>
+static AstNodeStmt *parse_stmt_var(Parser *this) {
+    AstNodeStmt *node = ast_node_stmt_var_create();
+
+    expect(this, TOKEN_VAR);
+    node->varStmt->identifier = parse_identifier(this);
+    expect(this, TOKEN_COLON);
+    node->varStmt->type = parse_type(this);
+
+    if (match(this, TOKEN_EQUAL)) {
+        // todo expr
+    }
+
+    if (!match(this, TOKEN_SEMICOLON)) {
+        print_token_expected_error(this, 1, TOKEN_SEMICOLON);
+        ast_node_stmt_destroy(node);
+        return NULL;
+    } else if (this->error_recovery) {
+        this->error_recovery = false;
+        ast_node_stmt_destroy(node);
+        return NULL;
+    } else {
+        return node;
+    }
+}
+
+// <constStmt> := <CONST> <identifier> <:> <type> <=> <expr> <;>
+static AstNodeStmt *parse_stmt_const(Parser *this) {
+
+}
+
 // <stmt> := ( <;> | <ifStmt> | <whileStmt> | <assignmentStmt> )
 static AstNodeStmt *parse_stmt(Parser *this) {
     switch (peek(this, 0)->type) {
@@ -422,6 +453,8 @@ static AstNodeStmt *parse_stmt(Parser *this) {
             return parse_stmt_while(this);
         case TOKEN_IDENTIFIER:
             return parse_stmt_assignment(this);
+        case TOKEN_VAR:
+            return parse_stmt_var(this);
         default:
             print_expected_error(this, "<statement>");
             return NULL;
