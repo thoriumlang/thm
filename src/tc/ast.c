@@ -254,8 +254,12 @@ AstNodeStmt *ast_node_stmt_const_create() {
 }
 
 static void ast_node_stmt_const_destroy(AstNodeStmtConst *this) {
-    ast_node_identifier_destroy(this->identifier);
-    ast_node_type_destroy(this->type);
+    if (this->identifier != NULL) {
+        ast_node_identifier_destroy(this->identifier);
+    }
+    if (this->type != NULL) {
+        ast_node_type_destroy(this->type);
+    }
     free(this);
 }
 
@@ -278,8 +282,12 @@ AstNodeStmt *ast_node_stmt_var_create() {
 }
 
 static void ast_node_stmt_var_destroy(AstNodeStmtVar *this) {
-    ast_node_identifier_destroy(this->identifier);
-    ast_node_type_destroy(this->type);
+    if (this->identifier != NULL) {
+        ast_node_identifier_destroy(this->identifier);
+    }
+    if (this->type != NULL) {
+        ast_node_type_destroy(this->type);
+    }
     free(this);
 }
 
@@ -302,7 +310,9 @@ AstNodeStmt *ast_node_stmt_assignment_create() {
 }
 
 static void ast_node_stmt_assignment_destroy(AstNodeStmtAssignment *this) {
-    ast_node_identifier_destroy(this->identifier);
+    if (this->identifier != NULL) {
+        ast_node_identifier_destroy(this->identifier);
+    }
     free(this);
 }
 
