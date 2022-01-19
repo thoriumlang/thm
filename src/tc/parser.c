@@ -31,6 +31,12 @@ typedef struct Parser {
 
 #pragma region helpers
 
+/**
+ * Returns a pointer to the nth next token.
+ * @param this the parser instance.
+ * @param n the index of the next token to return; starts at 0.
+ * @return the nth next token, NULL if it does not exist.
+ */
 static Token *peek(Parser *this, int n) {
     for (size_t i = queue_size(this->tokens); i < n + 1; i++) {
         Token token = lexer_next(this->lexer);
@@ -41,10 +47,20 @@ static Token *peek(Parser *this, int n) {
     return queue_peek(this->tokens, n);
 }
 
+/**
+ * Returns whether the end of the token stream is reached.
+ * @param this the parser insrance
+ * @return true when no tokens are available anymore.
+ */
 static bool is_at_end(Parser *this) {
     return peek(this, 0)->type == TOKEN_EOF;
 }
 
+/**
+ * Consumes and returns the next token. In case there is no next token, returns an EOF token.
+ * @param this the parser instance.
+ * @return the next token, or an EOF token is no next token exists.
+ */
 static Token advance(Parser *this) {
     if (queue_is_empty(this->tokens)) {
         return lexer_next(this->lexer);
@@ -58,10 +74,38 @@ static Token advance(Parser *this) {
     return token;
 }
 
+/**
+ * Returns whether the next token is of the expected type without consuming it.
+ * @param this the parser instance.
+ * @param expected the expected next token type.
+ * @return true if the next token is of the expected type; false otherwise.
+ */
 static bool check(Parser *this, ETokenType expected) {
     return (peek(this, 0)->type == expected);
 }
 
+/**
+ * Returns whether any of the n next tokens is of the expected type.
+ * @param this the parser instance.
+ * @param expected the expected token type.
+ * @param n the amount of next tokens to check.
+ * @return true if any of the next n tokens is of the expected type; false otherwise.
+ */
+static bool check_within(Parser *this, ETokenType expected, int n) {
+    for (int i = 0; i < n; i++) {
+        if (peek(this, i)->type == expected) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Returns whether the next token is of the expected type. If it is, it consumes it, otherwise it does not.
+ * @param this
+ * @param expected
+ * @return true if the next token is of the expected type; false otherwise.
+ */
 static bool match(Parser *this, ETokenType expected) {
     if (is_at_end(this) || !check(this, expected)) {
         return false;
@@ -99,19 +143,15 @@ static void print_token_expected_error(Parser *this, size_t tokens, ...) {
     fprintf(stderr, " at %i:%i\n", token->line, token->column);
 }
 
+/**
+ * Triggers an error in case the next token is not of the expected type.
+ * @param this the parser instance.
+ * @param expected the next token expected type.
+ */
 static void expect(Parser *this, ETokenType expected) {
     if (!match(this, expected)) {
         print_token_expected_error(this, 1, expected);
     }
-}
-
-static bool check_within(Parser *this, ETokenType expected, int n) {
-    for (int i = 0; i < n; i++) {
-        if (peek(this, i)->type == expected) {
-            return true;
-        }
-    }
-    return false;
 }
 
 static void print_expected_error(Parser *this, const char *expected) {
