@@ -28,6 +28,9 @@ AstNodeIdentifier *ast_node_identifier_create(Token token) {
     node->name = malloc(token.length * sizeof(char) + 1);
     memcpy(node->name, token.start, token.length);
     node->name[token.length] = 0;
+
+    node->metadata.start_line = token.line;
+    node->metadata.start_column = token.column;
     return node;
 }
 
@@ -42,7 +45,7 @@ void ast_node_identifier_destroy(AstNodeIdentifier *this) {
 
 #pragma region AstNodeType
 
-AstNodeType *ast_node_type_create(int ptr, AstNodeIdentifier *identifier) {
+AstNodeType *ast_node_type_create(int ptr, AstNodeIdentifier *identifier, int line, int column) {
     if (identifier == NULL) {
         return NULL;
     }
@@ -50,6 +53,8 @@ AstNodeType *ast_node_type_create(int ptr, AstNodeIdentifier *identifier) {
     AstNodeType *node = malloc(sizeof(AstNodeType));
     node->ptr = ptr;
     node->identifier = identifier;
+    node->metadata.start_line = line;
+    node->metadata.start_column = column;
 
     return node;
 }
@@ -134,11 +139,13 @@ void ast_node_const_print(AstNodeConst *this) {
 
 #pragma region AstNodeParameter
 
-AstNodeParameter *ast_node_parameter_create(AstNodeIdentifier *identifier, AstNodeType *type) {
+AstNodeParameter *ast_node_parameter_create(AstNodeIdentifier *identifier, AstNodeType *type, int line, int column) {
     if (identifier != NULL && type != NULL) {
         AstNodeParameter *node = malloc(sizeof(AstNodeParameter));
         node->name = identifier;
         node->type = type;
+        node->metadata.start_line = line;
+        node->metadata.start_column = column;
         return node;
     }
     if (identifier != NULL) {
