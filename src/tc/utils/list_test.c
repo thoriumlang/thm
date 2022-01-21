@@ -42,7 +42,6 @@ static void add_then_size(void **state) {
     assert_int_equal(1, list_size(list));
 }
 
-
 int main() {
     const struct CMUnitTest tests[] =
             {
