@@ -451,8 +451,11 @@ AstRoot *ast_root_create() {
 }
 
 void ast_root_destroy(AstRoot *this) {
+    list_foreach(this->constants, fn_consumer(ast_node_const_destroy));
     list_destroy(this->constants);
+    list_foreach(this->variables, fn_consumer(ast_node_variable_destroy));
     list_destroy(this->variables);
+    list_foreach(this->functions, fn_consumer(ast_node_function_destroy));
     list_destroy(this->functions);
     free(this);
 }
