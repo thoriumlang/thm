@@ -35,7 +35,7 @@ void list_destroy(List *this) {
 }
 
 void list_add(List *this, void *item) {
-    this->items = realloc(this->items, this->items_count++);
+    this->items = realloc(this->items, sizeof(void *) * ++this->items_count);
     this->items[this->items_count - 1] = item;
 }
 
@@ -48,4 +48,14 @@ void *list_get(List *this, size_t index) {
         return NULL;
     }
     return this->items[index];
+}
+
+void list_foreach(List *this, fn_consumer_closure_t consumer_closure) {
+    for (size_t i = 0; i < this->items_count; i++) {
+        if (consumer_closure.has_data) {
+            consumer_closure.fn.biconsumer(this->items[i], consumer_closure.data);
+        } else {
+            consumer_closure.fn.consumer(this->items[i]);
+        }
+    }
 }

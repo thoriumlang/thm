@@ -33,6 +33,23 @@ static void add_then_get(void **state) {
     list_destroy(list);
 }
 
+static void add_add_then_get_get(void **state) {
+    List *list = list_create();
+    int item1 = 1;
+    int item2 = 2;
+
+    list_add(list, &item1);
+    list_add(list, &item2);
+
+    int *actual;
+    actual = list_get(list, 0);
+    assert_int_equal(1, *actual);
+    actual = list_get(list, 1);
+    assert_int_equal(2, *actual);
+
+    list_destroy(list);
+}
+
 static void add_then_size(void **state) {
     List *list = list_create();
     int item = 1;
@@ -46,11 +63,11 @@ static void add_then_size(void **state) {
     list_destroy(list);
 }
 
-
 int main() {
     const struct CMUnitTest tests[] =
             {
                     cmocka_unit_test(add_then_get),
+                    cmocka_unit_test(add_add_then_get_get),
                     cmocka_unit_test(add_then_size),
             };
     cmocka_set_message_output(CM_OUTPUT_STDOUT);

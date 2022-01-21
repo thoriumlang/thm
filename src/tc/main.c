@@ -50,15 +50,9 @@ void repl() {
             continue;
         }
 
-        for (size_t i = 0; i < list_size(root->variables); i++) {
-            ast_node_variable_print(list_get(root->variables, i));
-        }
-        for (size_t i = 0; i < list_size(root->constants); i++) {
-            ast_node_const_print(list_get(root->constants, i));
-        }
-        for (size_t i = 0; i < list_size(root->functions); i++) {
-            ast_node_function_print(list_get(root->functions, i), 0);
-        }
+        list_foreach(root->variables, fn_consumer(ast_node_variable_print));
+        list_foreach(root->constants, fn_consumer(ast_node_const_print));
+        list_foreach(root->functions, fn_consumer(ast_node_function_print));
 
         ast_root_destroy(root);
     }

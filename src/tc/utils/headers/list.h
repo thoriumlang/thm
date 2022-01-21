@@ -17,6 +17,8 @@
 #ifndef THM_LIST_H
 #define THM_LIST_H
 
+#include "functions.h"
+
 typedef struct List List;
 
 List *list_create();
@@ -28,5 +30,7 @@ void list_add(List *this, void *item);
 size_t list_size(List *this);
 
 void *list_get(List *this, size_t index);
+
+void list_foreach(List *this, fn_consumer_closure_t consumer_closure);
 
 #endif //THM_LIST_H

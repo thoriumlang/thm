@@ -11,6 +11,7 @@ add_executable(tc
         lexer.c lexer.h
         parser.c parser.h
         ast.c ast.h
+        utils/headers/functions.h
         utils/headers/list.h
         utils/headers/queue.h
         utils/headers/str.h)
