@@ -29,6 +29,8 @@ static void add_then_get(void **state) {
     int *actual = list_get(list, 0);
 
     assert_int_equal(1, *actual);
+
+    list_destroy(list);
 }
 
 static void add_then_size(void **state) {
@@ -40,12 +42,16 @@ static void add_then_size(void **state) {
     list_add(list, &item);
 
     assert_int_equal(1, list_size(list));
+
+    list_destroy(list);
 }
+
 
 int main() {
     const struct CMUnitTest tests[] =
             {
                     cmocka_unit_test(add_then_get),
+                    cmocka_unit_test(add_then_size),
             };
     cmocka_set_message_output(CM_OUTPUT_STDOUT);
     return cmocka_run_group_tests(tests, NULL, NULL);
