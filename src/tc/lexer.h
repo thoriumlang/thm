@@ -86,7 +86,7 @@ typedef struct Token {
     int column;
 } Token;
 
-Lexer *lexer_create(char *source);
+Lexer *lexer_create(char *source, int line, int column);
 
 void lexer_destroy(Lexer *this);
 

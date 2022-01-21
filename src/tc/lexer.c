@@ -56,12 +56,12 @@ static Token match_keyword(Lexer *this, int start, int length, const char *rest,
 
 static Token make_error(Lexer *this);
 
-Lexer *lexer_create(char *source) {
+Lexer *lexer_create(char *source, int line, int column) {
     Lexer *lexer = malloc(sizeof(Lexer));
     lexer->start = source;
     lexer->current = source;
-    lexer->line = 1;
-    lexer->column = 0;
+    lexer->line = line;
+    lexer->column = column;
     return lexer;
 }
 
@@ -223,13 +223,12 @@ static char peek(Lexer *this, int n) {
 }
 
 static Token make_token(Lexer *this, ETokenType token_type) {
-    Token result = {
-            .type = token_type,
-            .start = this->start,
-            .line = this->line,
-            .column = this->column,
-            .length = (int) (this->current - this->start),
-    };
+    Token result;
+    result.type = token_type;
+    result.start = this->start;
+    result.line = this->line;
+    result.length = (int) (this->current - this->start);
+    result.column = this->column - result.length;
     return result;
 }
 

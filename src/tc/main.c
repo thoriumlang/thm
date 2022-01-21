@@ -39,7 +39,7 @@ void repl() {
             break;
         }
 
-        Lexer *lexer = lexer_create(buffer);
+        Lexer *lexer = lexer_create(buffer, line++, 1);
         Parser *parser = parser_create(lexer);
         AstRoot *root = parser_parse(parser);
 
