@@ -15,6 +15,7 @@
  */
 
 #include <string.h>
+#include <math.h>
 #include "headers/str.h"
 
 void str_repeat(char *dst, const char *str, size_t count) {
@@ -24,4 +25,8 @@ void str_repeat(char *dst, const char *str, size_t count) {
     for (size_t i = count; i > 0; i--) {
         strcat(dst, str);
     }
+}
+
+size_t str_lenszt(size_t number) {
+    return (size_t) floor(log10((double) number)) + 1;
 }

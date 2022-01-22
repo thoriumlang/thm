@@ -21,4 +21,6 @@
 
 void str_repeat(char *dst, const char *str, size_t count);
 
+size_t str_lenszt(size_t number);
+
 #endif //THM_STR_H
