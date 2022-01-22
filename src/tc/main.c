@@ -21,6 +21,7 @@
 #include "parser.h"
 #include "ast.h"
 #include "str.h"
+#include "analyser.h"
 
 void repl();
 
@@ -30,7 +31,12 @@ int main(int argc, char **argv) {
 }
 
 void repl() {
+    int line = 1;
     char buffer[1024];
+    List *asts = list_create();
+
+    Analyser *analyser = analyzer_create();
+
     while (true) {
         printf("> ");
 
@@ -54,6 +60,13 @@ void repl() {
         list_foreach(root->constants, fn_consumer(ast_node_const_print));
         list_foreach(root->functions, fn_consumer(ast_node_function_print));
 
-        ast_root_destroy(root);
+        list_add(asts, root);
+        analyzer_analyse(analyser, root);
     }
+
+    analyser_dump_symbol_table(analyser);
+
+    analyzer_destroy(analyser);
+    list_foreach(asts, fn_consumer(ast_root_destroy));
+    list_destroy(asts);
 }
