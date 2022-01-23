@@ -25,12 +25,14 @@
 
 AstNodeIdentifier *ast_node_identifier_create(Token token) {
     AstNodeIdentifier *node = malloc(sizeof(AstNodeIdentifier));
+    node->metadata = malloc(sizeof(AstNode));
+
     node->name = malloc(token.length * sizeof(char) + 1);
     memcpy(node->name, token.start, token.length);
     node->name[token.length] = 0;
 
-    node->metadata.start_line = token.line;
-    node->metadata.start_column = token.column;
+    node->metadata->start_line = token.line;
+    node->metadata->start_column = token.column;
     return node;
 }
 
@@ -38,6 +40,7 @@ void ast_node_identifier_destroy(AstNodeIdentifier *this) {
     if (this->name != NULL) {
         free(this->name);
     }
+    free(this->metadata);
     free(this);
 }
 
@@ -51,10 +54,12 @@ AstNodeType *ast_node_type_create(int ptr, AstNodeIdentifier *identifier, int li
     }
 
     AstNodeType *node = malloc(sizeof(AstNodeType));
+    node->metadata = malloc(sizeof(AstNode));
+
     node->ptr = ptr;
     node->identifier = identifier;
-    node->metadata.start_line = line;
-    node->metadata.start_column = column;
+    node->metadata->start_line = line;
+    node->metadata->start_column = column;
 
     return node;
 }
@@ -63,6 +68,7 @@ void ast_node_type_destroy(AstNodeType *this) {
     if (this->identifier != NULL) {
         ast_node_identifier_destroy(this->identifier);
     }
+    free(this->metadata);
     free(this);
 }
 
@@ -79,6 +85,7 @@ void ast_node_type_print(AstNodeType *this) {
 
 AstNodeVariable *ast_node_variable_create() {
     AstNodeVariable *node = malloc(sizeof(AstNodeVariable));
+    node->metadata = malloc(sizeof(AstNode));
     node->pub = false;
     node->ext = false;
     node->vol = false;
@@ -92,6 +99,7 @@ void ast_node_variable_destroy(AstNodeVariable *this) {
     if (this->type != NULL) {
         ast_node_type_destroy(this->type);
     }
+    free(this->metadata);
     free(this);
 }
 
@@ -111,6 +119,7 @@ void ast_node_variable_print(AstNodeVariable *this) {
 
 AstNodeConst *ast_node_const_create() {
     AstNodeConst *node = malloc(sizeof(AstNodeConst));
+    node->metadata = malloc(sizeof(AstNode));
     node->ext = false;
     node->pub = false;
     return node;
@@ -123,6 +132,7 @@ void ast_node_const_destroy(AstNodeConst *this) {
     if (this->type != NULL) {
         ast_node_type_destroy(this->type);
     }
+    free(this->metadata);
     free(this);
 }
 
@@ -142,10 +152,12 @@ void ast_node_const_print(AstNodeConst *this) {
 AstNodeParameter *ast_node_parameter_create(AstNodeIdentifier *identifier, AstNodeType *type, int line, int column) {
     if (identifier != NULL && type != NULL) {
         AstNodeParameter *node = malloc(sizeof(AstNodeParameter));
+        node->metadata = malloc(sizeof(AstNode));
+
         node->name = identifier;
         node->type = type;
-        node->metadata.start_line = line;
-        node->metadata.start_column = column;
+        node->metadata->start_line = line;
+        node->metadata->start_column = column;
         return node;
     }
     if (identifier != NULL) {
@@ -165,6 +177,7 @@ AstNodeParameter *ast_node_parameter_create(AstNodeIdentifier *identifier, AstNo
 
 AstNodeParameters *ast_node_parameters_create() {
     AstNodeParameters *node = malloc(sizeof(AstNodeParameters));
+    node->metadata = malloc(sizeof(AstNode));
     node->parameters = list_create();
     return node;
 }
@@ -173,6 +186,7 @@ void ast_node_parameters_destroy(AstNodeParameters *this) {
     if (this->parameters != NULL) {
         list_destroy(this->parameters);
     }
+    free(this->metadata);
     free(this);
 }
 
@@ -182,12 +196,14 @@ void ast_node_parameters_destroy(AstNodeParameters *this) {
 
 AstNodeStatements *ast_node_stmts_create() {
     AstNodeStatements *node = malloc(sizeof(AstNodeStatements));
+    node->metadata = malloc(sizeof(AstNode));
     node->stmts = list_create();
     return node;
 }
 
 void ast_node_stmts_destroy(AstNodeStatements *this) {
     list_destroy(this->stmts);
+    free(this->metadata);
     free(this);
 }
 
@@ -197,6 +213,7 @@ void ast_node_stmts_destroy(AstNodeStatements *this) {
 
 AstNodeFunction *ast_node_function_create() {
     AstNodeFunction *node = malloc(sizeof(AstNodeFunction));
+    node->metadata = malloc(sizeof(AstNode));
     node->pub = false;
     node->ext = false;
     return node;
@@ -212,6 +229,7 @@ void ast_node_function_destroy(AstNodeFunction *this) {
     if (this->parameters != NULL) {
         ast_node_parameters_destroy(this->parameters);
     }
+    free(this->metadata);
     free(this);
 }
 
@@ -257,6 +275,7 @@ static AstNodeStmt *ast_node_stmt_create(EStmtKind kind) {
 AstNodeStmt *ast_node_stmt_const_create() {
     AstNodeStmt *node = ast_node_stmt_create(CONST);
     node->constStmt = malloc(sizeof(AstNodeStmtConst));
+    node->constStmt->metadata = malloc(sizeof(AstNode));
     return node;
 }
 
@@ -267,6 +286,7 @@ static void ast_node_stmt_const_destroy(AstNodeStmtConst *this) {
     if (this->type != NULL) {
         ast_node_type_destroy(this->type);
     }
+    free(this->metadata);
     free(this);
 }
 
@@ -285,6 +305,7 @@ static void ast_node_stmt_const_print(AstNodeStmtConst *this, int ident) {
 AstNodeStmt *ast_node_stmt_var_create() {
     AstNodeStmt *node = ast_node_stmt_create(VAR);
     node->varStmt = malloc(sizeof(AstNodeStmtVar));
+    node->varStmt->metadata = malloc(sizeof(AstNode));
     return node;
 }
 
@@ -295,6 +316,7 @@ static void ast_node_stmt_var_destroy(AstNodeStmtVar *this) {
     if (this->type != NULL) {
         ast_node_type_destroy(this->type);
     }
+    free(this->metadata);
     free(this);
 }
 
@@ -313,6 +335,7 @@ static void ast_node_stmt_var_print(AstNodeStmtVar *this, int ident) {
 AstNodeStmt *ast_node_stmt_assignment_create() {
     AstNodeStmt *node = ast_node_stmt_create(ASSIGNMENT);
     node->assignmentStmt = malloc(sizeof(AstNodeStmtAssignment));
+    node->assignmentStmt->metadata = malloc(sizeof(AstNode));
     return node;
 }
 
@@ -320,6 +343,7 @@ static void ast_node_stmt_assignment_destroy(AstNodeStmtAssignment *this) {
     if (this->identifier != NULL) {
         ast_node_identifier_destroy(this->identifier);
     }
+    free(this->metadata);
     free(this);
 }
 
@@ -336,6 +360,7 @@ static void ast_node_stmt_assignment_print(AstNodeStmtAssignment *this, int iden
 AstNodeStmt *ast_node_stmt_if_create() {
     AstNodeStmt *node = ast_node_stmt_create(IF);
     node->ifStmt = malloc(sizeof(AstNodeStmtIf));
+    node->ifStmt->metadata = malloc(sizeof(AstNode));
     node->ifStmt->true_block = ast_node_stmts_create();
     node->ifStmt->false_block = ast_node_stmts_create();
     return node;
@@ -344,6 +369,7 @@ AstNodeStmt *ast_node_stmt_if_create() {
 static void ast_node_stmt_if_destroy(AstNodeStmtIf *this) {
     ast_node_stmts_destroy(this->true_block);
     ast_node_stmts_destroy(this->false_block);
+    free(this->metadata);
     free(this);
 }
 
@@ -372,12 +398,14 @@ static void ast_node_stmt_if_print(AstNodeStmtIf *this, int ident) {
 AstNodeStmt *ast_node_stmt_while_create() {
     AstNodeStmt *node = ast_node_stmt_create(WHILE);
     node->whileStmt = malloc(sizeof(AstNodeStmtWhile));
+    node->whileStmt->metadata = malloc(sizeof(AstNode));
     node->whileStmt->block = ast_node_stmts_create();
     return node;
 }
 
 static void ast_node_while_stmt_destroy(AstNodeStmtWhile *this) {
     ast_node_stmts_destroy(this->block);
+    free(this->metadata);
     free(this);
 }
 

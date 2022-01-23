@@ -29,8 +29,8 @@ typedef struct Analyser {
 
 #pragma region private
 
-static void print_error(Analyser *this, char *error, AstNodeMetadata metadata) {
-    fprintf(stderr, "Error at %d:%d: %s\n", metadata.start_line, metadata.start_column, error);
+static void print_error(Analyser *this, char *error, AstNode *metadata) {
+    fprintf(stderr, "Error at %d:%d: %s\n", metadata->start_line, metadata->start_column, error);
     this->error_found = true;
 }
 
@@ -40,8 +40,8 @@ static void insert_variable_in_symbols_table(AstNodeVariable *node, Analyser *th
         char buffer[1024];
         sprintf(buffer, "'%s' already defined at %d:%d.",
                 node->name->name,
-                ((AstNodeMetadata *) symbol->ast_node)->start_line,
-                ((AstNodeMetadata *) symbol->ast_node)->start_column);
+                (*(AstNode **) symbol->ast_node)->start_line,
+                (*(AstNode **) symbol->ast_node)->start_column);
         print_error(this, buffer, node->metadata);
         return;
     }
@@ -56,8 +56,8 @@ static void insert_const_in_symbols_table(AstNodeConst *node, Analyser *this) {
         char buffer[1024];
         sprintf(buffer, "'%s' already defined at %d:%d.",
                 node->name->name,
-                ((AstNodeMetadata *) symbol->ast_node)->start_line,
-                ((AstNodeMetadata *) symbol->ast_node)->start_column);
+                (*(AstNode **) symbol->ast_node)->start_line,
+                (*(AstNode **) symbol->ast_node)->start_column);
         print_error(this, buffer, node->metadata);
         return;
     }
@@ -128,8 +128,8 @@ static void insert_function_in_symbols_table(AstNodeFunction *node, Analyser *th
         char buffer[1024];
         sprintf(buffer, "'%s' already defined at %d:%d.",
                 node->name->name,
-                ((AstNodeMetadata *) symbol->ast_node)->start_line,
-                ((AstNodeMetadata *) symbol->ast_node)->start_column);
+                (*(AstNode **) symbol->ast_node)->start_line,
+                (*(AstNode **) symbol->ast_node)->start_column);
         print_error(this, buffer, node->metadata);
         free(name);
         return;

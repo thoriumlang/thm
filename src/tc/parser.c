@@ -208,8 +208,8 @@ static AstNodeVariable *parse_variable(Parser *this) {
     AstNodeVariable *node = ast_node_variable_create();
 
     Token *token = peek(this, 0);
-    node->metadata.start_line = token->line;
-    node->metadata.start_column = token->column;
+    node->metadata->start_line = token->line;
+    node->metadata->start_column = token->column;
 
     switch (token->type) {
         case TOKEN_PUBLIC:
@@ -265,8 +265,8 @@ static AstNodeConst *parse_const(Parser *this) {
     AstNodeConst *node = ast_node_const_create();
 
     Token *token = peek(this, 0);
-    node->metadata.start_line = token->line;
-    node->metadata.start_column = token->column;
+    node->metadata->start_line = token->line;
+    node->metadata->start_column = token->column;
 
     switch (token->type) {
         case TOKEN_PUBLIC:
@@ -334,8 +334,8 @@ static AstNodeParameters *parse_parameters(Parser *this) {
     AstNodeParameters *node = ast_node_parameters_create();
 
     Token *token = peek(this, 0);
-    node->metadata.start_line = token->line;
-    node->metadata.start_column = token->column;
+    node->metadata->start_line = token->line;
+    node->metadata->start_column = token->column;
 
     AstNodeParameter *parameter;
     if (token->type != TOKEN_RPAR) {
@@ -366,8 +366,8 @@ static AstNodeStatements *parse_stmts(Parser *this) {
         if (stmt != NULL) {
             if (first_statement) {
                 first_statement = false;
-                node->metadata.start_line = stmt->metadata.start_line;
-                node->metadata.start_column = stmt->metadata.start_column;
+                node->metadata->start_line = (*stmt->metadata)->start_line;
+                node->metadata->start_column = (*stmt->metadata)->start_column;
             }
             list_add(node->stmts, stmt);
         }
@@ -381,8 +381,8 @@ static AstNodeFunction *parse_function(Parser *this) {
     AstNodeFunction *node = ast_node_function_create();
 
     Token *token = peek(this, 0);
-    node->metadata.start_line = token->line;
-    node->metadata.start_column = token->column;
+    node->metadata->start_line = token->line;
+    node->metadata->start_column = token->column;
 
     switch (token->type) {
         case TOKEN_PUBLIC:
@@ -444,8 +444,8 @@ static AstNodeStmt *parse_stmt_const(Parser *this) {
     AstNodeStmt *node = ast_node_stmt_const_create();
 
     Token *token = peek(this, 0);
-    node->metadata.start_line = token->line;
-    node->metadata.start_column = token->column;
+    (*node->metadata)->start_line = token->line;
+    (*node->metadata)->start_column = token->column;
 
     expect(this, TOKEN_CONST);
     node->constStmt->identifier = parse_identifier(this);
@@ -473,8 +473,8 @@ static AstNodeStmt *parse_stmt_var(Parser *this) {
     AstNodeStmt *node = ast_node_stmt_var_create();
 
     Token *token = peek(this, 0);
-    node->metadata.start_line = token->line;
-    node->metadata.start_column = token->column;
+    (*node->metadata)->start_line = token->line;
+    (*node->metadata)->start_column = token->column;
 
     expect(this, TOKEN_VAR);
     node->varStmt->identifier = parse_identifier(this);
@@ -503,8 +503,8 @@ static AstNodeStmt *parse_stmt_assignment(Parser *this) {
     AstNodeStmt *node = ast_node_stmt_assignment_create();
 
     Token *token = peek(this, 0);
-    node->metadata.start_line = token->line;
-    node->metadata.start_column = token->column;
+    (*node->metadata)->start_line = token->line;
+    (*node->metadata)->start_column = token->column;
 
     node->assignmentStmt->identifier = parse_identifier(this);
 
@@ -530,8 +530,8 @@ static AstNodeStmt *parse_stmt_if(Parser *this) {
     AstNodeStmt *node = ast_node_stmt_if_create();
 
     Token *token = peek(this, 0);
-    node->metadata.start_line=token->line;
-    node->metadata.start_column=token->column;
+    (*node->metadata)->start_line = token->line;
+    (*node->metadata)->start_column = token->column;
 
     expect(this, TOKEN_IF);
     expect(this, TOKEN_LPAR);
@@ -578,8 +578,8 @@ static AstNodeStmt *parse_stmt_while(Parser *this) {
     AstNodeStmt *node = ast_node_stmt_while_create();
 
     Token *token = peek(this, 0);
-    node->metadata.start_line=token->line;
-    node->metadata.start_column=token->column;
+    (*node->metadata)->start_line = token->line;
+    (*node->metadata)->start_column = token->column;
 
     expect(this, TOKEN_WHILE);
     expect(this, TOKEN_LPAR);

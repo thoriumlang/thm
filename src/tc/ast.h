@@ -21,15 +21,19 @@
 #include <list.h>
 #include "lexer.h"
 
-typedef struct AstNodeMetadata {
+#pragma region AstNode
+
+typedef struct AstNode {
     int start_line;
     int start_column;
-} AstNodeMetadata;
+} AstNode;
+
+#pragma endregion
 
 #pragma region AstNodeIdentifier
 
 typedef struct AstNodeIdentifier {
-    AstNodeMetadata metadata;
+    AstNode *metadata;
     char *name;
 } AstNodeIdentifier;
 
@@ -42,7 +46,7 @@ void ast_node_identifier_destroy(AstNodeIdentifier *this);
 #pragma region AstNodeType
 
 typedef struct AstNodeType {
-    AstNodeMetadata metadata;
+    AstNode *metadata;
     AstNodeIdentifier *identifier;
     int ptr;
 } AstNodeType;
@@ -58,7 +62,7 @@ void ast_node_type_print(AstNodeType *this);
 #pragma region AstNodeVariable
 
 typedef struct {
-    AstNodeMetadata metadata;
+    AstNode *metadata;
     AstNodeType *type;
     AstNodeIdentifier *name;
     bool pub;
@@ -77,7 +81,7 @@ void ast_node_variable_print(AstNodeVariable *this);
 #pragma region AstNodeConst
 
 typedef struct {
-    AstNodeMetadata metadata;
+    AstNode *metadata;
     bool pub;
     bool ext;
     AstNodeIdentifier *name;
@@ -95,7 +99,7 @@ void ast_node_const_print(AstNodeConst *this);
 #pragma region AstNodeParameter
 
 typedef struct {
-    AstNodeMetadata metadata;
+    AstNode *metadata;
     AstNodeIdentifier *name;
     AstNodeType *type;
 } AstNodeParameter;
@@ -107,7 +111,7 @@ AstNodeParameter *ast_node_parameter_create(AstNodeIdentifier *identifier, AstNo
 #pragma region AstNodeParameters
 
 typedef struct AstNodeParameters {
-    AstNodeMetadata metadata;
+    AstNode *metadata;
     List *parameters;
 } AstNodeParameters;
 
@@ -120,7 +124,7 @@ void ast_node_parameters_destroy(AstNodeParameters *this);
 #pragma region AstNodeStatements
 
 typedef struct {
-    AstNodeMetadata metadata;
+    AstNode *metadata;
     List *stmts; // of AstNodeStmt
 } AstNodeStatements;
 
@@ -133,7 +137,7 @@ void ast_node_stmts_destroy(AstNodeStatements *this);
 #pragma region AstNodeFunction
 
 typedef struct {
-    AstNodeMetadata metadata;
+    AstNode *metadata; // todo rename
     bool pub;
     bool ext;
     AstNodeType *type;
@@ -155,6 +159,7 @@ typedef struct AstNodeStmt AstNodeStmt;
 #pragma region AstNodeStmtConst
 
 typedef struct {
+    AstNode *metadata;
     AstNodeIdentifier *identifier;
     AstNodeType *type;
     // expression
@@ -167,6 +172,7 @@ AstNodeStmt *ast_node_stmt_const_create();
 #pragma region AstNodeStmtVar
 
 typedef struct {
+    AstNode *metadata;
     AstNodeIdentifier *identifier;
     AstNodeType *type;
     // expression
@@ -179,6 +185,7 @@ AstNodeStmt *ast_node_stmt_var_create();
 #pragma region AstNodeStmtAssignment
 
 typedef struct {
+    AstNode *metadata;
     AstNodeIdentifier *identifier;
     // expression
 } AstNodeStmtAssignment;
@@ -190,6 +197,7 @@ AstNodeStmt *ast_node_stmt_assignment_create();
 #pragma region AstNodeStmtIf
 
 typedef struct {
+    AstNode *metadata;
     // condition
     AstNodeStatements *true_block;
     AstNodeStatements *false_block;
@@ -202,6 +210,7 @@ AstNodeStmt *ast_node_stmt_if_create();
 #pragma region AstNodeStmtWhile
 
 typedef struct {
+    AstNode *metadata;
     // condition
     AstNodeStatements *block;
 } AstNodeStmtWhile;
@@ -221,15 +230,15 @@ typedef enum {
 } EStmtKind;
 
 typedef struct AstNodeStmt {
-    AstNodeMetadata metadata;
-    EStmtKind kind;
     union {
+        AstNode **metadata; // this is a shortcut for *Stmt->metadata
         AstNodeStmtConst *constStmt;
         AstNodeStmtVar *varStmt;
         AstNodeStmtAssignment *assignmentStmt;
         AstNodeStmtIf *ifStmt;
         AstNodeStmtWhile *whileStmt;
     };
+    EStmtKind kind;
 } AstNodeStmt;
 
 void ast_node_stmt_destroy(AstNodeStmt *this);
@@ -241,7 +250,7 @@ void ast_node_stmt_print(AstNodeStmt *this, int indent);
 #pragma region AstRoot
 
 typedef struct {
-    AstNodeMetadata metadata;
+    AstNode *metadata;
     List *variables; // of AstNodeVariable
     List *constants; // of AstNodeConst
     List *functions; // of AstNodeFunction
