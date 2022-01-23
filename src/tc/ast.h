@@ -20,12 +20,14 @@
 #include <stdbool.h>
 #include <list.h>
 #include "lexer.h"
+#include "symbol_table.h"
 
 #pragma region AstNode
 
 typedef struct AstNode {
     int start_line;
     int start_column;
+    SymbolTable *symbols;
 } AstNode;
 
 #pragma endregion

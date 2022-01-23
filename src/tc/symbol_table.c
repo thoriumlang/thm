@@ -22,14 +22,11 @@
 typedef struct SymbolTable {
     SymbolTable *parent;
     Map *symbols; // str -> Symbol
+    List *children;
+    AstNode *owning_node;
 } SymbolTable;
 
-SymbolTable *symbol_table_create() {
-    SymbolTable *table = malloc(sizeof(SymbolTable));
-    table->parent = NULL;
-    table->symbols = map_create(map_hash_fn_str, map_eq_fn_str);
-    return table;
-}
+#pragma region private
 
 static void free_symbol(Pair *e) {
     switch (((Symbol *) e->value)->kind) {
@@ -44,11 +41,45 @@ static void free_symbol(Pair *e) {
     }
 }
 
+static void free_child_table(SymbolTable *t) {
+    symbol_table_destroy(t);
+}
+
+#pragma endregion
+
+#pragma region public
+
+SymbolTable *symbol_table_create() {
+    SymbolTable *table = malloc(sizeof(SymbolTable));
+    table->parent = NULL;
+    table->symbols = map_create(map_hash_fn_str, map_eq_fn_str);
+    table->children = list_create();
+    return table;
+}
+
+SymbolTable *symbol_table_create_child_for(SymbolTable *this, /*actually a (AstNode*) */void *node) {
+    SymbolTable *table = symbol_table_create();
+
+    table->owning_node = node;
+    table->parent = this;
+    list_add(this->children, table);
+
+    return table;
+}
+
 void symbol_table_destroy(SymbolTable *this) {
     List *entries = map_get_entries(this->symbols);
     list_foreach(entries, fn_consumer(free_symbol));
     list_destroy(entries);
     map_destroy(this->symbols);
+
+    list_foreach(this->children, fn_consumer(free_child_table));
+    list_destroy(this->children);
+
+    if (this->owning_node) {
+        this->owning_node->symbols = NULL;
+    }
+
     free(this);
 }
 
@@ -58,6 +89,16 @@ void symbol_table_add(SymbolTable *this, Symbol *symbol) {
 
 bool symbol_table_symbol_exists_in_current_scope(SymbolTable *this, char *name) {
     return map_is_present(this->symbols, name);
+}
+
+bool symbol_table_symbol_exists(SymbolTable *this, char *name) {
+    if (map_is_present(this->symbols, name)) {
+        return true;
+    }
+    if (this->parent) {
+        return symbol_table_symbol_exists(this->parent, name);
+    }
+    return false;
 }
 
 Symbol *symbol_table_get(SymbolTable *this, char *name) {
@@ -86,3 +127,5 @@ void symbol_table_dump(SymbolTable *this) {
 
     list_destroy(values);
 }
+
+#pragma endregion

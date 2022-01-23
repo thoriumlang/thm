@@ -159,7 +159,41 @@ bool analyzer_analyse(Analyser *this, AstRoot *root) {
     list_foreach(root->constants, fn_consumer_closure(insert_const_in_symbols_table, this));
     list_foreach(root->functions, fn_consumer_closure(insert_function_in_symbols_table, this));
 
+    char buffer[1204];
 
+    for (size_t i = 0; i < list_size(root->functions); i++) {
+        AstNodeFunction *f = (AstNodeFunction *) list_get(root->functions, i);
+        f->metadata->symbols = symbol_table_create_child_for(this->symbols, f->metadata);
+
+        for (size_t s = 0; s < list_size(f->statements->stmts); s++) {
+            AstNodeStmt *stmt = (AstNodeStmt *) list_get(f->statements->stmts, s);
+            switch (stmt->kind) {
+                case CONST:
+                    symbol_table_add(
+                            f->metadata->symbols,
+                            symbol_create(stmt->constStmt->identifier->name, SYM_CONST, stmt)
+                    );
+                    break;
+                case VAR:
+                    symbol_table_add(
+                            f->metadata->symbols,
+                            symbol_create(stmt->varStmt->identifier->name, SYM_VAR, stmt)
+                    );
+                    break;
+                case ASSIGNMENT:
+                    if (!symbol_table_symbol_exists(f->metadata->symbols, stmt->assignmentStmt->identifier->name)) {
+                        sprintf(buffer, "identifier '%s' not defined", stmt->assignmentStmt->identifier->name);
+                        print_error(this, buffer, stmt->metadata);
+                    }
+                    break;
+                case IF:
+                    break;
+                case WHILE:
+                    break;
+            }
+        }
+
+    }
 
     return this->error_found;
 }
