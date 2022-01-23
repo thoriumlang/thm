@@ -30,7 +30,9 @@ List *list_create() {
 }
 
 void list_destroy(List *this) {
-    free(this->items);
+    if (this->items) {
+        free(this->items);
+    }
     free(this);
 }
 
