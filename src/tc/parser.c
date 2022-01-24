@@ -182,12 +182,16 @@ static AstNodeIdentifier *parse_identifier(Parser *this) {
 
 // <type> := <@>* <identifier>
 static AstNodeType *parse_type(Parser *this) {
-    if (!check(this, TOKEN_IDENTIFIER) && !check(this, TOKEN_AT)) {
-        print_token_expected_error(this, 2, TOKEN_IDENTIFIER, TOKEN_AT);
+    Token *token = peek(this, 0);
+
+    if (token->type != TOKEN_BYTE &&
+        token->type != TOKEN_WORD &&
+        token->type != TOKEN_IDENTIFIER &&
+        token->type != TOKEN_AT) {
+        print_token_expected_error(this, 4, TOKEN_WORD, TOKEN_BYTE, TOKEN_IDENTIFIER, TOKEN_AT);
         return NULL;
     }
 
-    Token *token = peek(this, 0);
     int line = token->line;
     int column = token->column;
 
@@ -196,7 +200,20 @@ static AstNodeType *parse_type(Parser *this) {
         ptr++;
     }
 
-    AstNodeIdentifier *identifier = parse_identifier(this);
+    AstNodeIdentifier *identifier = NULL;
+    token = peek(this, 0);
+    switch (token->type) {
+        case TOKEN_IDENTIFIER:
+        case TOKEN_WORD:
+        case TOKEN_BYTE:
+            identifier = ast_node_identifier_create(*token);
+            advance(this);
+            break;
+        default:
+            print_token_expected_error(this, 4, TOKEN_WORD, TOKEN_BYTE, TOKEN_IDENTIFIER, TOKEN_AT);
+            break;
+    }
+
     if (identifier == NULL) {
         return NULL;
     }
