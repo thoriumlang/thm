@@ -19,6 +19,7 @@
 #include "map.h"
 #include "ast.h"
 #include "memory.h"
+#include "pair.h"
 
 typedef struct SymbolTable {
     SymbolTable *parent;
@@ -30,13 +31,13 @@ typedef struct SymbolTable {
 #pragma region private
 
 static void free_symbol(Pair *e) {
-    switch (((Symbol *) e->value)->kind) {
+    switch (((Symbol *) pair_get_value(e))->kind) {
         case SYM_FN:
-            memory_free(e->value);
-            memory_free(e->key);
+            memory_free(pair_get_value(e));
+            memory_free(pair_get_key(e));
             break;
         default:
-            memory_free(e->value);
+            memory_free(pair_get_value(e));
             // key is allocated in the scope of the AST and hence freed in the scope of the AST
             break;
     }
@@ -46,19 +47,17 @@ static void free_child_table(SymbolTable *t) {
     symbol_table_destroy(t);
 }
 
-#ifdef CPOCL_MEMORY_DEBUG
-#undef cpocl_memory_alloc
-#undef cpocl_memory_free
-
-static void *cpocl_memory_alloc(size_t size) {
-    return cpocl_memory_alloc_debug(size, "SymbolTable.Map", 0);
+static void *st_memory_alloc(size_t size) {
+    return cpocl_memory_alloc(size);
 }
 
-static void cpocl_memory_free(void *ptr) {
-    cpocl_memory_free_debug(ptr, "SymbolTable.Map", 0);
+static void *st_memory_realloc(void *ptr, size_t size) {
+    return cpocl_memory_realloc(ptr, size);
 }
 
-#endif
+static void st_memory_free(void *ptr) {
+    cpocl_memory_free(ptr);
+}
 
 #pragma endregion
 
@@ -68,9 +67,15 @@ SymbolTable *symbol_table_create(void) {
     SymbolTable *table = memory_alloc(sizeof(SymbolTable));
     table->parent = NULL;
     table->symbols = map_create(map_hash_fn_str, map_eq_fn_str,
-                                .malloc = cpocl_memory_alloc,
-                                .free = cpocl_memory_free);
-    table->children = list_create();
+                                .malloc = st_memory_alloc,
+                                .realloc = st_memory_realloc,
+                                .free = st_memory_free
+    );
+    table->children = list_create(
+            .malloc = st_memory_alloc,
+            .realloc = st_memory_realloc,
+            .free = st_memory_free
+    );
     return table;
 }
 
@@ -87,6 +92,7 @@ SymbolTable *symbol_table_create_child_for(SymbolTable *self, /*actually a (AstN
 void symbol_table_destroy(SymbolTable *self) {
     List *entries = map_get_entries(self->symbols);
     list_foreach(entries, FN_CONSUMER(free_symbol));
+    list_foreach(entries, FN_CONSUMER(pair_destroy));
     list_destroy(entries);
     map_destroy(self->symbols);
 

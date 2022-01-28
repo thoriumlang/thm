@@ -21,7 +21,7 @@
 #include <stddef.h>
 #include <malloc.h>
 
-typedef struct Queue Queue;
+typedef struct CpoclQueue CpoclQueue;
 
 typedef struct CpoclQueueOptions {
     void *(*malloc)(size_t);
@@ -29,25 +29,38 @@ typedef struct CpoclQueueOptions {
     void (*free)(void *);
 } CpoclQueueOptions;
 
-#define queue_create(size, ...) \
-    queue_create_((size), (struct CpoclQueueOptions) { \
+#define cpocl_queue_create(size, ...) \
+    cpocl_queue_create_with_opts((size), (struct CpoclQueueOptions) { \
         .malloc = malloc,       \
         .free = free,           \
-        __VA_ARGS__ \
+        __VA_ARGS__             \
     })
 
-Queue *queue_create_(size_t size, CpoclQueueOptions options);
+CpoclQueue *cpocl_queue_create_with_opts(size_t size, CpoclQueueOptions options);
 
-void queue_destroy(Queue *self);
+void cpocl_queue_destroy(CpoclQueue *self);
 
-void queue_enqueue(Queue *self, void *item);
+void cpocl_queue_enqueue(CpoclQueue *self, void *item);
 
-void *queue_dequeue(Queue *self);
+void *cpocl_queue_dequeue(CpoclQueue *self);
 
-void *queue_peek(Queue *self, size_t n);
+void *cpocl_queue_peek(CpoclQueue *self, size_t n);
 
-size_t queue_size(Queue *self);
+size_t cpocl_queue_size(CpoclQueue *self);
 
-bool queue_is_empty(Queue *self);
+bool cpocl_queue_is_empty(CpoclQueue *self);
+
+#ifdef CPOCL_SHORT_NAMES
+#define Queue CpoclQueue
+#define QueueOptions CpoclQueueOptions
+#define queue_create cpocl_queue_create
+#define queue_create_with_opts cpocl_queue_create_with_opts
+#define queue_destroy cpocl_queue_destroy
+#define queue_enqueue cpocl_queue_enqueue
+#define queue_dequeue cpocl_queue_dequeue
+#define queue_peek cpocl_queue_peek
+#define queue_size cpocl_queue_size
+#define queue_is_empty cpocl_queue_is_empty
+#endif
 
 #endif //THM_QUEUE_H

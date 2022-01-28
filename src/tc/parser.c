@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-#include <queue.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include "parser.h"
 #include "lexer.h"
 #include "memory.h"
+#include "queue.h"
+#include "list.h"
 
 typedef struct Parser {
     Lexer *lexer;
@@ -166,19 +167,14 @@ static void print_expected_error(Parser *self, const char *expected) {
     fprintf(stderr, "Expected %s at %i:%i\n", expected, token->line, token->column);
 }
 
-#ifdef CPOCL_MEMORY_DEBUG
-#undef cpocl_memory_alloc
-#undef cpocl_memory_free
 
-static void *cpocl_memory_alloc(size_t size) {
-    return cpocl_memory_alloc_debug(size, "Parser.Queue", 0);
+static void *parser_memory_alloc(size_t size) {
+    return memory_alloc(size);
 }
 
-static void cpocl_memory_free(void *ptr) {
-    cpocl_memory_free_debug(ptr, "Parser.Queue", 0);
+static void parser_memory_free(void *ptr) {
+    memory_free(ptr);
 }
-
-#endif
 
 #pragma endregion
 
@@ -664,9 +660,11 @@ static AstNodeStmt *parse_stmt(Parser *self) {
 Parser *parser_create(Lexer *lexer) {
     Parser *parser = memory_alloc(sizeof(Parser));
     parser->lexer = lexer;
-    parser->tokens = queue_create(4,
-                                  .malloc = cpocl_memory_alloc,
-                                  .free = cpocl_memory_free);
+    parser->tokens = queue_create(
+            4,
+            .malloc = parser_memory_alloc,
+            .free = parser_memory_free
+    );
     parser->error_recovery = false;
     parser->error_found = false;
     return parser;

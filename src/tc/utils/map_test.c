@@ -21,11 +21,11 @@
 #include <string.h>
 #include "headers/map.h"
 
-List *list_create_(CpoclListOptions options) {
+List *cpocl_list_create_with_opts(CpoclListOptions options) {
     return NULL;
 }
 
-void list_add(List *self, void *item) {
+void cpocl_list_add(List *self, void *item) {
     // nothing
 }
 

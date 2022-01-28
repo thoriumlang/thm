@@ -29,6 +29,17 @@ if (CPOCL_MEMORY_DEBUG)
     add_compile_definitions(tc CPOCL_MEMORY_DEBUG)
 endif ()
 
+#set(CC_WARN_FLAGS -Werror -Wall -Wextra -Wpedantic -Wformat=2 -Wno-unused-parameter
+#        -Wshadow -Wwrite-strings -Wstrict-prototypes -Wold-style-definition
+#        -Wredundant-decls -Wnested-externs -Wmissing-include-dirs -Wno-unknown-pragmas)
+#
+#if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+#    list(APPEND CC_WARN_FLAGS -Wjump-misses-init -Wlogical-op)
+#endif ()
+#
+#target_compile_options(tc PRIVATE ${CC_WARN_FLAGS})
+
+
 SET(VM_DEBUG_MEMORY FALSE CACHE BOOL "Print memory access messages")
 
 if (VM_DEBUG_MEMORY)

@@ -20,7 +20,7 @@
 #include <malloc.h>
 #include "functions.h"
 
-typedef struct List List;
+typedef struct CpoclList CpoclList;
 
 typedef struct CpoclListOptions {
     void *(*malloc)(size_t);
@@ -30,24 +30,36 @@ typedef struct CpoclListOptions {
     void (*free)(void *);
 } CpoclListOptions;
 
-#define list_create(...) \
-    list_create_((struct CpoclListOptions) { \
+#define cpocl_list_create(...) \
+    cpocl_list_create_with_opts((struct CpoclListOptions) { \
         .malloc = malloc,       \
         .realloc = realloc,     \
         .free = free,           \
-        __VA_ARGS__ \
+        __VA_ARGS__             \
     })
 
-List *list_create_(CpoclListOptions options);
+CpoclList *cpocl_list_create_with_opts(CpoclListOptions options);
 
-void list_destroy(List *self);
+void cpocl_list_destroy(CpoclList *self);
 
-void list_add(List *self, void *item);
+void cpocl_list_add(CpoclList *self, void *item);
 
-size_t list_size(List *self);
+size_t cpocl_list_size(CpoclList *self);
 
-void *list_get(List *self, size_t index);
+void *cpocl_list_get(CpoclList *self, size_t index);
 
-void list_foreach(List *self, fn_consumer_closure consumer_closure);
+void cpocl_list_foreach(CpoclList *self, fn_consumer_closure consumer_closure);
+
+#ifdef CPOCL_SHORT_NAMES
+#define List CpoclList
+#define ListOptions CpoclListOptions
+#define list_create cpocl_list_create
+#define list_create_with_opts cpocl_list_create_with_opts
+#define list_destroy cpocl_list_destroy
+#define list_add cpocl_list_add
+#define list_size cpocl_list_size
+#define list_get cpocl_list_get
+#define list_foreach cpocl_list_foreach
+#endif
 
 #endif //THM_LIST_H

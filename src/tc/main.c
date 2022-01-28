@@ -22,6 +22,7 @@
 #include "ast.h"
 #include "str.h"
 #include "analyser.h"
+#include "list.h"
 #include "memory.h"
 
 void repl(void);

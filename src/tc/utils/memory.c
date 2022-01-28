@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+#ifndef CPOCL_SHORT_NAMES
+#define CPOCL_SHORT_NAMES
+#endif
+
 #include <malloc.h>
 #include <stdlib.h>
 #include <string.h>
@@ -58,8 +62,10 @@ void cpocl_memory_destroy(CpoclMemory *self) {
 }
 
 void cpocl_memory_print_stats(CpoclMemory *self) {
+    fprintf(stderr, "--- MEMORY STATISTICS ---\n");
     fprintf(stderr, "Total allocated: %lu bytes\n", self->total_allocated);
     fprintf(stderr, "Still allocated: %lu bytes\n", self->allocated);
+    fprintf(stderr, "--- END MEMORY STATISTICS ---\n");
     MemoryBlock *block = CPOCL_GLOBAL->blocks;
     while (block != NULL) {
         if ((block->flags & MEMORY_BLOCK_FLAGS_freed) != MEMORY_BLOCK_FLAGS_freed) {
@@ -115,7 +121,11 @@ void cpocl_memory_free_debug(void *ptr, char *file, int line) {
 }
 
 void *cpocl_memory_realloc_debug(void *ptr, size_t new_size, char *file, int line) {
-    MemoryBlock *block = (void *) ((int8_t *) ptr - sizeof(MemoryBlock));
+    if (ptr == NULL) {
+        return cpocl_memory_alloc_debug(new_size, file, line);
+    }
+
+    MemoryBlock *block = (void *) (((int8_t *) ptr) - sizeof(MemoryBlock));
 
     if ((block->flags & MEMORY_BLOCK_FLAGS_freed) == MEMORY_BLOCK_FLAGS_freed) {
         fprintf(stderr, "%s:%d: cannot realloc: block allocated at %s:%d already freed at %s:%d\n",

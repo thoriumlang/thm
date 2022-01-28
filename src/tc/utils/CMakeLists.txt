@@ -6,6 +6,7 @@ set(CMAKE_C_STANDARD 11)
 add_library(utils STATIC
         list.c headers/list.h
         str.c headers/str.h
+        pair.c headers/pair.h
         map.c headers/map.h
         queue.c headers/queue.h
         memory.c headers/memory.h)
@@ -47,7 +48,7 @@ add_executable(list_test list_test.c list.c)
 target_compile_features(list_test PRIVATE c_std_99)
 target_link_libraries(list_test PRIVATE cmocka-static)
 
-add_executable(map_test map_test.c map.c)
+add_executable(map_test map_test.c map.c pair.c)
 target_compile_features(map_test PRIVATE c_std_99)
 target_link_libraries(map_test PRIVATE cmocka-static)
 

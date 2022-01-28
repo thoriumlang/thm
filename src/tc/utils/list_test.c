@@ -24,13 +24,13 @@ static void add_then_get(void **state) {
     List *list = list_create();
     int item = 1;
 
-    list_add(list, &item);
+    cpocl_list_add(list, &item);
 
-    int *actual = list_get(list, 0);
+    int *actual = cpocl_list_get(list, 0);
 
     assert_int_equal(1, *actual);
 
-    list_destroy(list);
+    cpocl_list_destroy(list);
 }
 
 static void add_add_then_get_get(void **state) {
@@ -38,29 +38,29 @@ static void add_add_then_get_get(void **state) {
     int item1 = 1;
     int item2 = 2;
 
-    list_add(list, &item1);
-    list_add(list, &item2);
+    cpocl_list_add(list, &item1);
+    cpocl_list_add(list, &item2);
 
     int *actual;
-    actual = list_get(list, 0);
+    actual = cpocl_list_get(list, 0);
     assert_int_equal(1, *actual);
-    actual = list_get(list, 1);
+    actual = cpocl_list_get(list, 1);
     assert_int_equal(2, *actual);
 
-    list_destroy(list);
+    cpocl_list_destroy(list);
 }
 
 static void add_then_size(void **state) {
     List *list = list_create();
     int item = 1;
 
-    assert_int_equal(0, list_size(list));
+    assert_int_equal(0, cpocl_list_size(list));
 
-    list_add(list, &item);
+    cpocl_list_add(list, &item);
 
-    assert_int_equal(1, list_size(list));
+    assert_int_equal(1, cpocl_list_size(list));
 
-    list_destroy(list);
+    cpocl_list_destroy(list);
 }
 
 int main(void) {

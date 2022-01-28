@@ -14,46 +14,50 @@
  * limitations under the License.
  */
 
+#ifndef CPOCL_SHORT_NAMES
+#define CPOCL_SHORT_NAMES
+#endif
+
 #include "headers/list.h"
 
-typedef struct List {
+typedef struct CpoclList {
     CpoclListOptions opts;
     void **items;
     size_t items_count;
-} List;
+} CpoclList;
 
-List *list_create_(CpoclListOptions options) {
-    List *list = options.malloc(sizeof(List));
+CpoclList *cpocl_list_create_with_opts(CpoclListOptions options) {
+    CpoclList *list = options.malloc(sizeof(CpoclList));
     list->opts = options;
     list->items_count = 0;
     list->items = NULL;
     return list;
 }
 
-void list_destroy(List *self) {
+void cpocl_list_destroy(CpoclList *self) {
     if (self->items) {
         self->opts.free(self->items);
     }
     self->opts.free(self);
 }
 
-void list_add(List *self, void *item) {
+void cpocl_list_add(CpoclList *self, void *item) {
     self->items = self->opts.realloc(self->items, sizeof(void *) * ++self->items_count);
     self->items[self->items_count - 1] = item;
 }
 
-size_t list_size(List *self) {
+size_t cpocl_list_size(CpoclList *self) {
     return self->items_count;
 }
 
-void *list_get(List *self, size_t index) {
+void *cpocl_list_get(CpoclList *self, size_t index) {
     if (index >= self->items_count) {
         return NULL;
     }
     return self->items[index];
 }
 
-void list_foreach(List *self, fn_consumer_closure consumer_closure) {
+void cpocl_list_foreach(CpoclList *self, fn_consumer_closure consumer_closure) {
     for (size_t i = 0; i < self->items_count; i++) {
         if (consumer_closure.has_data) {
             consumer_closure.fn.biconsumer(self->items[i], consumer_closure.data);

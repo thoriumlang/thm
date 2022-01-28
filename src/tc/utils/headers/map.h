@@ -21,56 +21,70 @@
 #include <stdbool.h>
 #include <string.h>
 #include <malloc.h>
+#include "functions.h"
 #include "list.h"
 
-typedef struct Map Map;
-
-typedef struct Pair {
-    void *key;
-    void *value;
-} Pair;
+typedef struct CpoclMap CpoclMap;
 
 typedef struct CpoclMapOptions {
     void *(*malloc)(size_t);
 
+    void *(*realloc)(void *, size_t);
+
     void (*free)(void *);
 } CpoclMapOptions;
 
-typedef size_t(*hash_fn)(void *);
-
-typedef bool(*eq_fn)(void *, void *);
-
-#define map_create(hash_fn, eq_fn, ...) \
-    map_create_((hash_fn), (eq_fn), (struct CpoclMapOptions) { \
+#define cpocl_map_create(hash_fn, eq_fn, ...) \
+    cpocl_map_create_with_opts((hash_fn), (eq_fn), (struct CpoclMapOptions) { \
         .malloc = malloc,       \
+        .realloc = realloc,     \
         .free = free,           \
-        __VA_ARGS__ \
+        __VA_ARGS__             \
     })
 
-Map *map_create_(hash_fn hash, eq_fn eq, CpoclMapOptions options);
+CpoclMap *cpocl_map_create_with_opts(cpocl_hash_fn hash, cpocl_eq_fn eq, CpoclMapOptions options);
 
-void map_destroy(Map *self);
+void cpocl_map_destroy(CpoclMap *self);
 
-size_t map_size(Map *self);
+size_t cpocl_map_size(CpoclMap *self);
 
-bool map_is_empty(Map *self);
+bool cpocl_map_is_empty(CpoclMap *self);
 
-void *map_put(Map *self, void *key, void *value);
+void *cpocl_map_put(CpoclMap *self, void *key, void *value);
 
-void *map_get(Map *self, void *key);
+void *cpocl_map_get(CpoclMap *self, void *key);
 
-void map_remove(Map *self, void *key);
+void cpocl_map_remove(CpoclMap *self, void *key);
 
-bool map_is_present(Map *self, void *key);
+bool cpocl_map_is_present(CpoclMap *self, void *key);
 
-List *map_get_keys(Map *self);
+CpoclList *cpocl_map_get_keys(CpoclMap *self);
 
-List *map_get_values(Map *self);
+CpoclList *cpocl_map_get_values(CpoclMap *self);
 
-List *map_get_entries(Map *self);
+CpoclList *cpocl_map_get_entries(CpoclMap *self);
 
-size_t map_hash_fn_str(void *key);
+size_t cpocl_map_hash_fn_str(void *key);
 
-bool map_eq_fn_str(void *a, void *b);
+bool cpocl_map_eq_fn_str(void *a, void *b);
+
+#ifdef CPOCL_SHORT_NAMES
+#define Map CpoclMap
+#define MapOptions CpoclMapOptions
+#define map_create cpocl_map_create
+#define map_create_with_opts cpocl_map_create_with_opts
+#define map_destroy cpocl_map_destroy
+#define map_size cpocl_map_size
+#define map_is_empty cpocl_map_is_empty
+#define map_put cpocl_map_put
+#define map_get cpocl_map_get
+#define map_remove cpocl_map_remove
+#define map_is_present cpocl_map_is_present
+#define map_get_keys cpocl_map_get_keys
+#define map_get_values cpocl_map_get_values
+#define map_get_entries cpocl_map_get_entries
+#define map_hash_fn_str cpocl_map_hash_fn_str
+#define map_eq_fn_str cpocl_map_eq_fn_str
+#endif
 
 #endif //THM_MAP_H

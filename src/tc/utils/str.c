@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+#ifndef CPOCL_SHORT_NAMES
+#define CPOCL_SHORT_NAMES
+#endif
+
 #include <string.h>
 #include <math.h>
 #include "headers/str.h"

@@ -14,27 +14,32 @@
  * limitations under the License.
  */
 
+#ifndef CPOCL_SHORT_NAMES
+#define CPOCL_SHORT_NAMES
+#endif
+
 #include <string.h>
 #include "headers/map.h"
+#include "headers/pair.h"
 
 #define MAP_BUCKETS_COUNT 255
 
-typedef struct MapEntry {
+typedef struct CpoclMapEntry {
     size_t hash;
     void *key;
     void *value;
-    struct MapEntry *next;
-} MapEntry;
+    struct CpoclMapEntry *next;
+} CpoclMapEntry;
 
-typedef struct Map {
+typedef struct CpoclMap {
     CpoclMapOptions opts;
-    hash_fn hash;
-    eq_fn eq;
-    MapEntry *buckets[MAP_BUCKETS_COUNT];
-} Map;
+    cpocl_hash_fn hash;
+    cpocl_eq_fn eq;
+    CpoclMapEntry *buckets[MAP_BUCKETS_COUNT];
+} CpoclMap;
 
-Map *map_create_(hash_fn hash, eq_fn eq, CpoclMapOptions options) {
-    Map *map = options.malloc(sizeof(Map));
+CpoclMap *cpocl_map_create_with_opts(cpocl_hash_fn hash, cpocl_eq_fn eq, CpoclMapOptions options) {
+    CpoclMap *map = options.malloc(sizeof(CpoclMap));
     map->opts = options;
     map->hash = hash;
     map->eq = eq;
@@ -45,11 +50,11 @@ Map *map_create_(hash_fn hash, eq_fn eq, CpoclMapOptions options) {
     return map;
 }
 
-void map_destroy(Map *self) {
+void cpocl_map_destroy(CpoclMap *self) {
     for (size_t i = 0; i < MAP_BUCKETS_COUNT; i++) {
-        MapEntry *entry = self->buckets[i];
+        CpoclMapEntry *entry = self->buckets[i];
         while (entry) {
-            MapEntry *current = entry;
+            CpoclMapEntry *current = entry;
             entry = entry->next;
             self->opts.free(current);
         }
@@ -57,10 +62,10 @@ void map_destroy(Map *self) {
     self->opts.free(self);
 }
 
-size_t map_size(Map *self) {
+size_t cpocl_map_size(CpoclMap *self) {
     size_t size = 0;
     for (size_t i = 0; i < MAP_BUCKETS_COUNT; i++) {
-        MapEntry *e = self->buckets[i];
+        CpoclMapEntry *e = self->buckets[i];
         while (e) {
             size++;
             e = e->next;
@@ -69,16 +74,16 @@ size_t map_size(Map *self) {
     return size;
 }
 
-bool map_is_empty(Map *self) {
-    return map_size(self) == 0;
+bool cpocl_map_is_empty(CpoclMap *self) {
+    return cpocl_map_size(self) == 0;
 }
 
-static bool map_key_eq(Map *self, MapEntry *e, void *key, size_t hash) {
+static bool cpocl_map_key_eq(CpoclMap *self, CpoclMapEntry *e, void *key, size_t hash) {
     return e->hash == hash && self->eq(key, e->key);
 }
 
-static MapEntry *map_entry_create(Map *self, void *key, void *value, size_t hash) {
-    MapEntry *entry = self->opts.malloc(sizeof(MapEntry));
+static CpoclMapEntry *cpocl_map_entry_create(CpoclMap *self, void *key, void *value, size_t hash) {
+    CpoclMapEntry *entry = self->opts.malloc(sizeof(CpoclMapEntry));
     entry->hash = hash;
     entry->next = NULL;
     entry->key = key;
@@ -87,35 +92,35 @@ static MapEntry *map_entry_create(Map *self, void *key, void *value, size_t hash
     return entry;
 }
 
-static void map_entry_destroy(Map *self, MapEntry *entry) {
+static void cpocl_map_entry_destroy(CpoclMap *self, CpoclMapEntry *entry) {
     self->opts.free(entry);
 }
 
-void *map_put(Map *self, void *key, void *value) {
+void *cpocl_map_put(CpoclMap *self, void *key, void *value) {
     size_t hash = self->hash(key);
     size_t bucket_idx = hash % MAP_BUCKETS_COUNT;
 
     if (self->buckets[bucket_idx]) {
-        MapEntry *e = self->buckets[bucket_idx];
+        CpoclMapEntry *e = self->buckets[bucket_idx];
         while (true) {
-            if (map_key_eq(self, e, key, hash)) {
+            if (cpocl_map_key_eq(self, e, key, hash)) {
                 void *old_val = e->value;
                 e->value = value;
                 return old_val;
             } else if (e->next == NULL) {
-                e->next = map_entry_create(self, key, value, hash);
+                e->next = cpocl_map_entry_create(self, key, value, hash);
                 return NULL;
             }
             e = e->next;
         }
     } else {
-        self->buckets[bucket_idx] = map_entry_create(self, key, value, hash);
+        self->buckets[bucket_idx] = cpocl_map_entry_create(self, key, value, hash);
         return NULL;
     }
 }
 
-void *map_get(Map *self, void *key) {
-    MapEntry *entry = self->buckets[(self->hash(key) % MAP_BUCKETS_COUNT)];
+void *cpocl_map_get(CpoclMap *self, void *key) {
+    CpoclMapEntry *entry = self->buckets[(self->hash(key) % MAP_BUCKETS_COUNT)];
     while (entry) {
         if (entry->hash == self->hash(key) && self->eq(key, entry->key)) {
             return entry->value;
@@ -125,12 +130,12 @@ void *map_get(Map *self, void *key) {
     return NULL;
 }
 
-void map_remove(Map *self, void *key) {
+void cpocl_map_remove(CpoclMap *self, void *key) {
     size_t hash = self->hash(key);
     size_t bucket_idx = hash % MAP_BUCKETS_COUNT;
 
-    MapEntry *previous = NULL;
-    MapEntry *entry = self->buckets[bucket_idx];
+    CpoclMapEntry *previous = NULL;
+    CpoclMapEntry *entry = self->buckets[bucket_idx];
     while (entry) {
         if (entry->hash == self->hash(key) && self->eq(key, entry->key)) {
             if (previous) {
@@ -138,7 +143,7 @@ void map_remove(Map *self, void *key) {
             } else {
                 self->buckets[bucket_idx] = entry->next;
             }
-            map_entry_destroy(self, entry);
+            cpocl_map_entry_destroy(self, entry);
             return;
         }
         previous = entry;
@@ -146,17 +151,25 @@ void map_remove(Map *self, void *key) {
     }
 }
 
-bool map_is_present(Map *self, void *key) {
-    return map_get(self, key) != NULL;
+bool cpocl_map_is_present(CpoclMap *self, void *key) {
+    return cpocl_map_get(self, key) != NULL;
 }
 
-List *map_get_keys(Map *self) {
-    List *keys = list_create();
+static inline CpoclList *make_list(CpoclMap *self) {
+    return cpocl_list_create_with_opts((CpoclListOptions) {
+            .malloc = self->opts.malloc,
+            .realloc = self->opts.realloc,
+            .free = self->opts.free
+    });
+}
+
+CpoclList *cpocl_map_get_keys(CpoclMap *self) {
+    CpoclList *keys = make_list(self);
 
     for (size_t i = 0; i < MAP_BUCKETS_COUNT; i++) {
-        MapEntry *e = self->buckets[i];
+        CpoclMapEntry *e = self->buckets[i];
         while (e) {
-            list_add(keys, e->key);
+            cpocl_list_add(keys, e->key);
             e = e->next;
         }
     }
@@ -164,13 +177,13 @@ List *map_get_keys(Map *self) {
     return keys;
 }
 
-List *map_get_values(Map *self) {
-    List *keys = list_create();
+CpoclList *cpocl_map_get_values(CpoclMap *self) {
+    CpoclList *keys = make_list(self);
 
     for (size_t i = 0; i < MAP_BUCKETS_COUNT; i++) {
-        MapEntry *e = self->buckets[i];
+        CpoclMapEntry *e = self->buckets[i];
         while (e) {
-            list_add(keys, e->value);
+            cpocl_list_add(keys, e->value);
             e = e->next;
         }
     }
@@ -178,16 +191,17 @@ List *map_get_values(Map *self) {
     return keys;
 }
 
-List *map_get_entries(Map *self) {
-    List *entries = list_create();
+CpoclList *cpocl_map_get_entries(CpoclMap *self) {
+    CpoclList *entries = make_list(self);
 
     for (size_t i = 0; i < MAP_BUCKETS_COUNT; i++) {
-        MapEntry *e = self->buckets[i];
+        CpoclMapEntry *e = self->buckets[i];
         while (e) {
-            Pair *p = self->opts.malloc(sizeof(Pair));
-            p->key = e->key;
-            p->value = e->value;
-            list_add(entries, p);
+            Pair *p = pair_create_with_opts(e->key, e->value, (CpoclPairOptions) {
+                    .malloc = self->opts.malloc,
+                    .free = self->opts.free
+            });
+            cpocl_list_add(entries, p);
             e = e->next;
         }
     }
@@ -195,7 +209,7 @@ List *map_get_entries(Map *self) {
     return entries;
 }
 
-size_t map_hash_fn_str(void *key) {
+size_t cpocl_map_hash_fn_str(void *key) {
     char *c = (char *) key;
     size_t hash = 5381;
     while (*c) {
@@ -204,6 +218,6 @@ size_t map_hash_fn_str(void *key) {
     return hash;
 }
 
-bool map_eq_fn_str(void *a, void *b) {
+bool cpocl_map_eq_fn_str(void *a, void *b) {
     return strcmp(a, b) == 0;
 }

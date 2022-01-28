@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 
+#ifndef CPOCL_SHORT_NAMES
+#define CPOCL_SHORT_NAMES
+#endif
+
 #include <printf.h>
 #include "headers/queue.h"
 
-typedef struct Queue {
+typedef struct CpoclQueue {
     CpoclQueueOptions opts;
 
     void **items;
@@ -25,10 +29,10 @@ typedef struct Queue {
     size_t size;
     size_t head;
     size_t tail;
-} Queue;
+} CpoclQueue;
 
-Queue *queue_create_(size_t size, CpoclQueueOptions options) {
-    Queue *queue = options.malloc(sizeof(Queue));
+CpoclQueue *cpocl_queue_create_with_opts(size_t size, CpoclQueueOptions options) {
+    CpoclQueue *queue = options.malloc(sizeof(CpoclQueue));
     queue->opts = options;
     queue->items = options.malloc(size * sizeof(void *));
     queue->items_count = 0;
@@ -38,20 +42,20 @@ Queue *queue_create_(size_t size, CpoclQueueOptions options) {
     return queue;
 }
 
-void queue_destroy(Queue *self) {
+void cpocl_queue_destroy(CpoclQueue *self) {
     self->opts.free(self->items);
     self->opts.free(self);
 }
 
-void queue_enqueue(Queue *self, void *item) {
+void cpocl_queue_enqueue(CpoclQueue *self, void *item) {
     if (self->items_count == self->size) {
         self->size = self->size * 2;
 
-        void **new_items = malloc(self->size * sizeof(void *));
+        void **new_items = self->opts.malloc(self->size * sizeof(void *));
         size_t new_head = 0;
 
         void *old_item;
-        while ((old_item = queue_dequeue(self)) != NULL) {
+        while ((old_item = cpocl_queue_dequeue(self)) != NULL) {
             new_items[new_head++] = old_item;
         }
 
@@ -67,7 +71,7 @@ void queue_enqueue(Queue *self, void *item) {
     self->items_count++;
 }
 
-void *queue_dequeue(Queue *self) {
+void *cpocl_queue_dequeue(CpoclQueue *self) {
     if (self->items_count == 0) {
         return NULL;
     }
@@ -80,17 +84,17 @@ void *queue_dequeue(Queue *self) {
     return item;
 }
 
-void *queue_peek(Queue *self, size_t n) {
+void *cpocl_queue_peek(CpoclQueue *self, size_t n) {
     if (self->items_count < n + 1) {
         return NULL;
     }
     return self->items[(self->tail + n) % self->size];
 }
 
-size_t queue_size(Queue *self) {
+size_t cpocl_queue_size(CpoclQueue *self) {
     return self->items_count;
 }
 
-bool queue_is_empty(Queue *self) {
+bool cpocl_queue_is_empty(CpoclQueue *self) {
     return self->items_count == 0;
 }

@@ -19,30 +19,44 @@
 
 #include <stdbool.h>
 
-typedef void(*biconsumer_fn)(void *, void *);
+typedef size_t(*cpocl_hash_fn)(void *);
 
-typedef void(*consumer_fn)(void *);
+typedef bool(*cpocl_eq_fn)(void *, void *);
+
+typedef void(*cpocl_biconsumer_fn)(void *, void *);
+
+typedef void(*cpocl_consumer_fn)(void *);
 
 typedef struct {
     union {
-        consumer_fn consumer;
-        biconsumer_fn biconsumer;
+        cpocl_consumer_fn consumer;
+        cpocl_biconsumer_fn biconsumer;
     } fn;
     void *data;
     bool has_data;
-} fn_consumer_closure;
+} cpocl_fn_consumer_closure;
 
-#define FN_CONSUMER_CLOSURE(f, d) \
+#define CPOCL_FN_CONSUMER_CLOSURE(f, d) \
 ((fn_consumer_closure) { \
-    .fn.biconsumer = (biconsumer_fn) (f), \
+    .fn.biconsumer = (cpocl_biconsumer_fn) (f), \
     .data = (d), \
     .has_data = true\
 })
-#define FN_CONSUMER(f) \
+#define CPOCL_FN_CONSUMER(f) \
 ((fn_consumer_closure) { \
-    .fn.consumer = (consumer_fn) (f), \
+    .fn.consumer = (cpocl_consumer_fn) (f), \
     .data = NULL, \
     .has_data = false \
 })
+
+#ifdef CPOCL_SHORT_NAMES
+#define FN_CONSUMER_CLOSURE CPOCL_FN_CONSUMER_CLOSURE
+#define FN_CONSUMER CPOCL_FN_CONSUMER
+#define hash_fn cpocl_hash_fn
+#define eq_fn cpocl_eq_fn
+#define fn_consumer_closure cpocl_fn_consumer_closure
+#define biconsumer_fn cpocl_biconsumer_fn
+#define consumer_fn cpocl_consumer_fn
+#endif
 
 #endif //THM_FUNCTIONS_H
