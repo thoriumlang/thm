@@ -18,7 +18,7 @@
 #include <setjmp.h>
 #include <stddef.h>
 #include <cmocka.h>
-#include "headers/list.h"
+#include "../headers/list.h"
 
 static void add_then_get(void **state) {
     List *list = list_create();

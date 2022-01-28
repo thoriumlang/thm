@@ -19,7 +19,7 @@
 #include <stddef.h>
 #include <cmocka.h>
 #include <string.h>
-#include "headers/map.h"
+#include "../headers/map.h"
 
 List *cpocl_list_create_with_opts(CpoclListOptions options) {
     return NULL;

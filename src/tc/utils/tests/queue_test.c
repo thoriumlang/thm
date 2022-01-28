@@ -18,7 +18,7 @@
 #include <setjmp.h>
 #include <stddef.h>
 #include <cmocka.h>
-#include "headers/queue.h"
+#include "../headers/queue.h"
 
 static void enqueue_grows(void **state) {
     Queue *queue = queue_create(1);
