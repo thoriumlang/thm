@@ -23,6 +23,7 @@ target_compile_options(utils PRIVATE ${CC_WARN_FLAGS})
 
 SET(DEBUG_MEMORY FALSE CACHE BOOL "Print memory access messages")
 SET(CPOCL_MEMORY_DEBUG FALSE CACHE BOOL "Enable memory debug and stats")
+SET(CPOCL_MEMORY_WARN FALSE CACHE BOOL "Issues warnings")
 SET(CPOCL_SHORT_NAMES FALSE CACHE BOOL "Enable short names")
 
 if (DEBUG_MEMORY)
@@ -38,6 +39,9 @@ if (CPOCL_SHORT_NAMES)
 endif ()
 if (CPOCL_MEMORY_DEBUG)
     add_compile_definitions(utils CPOCL_MEMORY_DEBUG)
+endif ()
+if (CPOCL_MEMORY_WARN)
+    add_compile_definitions(utils CPOCL_MEMORY_WARN)
 endif ()
 
 add_executable(queue_test queue_test.c queue.c)
