@@ -35,7 +35,7 @@ typedef struct AstNode {
 #pragma region AstNodeIdentifier
 
 typedef struct AstNodeIdentifier {
-    AstNode *metadata;
+    AstNode base;
     char *name;
 } AstNodeIdentifier;
 
@@ -48,7 +48,7 @@ void ast_node_identifier_destroy(AstNodeIdentifier *self);
 #pragma region AstNodeType
 
 typedef struct AstNodeType {
-    AstNode *metadata;
+    AstNode base;
     AstNodeIdentifier *identifier;
     int ptr;
 } AstNodeType;
@@ -64,7 +64,7 @@ void ast_node_type_print(AstNodeType *self);
 #pragma region AstNodeVariable
 
 typedef struct {
-    AstNode *metadata;
+    AstNode base;
     AstNodeType *type;
     AstNodeIdentifier *name;
     bool pub;
@@ -83,7 +83,7 @@ void ast_node_variable_print(AstNodeVariable *self);
 #pragma region AstNodeConst
 
 typedef struct {
-    AstNode *metadata;
+    AstNode base;
     bool pub;
     bool ext;
     AstNodeIdentifier *name;
@@ -101,7 +101,7 @@ void ast_node_const_print(AstNodeConst *self);
 #pragma region AstNodeParameter
 
 typedef struct {
-    AstNode *metadata;
+    AstNode base;
     AstNodeIdentifier *name;
     AstNodeType *type;
 } AstNodeParameter;
@@ -115,7 +115,7 @@ void ast_node_parameter_destroy(AstNodeParameter *self);
 #pragma region AstNodeParameters
 
 typedef struct AstNodeParameters {
-    AstNode *metadata;
+    AstNode base;
     List *parameters;
 } AstNodeParameters;
 
@@ -128,7 +128,7 @@ void ast_node_parameters_destroy(AstNodeParameters *self);
 #pragma region AstNodeStatements
 
 typedef struct {
-    AstNode *metadata;
+    AstNode base;
     List *stmts; // of AstNodeStmt
 } AstNodeStatements;
 
@@ -141,7 +141,7 @@ void ast_node_stmts_destroy(AstNodeStatements *self);
 #pragma region AstNodeFunction
 
 typedef struct {
-    AstNode *metadata; // todo rename
+    AstNode base;
     bool pub;
     bool ext;
     AstNodeType *type;
@@ -163,7 +163,7 @@ typedef struct AstNodeStmt AstNodeStmt;
 #pragma region AstNodeStmtConst
 
 typedef struct {
-    AstNode *metadata;
+    AstNode base;
     AstNodeIdentifier *identifier;
     AstNodeType *type;
     // expression
@@ -176,7 +176,7 @@ AstNodeStmt *ast_node_stmt_const_create(void);
 #pragma region AstNodeStmtVar
 
 typedef struct {
-    AstNode *metadata;
+    AstNode base;
     AstNodeIdentifier *identifier;
     AstNodeType *type;
     // expression
@@ -189,7 +189,7 @@ AstNodeStmt *ast_node_stmt_var_create(void);
 #pragma region AstNodeStmtAssignment
 
 typedef struct {
-    AstNode *metadata;
+    AstNode base;
     AstNodeIdentifier *identifier;
     // expression
 } AstNodeStmtAssignment;
@@ -201,7 +201,7 @@ AstNodeStmt *ast_node_stmt_assignment_create(void);
 #pragma region AstNodeStmtIf
 
 typedef struct {
-    AstNode *metadata;
+    AstNode base;
     // condition
     AstNodeStatements *true_block;
     AstNodeStatements *false_block;
@@ -214,7 +214,7 @@ AstNodeStmt *ast_node_stmt_if_create(void);
 #pragma region AstNodeStmtWhile
 
 typedef struct {
-    AstNode *metadata;
+    AstNode base;
     // condition
     AstNodeStatements *block;
 } AstNodeStmtWhile;
@@ -235,12 +235,11 @@ typedef enum {
 
 typedef struct AstNodeStmt {
     union {
-        AstNode **metadata; // self is a shortcut for *Stmt->metadata
-        AstNodeStmtConst *constStmt;
-        AstNodeStmtVar *varStmt;
-        AstNodeStmtAssignment *assignmentStmt;
-        AstNodeStmtIf *ifStmt;
-        AstNodeStmtWhile *whileStmt;
+        AstNodeStmtConst *const_stmt;
+        AstNodeStmtVar *var_stmt;
+        AstNodeStmtAssignment *assignment_stmt;
+        AstNodeStmtIf *if_stmt;
+        AstNodeStmtWhile *while_stmt;
     };
     EStmtKind kind;
 } AstNodeStmt;
@@ -254,7 +253,7 @@ void ast_node_stmt_print(AstNodeStmt *self, int indent);
 #pragma region AstRoot
 
 typedef struct {
-    AstNode *metadata;
+    AstNode base;
     List *variables; // of AstNodeVariable
     List *constants; // of AstNodeConst
     List *functions; // of AstNodeFunction

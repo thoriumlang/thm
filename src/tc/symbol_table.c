@@ -133,7 +133,7 @@ void symbol_table_dump(SymbolTable *self) {
 
     for (size_t i = 0; i < list_size(values); i++) {
         Symbol *symbol = (Symbol *) list_get(values, i);
-        AstNode *node = *(AstNode **) symbol->ast_node;
+        AstNode *node = (AstNode *) symbol->ast_node;
         switch (symbol->kind) {
             case SYM_VAR:
                 printf("VAR %s declared at %d:%d\n", symbol->name, node->start_line, node->start_column);

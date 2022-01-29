@@ -30,8 +30,8 @@ typedef struct Analyser {
 
 #pragma region private
 
-static void print_error(Analyser *self, char *error, AstNode *metadata) {
-    fprintf(stderr, "Error at %d:%d: %s\n", metadata->start_line, metadata->start_column, error);
+static void print_error(Analyser *self, char *error, AstNode *base) {
+    fprintf(stderr, "Error at %d:%d: %s\n", base->start_line, base->start_column, error);
     self->error_found = true;
 }
 
@@ -41,9 +41,9 @@ static void insert_variable_in_symbols_table(AstNodeVariable *node, Analyser *se
         char buffer[1024];
         sprintf(buffer, "'%s' already defined at %d:%d.",
                 node->name->name,
-                (*(AstNode **) symbol->ast_node)->start_line,
-                (*(AstNode **) symbol->ast_node)->start_column);
-        print_error(self, buffer, node->metadata);
+                ((AstNode *) symbol->ast_node)->start_line,
+                ((AstNode *) symbol->ast_node)->start_column);
+        print_error(self, buffer, &node->base);
         return;
     }
 
@@ -57,9 +57,9 @@ static void insert_const_in_symbols_table(AstNodeConst *node, Analyser *self) {
         char buffer[1024];
         sprintf(buffer, "'%s' already defined at %d:%d.",
                 node->name->name,
-                (*(AstNode **) symbol->ast_node)->start_line,
-                (*(AstNode **) symbol->ast_node)->start_column);
-        print_error(self, buffer, node->metadata);
+                ((AstNode *) symbol->ast_node)->start_line,
+                ((AstNode *) symbol->ast_node)->start_column);
+        print_error(self, buffer, &node->base);
         return;
     }
 
@@ -129,9 +129,9 @@ static void insert_function_in_symbols_table(AstNodeFunction *node, Analyser *se
         char buffer[1024];
         sprintf(buffer, "'%s' already defined at %d:%d.",
                 node->name->name,
-                (*(AstNode **) symbol->ast_node)->start_line,
-                (*(AstNode **) symbol->ast_node)->start_column);
-        print_error(self, buffer, node->metadata);
+                ((AstNode *) symbol->ast_node)->start_line,
+                ((AstNode *) symbol->ast_node)->start_column);
+        print_error(self, buffer, &node->base);
         memory_free(name);
         return;
     }
@@ -164,27 +164,27 @@ bool analyzer_analyse(Analyser *self, AstRoot *root) {
 
     for (size_t i = 0; i < list_size(root->functions); i++) {
         AstNodeFunction *f = (AstNodeFunction *) list_get(root->functions, i);
-        f->metadata->symbols = symbol_table_create_child_for(self->symbols, f->metadata);
+        f->base.symbols = symbol_table_create_child_for(self->symbols, &f->base);
 
         for (size_t s = 0; s < list_size(f->statements->stmts); s++) {
             AstNodeStmt *stmt = (AstNodeStmt *) list_get(f->statements->stmts, s);
             switch (stmt->kind) {
                 case CONST:
                     symbol_table_add(
-                            f->metadata->symbols,
-                            symbol_create(stmt->constStmt->identifier->name, SYM_CONST, stmt)
+                            f->base.symbols,
+                            symbol_create(stmt->const_stmt->identifier->name, SYM_CONST, stmt)
                     );
                     break;
                 case VAR:
                     symbol_table_add(
-                            f->metadata->symbols,
-                            symbol_create(stmt->varStmt->identifier->name, SYM_VAR, stmt)
+                            f->base.symbols,
+                            symbol_create(stmt->var_stmt->identifier->name, SYM_VAR, stmt)
                     );
                     break;
                 case ASSIGNMENT:
-                    if (!symbol_table_symbol_exists(f->metadata->symbols, stmt->assignmentStmt->identifier->name)) {
-                        sprintf(buffer, "identifier '%s' not defined", stmt->assignmentStmt->identifier->name);
-                        print_error(self, buffer, stmt->metadata);
+                    if (!symbol_table_symbol_exists(f->base.symbols, stmt->assignment_stmt->identifier->name)) {
+                        sprintf(buffer, "identifier '%s' not defined", stmt->assignment_stmt->identifier->name);
+                        print_error(self, buffer, (AstNode *) stmt);
                     }
                     break;
                 case IF:

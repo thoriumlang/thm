@@ -25,22 +25,20 @@
 
 AstNodeIdentifier *ast_node_identifier_create(Token token) {
     AstNodeIdentifier *node = memory_alloc(sizeof(AstNodeIdentifier));
-    node->metadata = memory_alloc(sizeof(AstNode));
 
     node->name = memory_alloc(token.length * sizeof(char) + 1);
     memcpy(node->name, token.start, token.length);
     node->name[token.length] = 0;
 
-    node->metadata->start_line = token.line;
-    node->metadata->start_column = token.column;
+    node->base.start_line = token.line;
+    node->base.start_column = token.column;
     return node;
 }
 
 void ast_node_identifier_destroy(AstNodeIdentifier *self) {
-    if (self->name) {
+    if (self->name != NULL) {
         memory_free(self->name);
     }
-    memory_free(self->metadata);
     memory_free(self);
 }
 
@@ -54,21 +52,19 @@ AstNodeType *ast_node_type_create(int ptr, AstNodeIdentifier *identifier, int li
     }
 
     AstNodeType *node = memory_alloc(sizeof(AstNodeType));
-    node->metadata = memory_alloc(sizeof(AstNode));
 
     node->ptr = ptr;
     node->identifier = identifier;
-    node->metadata->start_line = line;
-    node->metadata->start_column = column;
+    node->base.start_line = line;
+    node->base.start_column = column;
 
     return node;
 }
 
 void ast_node_type_destroy(AstNodeType *self) {
-    if (self->identifier) {
+    if (self->identifier != NULL) {
         ast_node_identifier_destroy(self->identifier);
     }
-    memory_free(self->metadata);
     memory_free(self);
 }
 
@@ -85,7 +81,6 @@ void ast_node_type_print(AstNodeType *self) {
 
 AstNodeVariable *ast_node_variable_create(void) {
     AstNodeVariable *node = memory_alloc(sizeof(AstNodeVariable));
-    node->metadata = memory_alloc(sizeof(AstNode));
     node->pub = false;
     node->ext = false;
     node->vol = false;
@@ -99,7 +94,6 @@ void ast_node_variable_destroy(AstNodeVariable *self) {
     if (self->type != NULL) {
         ast_node_type_destroy(self->type);
     }
-    memory_free(self->metadata);
     memory_free(self);
 }
 
@@ -119,7 +113,6 @@ void ast_node_variable_print(AstNodeVariable *self) {
 
 AstNodeConst *ast_node_const_create(void) {
     AstNodeConst *node = memory_alloc(sizeof(AstNodeConst));
-    node->metadata = memory_alloc(sizeof(AstNode));
     node->ext = false;
     node->pub = false;
     return node;
@@ -132,7 +125,6 @@ void ast_node_const_destroy(AstNodeConst *self) {
     if (self->type != NULL) {
         ast_node_type_destroy(self->type);
     }
-    memory_free(self->metadata);
     memory_free(self);
 }
 
@@ -152,12 +144,11 @@ void ast_node_const_print(AstNodeConst *self) {
 AstNodeParameter *ast_node_parameter_create(AstNodeIdentifier *identifier, AstNodeType *type, int line, int column) {
     if (identifier && type) {
         AstNodeParameter *node = memory_alloc(sizeof(AstNodeParameter));
-        node->metadata = memory_alloc(sizeof(AstNode));
 
         node->name = identifier;
         node->type = type;
-        node->metadata->start_line = line;
-        node->metadata->start_column = column;
+        node->base.start_line = line;
+        node->base.start_column = column;
         return node;
     }
     if (identifier) {
@@ -176,7 +167,6 @@ void ast_node_parameter_destroy(AstNodeParameter *self) {
     if (self->type != NULL) {
         ast_node_type_destroy(self->type);
     }
-    memory_free(self->metadata);
     memory_free(self);
 }
 
@@ -186,7 +176,6 @@ void ast_node_parameter_destroy(AstNodeParameter *self) {
 
 AstNodeParameters *ast_node_parameters_create(void) {
     AstNodeParameters *node = memory_alloc(sizeof(AstNodeParameters));
-    node->metadata = memory_alloc(sizeof(AstNode));
     node->parameters = list_create();
     return node;
 }
@@ -196,7 +185,6 @@ void ast_node_parameters_destroy(AstNodeParameters *self) {
         list_foreach(self->parameters, FN_CONSUMER(ast_node_parameter_destroy));
         list_destroy(self->parameters);
     }
-    memory_free(self->metadata);
     memory_free(self);
 }
 
@@ -206,14 +194,12 @@ void ast_node_parameters_destroy(AstNodeParameters *self) {
 
 AstNodeStatements *ast_node_stmts_create(void) {
     AstNodeStatements *node = memory_alloc(sizeof(AstNodeStatements));
-    node->metadata = memory_alloc(sizeof(AstNode));
     node->stmts = list_create();
     return node;
 }
 
 void ast_node_stmts_destroy(AstNodeStatements *self) {
     list_destroy(self->stmts);
-    memory_free(self->metadata);
     memory_free(self);
 }
 
@@ -223,7 +209,6 @@ void ast_node_stmts_destroy(AstNodeStatements *self) {
 
 AstNodeFunction *ast_node_function_create(void) {
     AstNodeFunction *node = memory_alloc(sizeof(AstNodeFunction));
-    node->metadata = memory_alloc(sizeof(AstNode));
     node->pub = false;
     node->ext = false;
     return node;
@@ -242,7 +227,6 @@ void ast_node_function_destroy(AstNodeFunction *self) {
     if (self->statements != NULL) {
         ast_node_stmts_destroy(self->statements);
     }
-    memory_free(self->metadata);
     memory_free(self);
 }
 
@@ -287,8 +271,7 @@ static AstNodeStmt *ast_node_stmt_create(EStmtKind kind) {
 
 AstNodeStmt *ast_node_stmt_const_create(void) {
     AstNodeStmt *node = ast_node_stmt_create(CONST);
-    node->constStmt = memory_alloc(sizeof(AstNodeStmtConst));
-    node->constStmt->metadata = memory_alloc(sizeof(AstNode));
+    node->const_stmt = memory_alloc(sizeof(AstNodeStmtConst));
     return node;
 }
 
@@ -299,7 +282,6 @@ static void ast_node_stmt_const_destroy(AstNodeStmtConst *self) {
     if (self->type != NULL) {
         ast_node_type_destroy(self->type);
     }
-    memory_free(self->metadata);
     memory_free(self);
 }
 
@@ -317,8 +299,7 @@ static void ast_node_stmt_const_print(AstNodeStmtConst *self, int ident) {
 
 AstNodeStmt *ast_node_stmt_var_create(void) {
     AstNodeStmt *node = ast_node_stmt_create(VAR);
-    node->varStmt = memory_alloc(sizeof(AstNodeStmtVar));
-    node->varStmt->metadata = memory_alloc(sizeof(AstNode));
+    node->var_stmt = memory_alloc(sizeof(AstNodeStmtVar));
     return node;
 }
 
@@ -329,7 +310,6 @@ static void ast_node_stmt_var_destroy(AstNodeStmtVar *self) {
     if (self->type != NULL) {
         ast_node_type_destroy(self->type);
     }
-    memory_free(self->metadata);
     memory_free(self);
 }
 
@@ -347,8 +327,7 @@ static void ast_node_stmt_var_print(AstNodeStmtVar *self, int ident) {
 
 AstNodeStmt *ast_node_stmt_assignment_create(void) {
     AstNodeStmt *node = ast_node_stmt_create(ASSIGNMENT);
-    node->assignmentStmt = memory_alloc(sizeof(AstNodeStmtAssignment));
-    node->assignmentStmt->metadata = memory_alloc(sizeof(AstNode));
+    node->assignment_stmt = memory_alloc(sizeof(AstNodeStmtAssignment));
     return node;
 }
 
@@ -356,7 +335,6 @@ static void ast_node_stmt_assignment_destroy(AstNodeStmtAssignment *self) {
     if (self->identifier != NULL) {
         ast_node_identifier_destroy(self->identifier);
     }
-    memory_free(self->metadata);
     memory_free(self);
 }
 
@@ -372,17 +350,15 @@ static void ast_node_stmt_assignment_print(AstNodeStmtAssignment *self, int iden
 
 AstNodeStmt *ast_node_stmt_if_create(void) {
     AstNodeStmt *node = ast_node_stmt_create(IF);
-    node->ifStmt = memory_alloc(sizeof(AstNodeStmtIf));
-    node->ifStmt->metadata = memory_alloc(sizeof(AstNode));
-    node->ifStmt->true_block = ast_node_stmts_create();
-    node->ifStmt->false_block = ast_node_stmts_create();
+    node->if_stmt = memory_alloc(sizeof(AstNodeStmtIf));
+    node->if_stmt->true_block = ast_node_stmts_create();
+    node->if_stmt->false_block = ast_node_stmts_create();
     return node;
 }
 
 static void ast_node_stmt_if_destroy(AstNodeStmtIf *self) {
     ast_node_stmts_destroy(self->true_block);
     ast_node_stmts_destroy(self->false_block);
-    memory_free(self->metadata);
     memory_free(self);
 }
 
@@ -410,15 +386,13 @@ static void ast_node_stmt_if_print(AstNodeStmtIf *self, int ident) {
 
 AstNodeStmt *ast_node_stmt_while_create(void) {
     AstNodeStmt *node = ast_node_stmt_create(WHILE);
-    node->whileStmt = memory_alloc(sizeof(AstNodeStmtWhile));
-    node->whileStmt->metadata = memory_alloc(sizeof(AstNode));
-    node->whileStmt->block = ast_node_stmts_create();
+    node->while_stmt = memory_alloc(sizeof(AstNodeStmtWhile));
+    node->while_stmt->block = ast_node_stmts_create();
     return node;
 }
 
 static void ast_node_while_stmt_destroy(AstNodeStmtWhile *self) {
     ast_node_stmts_destroy(self->block);
-    memory_free(self->metadata);
     memory_free(self);
 }
 
@@ -439,19 +413,19 @@ static void ast_node_stmt_while_print(AstNodeStmtWhile *self, int ident) {
 void ast_node_stmt_destroy(AstNodeStmt *self) {
     switch (self->kind) {
         case CONST:
-            ast_node_stmt_const_destroy(self->constStmt);
+            ast_node_stmt_const_destroy(self->const_stmt);
             break;
         case VAR:
-            ast_node_stmt_var_destroy(self->varStmt);
+            ast_node_stmt_var_destroy(self->var_stmt);
             break;
         case ASSIGNMENT:
-            ast_node_stmt_assignment_destroy(self->assignmentStmt);
+            ast_node_stmt_assignment_destroy(self->assignment_stmt);
             break;
         case IF:
-            ast_node_stmt_if_destroy(self->ifStmt);
+            ast_node_stmt_if_destroy(self->if_stmt);
             break;
         case WHILE:
-            ast_node_while_stmt_destroy(self->whileStmt);
+            ast_node_while_stmt_destroy(self->while_stmt);
             break;
         default:
             printf("<unknown statement>;\n"); // todo die
@@ -462,19 +436,19 @@ void ast_node_stmt_destroy(AstNodeStmt *self) {
 void ast_node_stmt_print(AstNodeStmt *self, int ident) {
     switch (self->kind) {
         case CONST:
-            ast_node_stmt_const_print(self->constStmt, ident);
+            ast_node_stmt_const_print(self->const_stmt, ident);
             break;
         case VAR:
-            ast_node_stmt_var_print(self->varStmt, ident);
+            ast_node_stmt_var_print(self->var_stmt, ident);
             break;
         case ASSIGNMENT:
-            ast_node_stmt_assignment_print(self->assignmentStmt, ident);
+            ast_node_stmt_assignment_print(self->assignment_stmt, ident);
             break;
         case IF:
-            ast_node_stmt_if_print(self->ifStmt, ident);
+            ast_node_stmt_if_print(self->if_stmt, ident);
             break;
         case WHILE:
-            ast_node_stmt_while_print(self->whileStmt, ident);
+            ast_node_stmt_while_print(self->while_stmt, ident);
             break;
         default:
             printf("<unknown statement>;\n"); // todo die
