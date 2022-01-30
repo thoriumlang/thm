@@ -7,17 +7,37 @@ add_library(utils STATIC
         list.c headers/list.h
         str.c headers/str.h
         map.c headers/map.h
-        queue.c headers/queue.h)
+        queue.c headers/queue.h
+        memory.c headers/memory.h)
 
-SET(VM_DEBUG_MEMORY FALSE CACHE BOOL "Print memory access messages")
+set(CC_WARN_FLAGS -Werror -Wall -Wextra -Wpedantic -Wformat=2 -Wno-unused-parameter
+        -Wshadow -Wwrite-strings -Wstrict-prototypes -Wold-style-definition
+        -Wredundant-decls -Wnested-externs -Wmissing-include-dirs -Wno-unknown-pragmas)
 
-if (VM_DEBUG_MEMORY)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    list(APPEND CC_WARN_FLAGS -Wjump-misses-init -Wlogical-op)
+endif ()
+
+target_compile_options(utils PRIVATE ${CC_WARN_FLAGS})
+
+SET(DEBUG_MEMORY FALSE CACHE BOOL "Print memory access messages")
+SET(CPOCL_MEMORY_DEBUG FALSE CACHE BOOL "Enable memory debug and stats")
+SET(CPOCL_SHORT_NAMES FALSE CACHE BOOL "Enable short names")
+
+if (DEBUG_MEMORY)
     if (APPLE)
         # use with `export MallocNanoZone=0`
         target_compile_options(tc PRIVATE -fsanitize=address)
         target_link_options(tc PRIVATE -fsanitize=address)
-    endif()
-endif()
+    endif ()
+endif ()
+
+if (CPOCL_SHORT_NAMES)
+    add_compile_definitions(utils CPOCL_SHORT_NAMES)
+endif ()
+if (CPOCL_MEMORY_DEBUG)
+    add_compile_definitions(utils CPOCL_MEMORY_DEBUG)
+endif ()
 
 add_executable(queue_test queue_test.c queue.c)
 target_compile_features(queue_test PRIVATE c_std_99)

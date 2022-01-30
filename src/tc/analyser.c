@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-#include <malloc.h>
 #include <string.h>
+#include <stdio.h>
 #include "functions.h"
 #include "analyser.h"
 #include "symbol_table.h"
 #include "symbol.h"
 #include "str.h"
+#include "memory.h"
 
 typedef struct Analyser {
     SymbolTable *symbols;
@@ -29,41 +30,41 @@ typedef struct Analyser {
 
 #pragma region private
 
-static void print_error(Analyser *this, char *error, AstNode *metadata) {
+static void print_error(Analyser *self, char *error, AstNode *metadata) {
     fprintf(stderr, "Error at %d:%d: %s\n", metadata->start_line, metadata->start_column, error);
-    this->error_found = true;
+    self->error_found = true;
 }
 
-static void insert_variable_in_symbols_table(AstNodeVariable *node, Analyser *this) {
-    if (symbol_table_symbol_exists_in_current_scope(this->symbols, node->name->name)) {
-        Symbol *symbol = symbol_table_get(this->symbols, node->name->name);
+static void insert_variable_in_symbols_table(AstNodeVariable *node, Analyser *self) {
+    if (symbol_table_symbol_exists_in_current_scope(self->symbols, node->name->name)) {
+        Symbol *symbol = symbol_table_get(self->symbols, node->name->name);
         char buffer[1024];
         sprintf(buffer, "'%s' already defined at %d:%d.",
                 node->name->name,
                 (*(AstNode **) symbol->ast_node)->start_line,
                 (*(AstNode **) symbol->ast_node)->start_column);
-        print_error(this, buffer, node->metadata);
+        print_error(self, buffer, node->metadata);
         return;
     }
 
     Symbol *symbol = symbol_create(node->name->name, SYM_VAR, node);
-    symbol_table_add(this->symbols, symbol);
+    symbol_table_add(self->symbols, symbol);
 }
 
-static void insert_const_in_symbols_table(AstNodeConst *node, Analyser *this) {
-    if (symbol_table_symbol_exists_in_current_scope(this->symbols, node->name->name)) {
-        Symbol *symbol = symbol_table_get(this->symbols, node->name->name);
+static void insert_const_in_symbols_table(AstNodeConst *node, Analyser *self) {
+    if (symbol_table_symbol_exists_in_current_scope(self->symbols, node->name->name)) {
+        Symbol *symbol = symbol_table_get(self->symbols, node->name->name);
         char buffer[1024];
         sprintf(buffer, "'%s' already defined at %d:%d.",
                 node->name->name,
                 (*(AstNode **) symbol->ast_node)->start_line,
                 (*(AstNode **) symbol->ast_node)->start_column);
-        print_error(this, buffer, node->metadata);
+        print_error(self, buffer, node->metadata);
         return;
     }
 
     Symbol *symbol = symbol_create(node->name->name, SYM_CONST, node);
-    symbol_table_add(this->symbols, symbol);
+    symbol_table_add(self->symbols, symbol);
 }
 
 static char *mangle_function_name(AstNodeFunction *node) {
@@ -86,7 +87,7 @@ static char *mangle_function_name(AstNodeFunction *node) {
         }
     }
 
-    char *buffer = malloc(buffer_size);
+    char *buffer = memory_alloc(buffer_size);
     char *pos = buffer;
 
     memcpy(pos, "fn_", 4);
@@ -121,49 +122,49 @@ static char *mangle_function_name(AstNodeFunction *node) {
     return buffer;
 }
 
-static void insert_function_in_symbols_table(AstNodeFunction *node, Analyser *this) {
+static void insert_function_in_symbols_table(AstNodeFunction *node, Analyser *self) {
     char *name = mangle_function_name(node);
-    if (symbol_table_symbol_exists_in_current_scope(this->symbols, name)) {
-        Symbol *symbol = symbol_table_get(this->symbols, name);
+    if (symbol_table_symbol_exists_in_current_scope(self->symbols, name)) {
+        Symbol *symbol = symbol_table_get(self->symbols, name);
         char buffer[1024];
         sprintf(buffer, "'%s' already defined at %d:%d.",
                 node->name->name,
                 (*(AstNode **) symbol->ast_node)->start_line,
                 (*(AstNode **) symbol->ast_node)->start_column);
-        print_error(this, buffer, node->metadata);
-        free(name);
+        print_error(self, buffer, node->metadata);
+        memory_free(name);
         return;
     }
 
     Symbol *symbol = symbol_create(name, SYM_FN, node);
-    symbol_table_add(this->symbols, symbol);
+    symbol_table_add(self->symbols, symbol);
 }
 
 #pragma endregion
 
 #pragma region public
 
-Analyser *analyzer_create() {
-    Analyser *analyser = malloc(sizeof(Analyser));
+Analyser *analyzer_create(void) {
+    Analyser *analyser = memory_alloc(sizeof(Analyser));
     analyser->symbols = symbol_table_create();
     return analyser;
 }
 
-void analyzer_destroy(Analyser *this) {
-    symbol_table_destroy(this->symbols);
-    free(this);
+void analyzer_destroy(Analyser *self) {
+    symbol_table_destroy(self->symbols);
+    memory_free(self);
 }
 
-bool analyzer_analyse(Analyser *this, AstRoot *root) {
-    list_foreach(root->variables, fn_consumer_closure(insert_variable_in_symbols_table, this));
-    list_foreach(root->constants, fn_consumer_closure(insert_const_in_symbols_table, this));
-    list_foreach(root->functions, fn_consumer_closure(insert_function_in_symbols_table, this));
+bool analyzer_analyse(Analyser *self, AstRoot *root) {
+    list_foreach(root->variables, FN_CONSUMER_CLOSURE(insert_variable_in_symbols_table, self));
+    list_foreach(root->constants, FN_CONSUMER_CLOSURE(insert_const_in_symbols_table, self));
+    list_foreach(root->functions, FN_CONSUMER_CLOSURE(insert_function_in_symbols_table, self));
 
     char buffer[1204];
 
     for (size_t i = 0; i < list_size(root->functions); i++) {
         AstNodeFunction *f = (AstNodeFunction *) list_get(root->functions, i);
-        f->metadata->symbols = symbol_table_create_child_for(this->symbols, f->metadata);
+        f->metadata->symbols = symbol_table_create_child_for(self->symbols, f->metadata);
 
         for (size_t s = 0; s < list_size(f->statements->stmts); s++) {
             AstNodeStmt *stmt = (AstNodeStmt *) list_get(f->statements->stmts, s);
@@ -183,23 +184,26 @@ bool analyzer_analyse(Analyser *this, AstRoot *root) {
                 case ASSIGNMENT:
                     if (!symbol_table_symbol_exists(f->metadata->symbols, stmt->assignmentStmt->identifier->name)) {
                         sprintf(buffer, "identifier '%s' not defined", stmt->assignmentStmt->identifier->name);
-                        print_error(this, buffer, stmt->metadata);
+                        print_error(self, buffer, stmt->metadata);
                     }
                     break;
                 case IF:
                     break;
                 case WHILE:
                     break;
+                default:
+                    break;
+                    // todo die
             }
         }
 
     }
 
-    return this->error_found;
+    return self->error_found;
 }
 
-void analyser_dump_symbol_table(Analyser *this) {
-    symbol_table_dump(this->symbols);
+void analyser_dump_symbol_table(Analyser *self) {
+    symbol_table_dump(self->symbols);
 }
 
 #pragma endregion

@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-#include <malloc.h>
+#include <stdio.h>
 #include "symbol_table.h"
 #include "map.h"
 #include "ast.h"
+#include "memory.h"
 
 typedef struct SymbolTable {
     SymbolTable *parent;
@@ -31,11 +32,11 @@ typedef struct SymbolTable {
 static void free_symbol(Pair *e) {
     switch (((Symbol *) e->value)->kind) {
         case SYM_FN:
-            free(e->value);
-            free(e->key);
+            memory_free(e->value);
+            memory_free(e->key);
             break;
         default:
-            free(e->value);
+            memory_free(e->value);
             // key is allocated in the scope of the AST and hence freed in the scope of the AST
             break;
     }
@@ -45,68 +46,84 @@ static void free_child_table(SymbolTable *t) {
     symbol_table_destroy(t);
 }
 
+#ifdef CPOCL_MEMORY_DEBUG
+#undef cpocl_memory_alloc
+#undef cpocl_memory_free
+
+static void *cpocl_memory_alloc(size_t size) {
+    return cpocl_memory_alloc_debug(size, "SymbolTable.Map", 0);
+}
+
+static void cpocl_memory_free(void *ptr) {
+    cpocl_memory_free_debug(ptr, "SymbolTable.Map", 0);
+}
+
+#endif
+
 #pragma endregion
 
 #pragma region public
 
-SymbolTable *symbol_table_create() {
-    SymbolTable *table = malloc(sizeof(SymbolTable));
+SymbolTable *symbol_table_create(void) {
+    SymbolTable *table = memory_alloc(sizeof(SymbolTable));
     table->parent = NULL;
-    table->symbols = map_create(map_hash_fn_str, map_eq_fn_str);
+    table->symbols = map_create(map_hash_fn_str, map_eq_fn_str,
+                                .malloc = cpocl_memory_alloc,
+                                .free = cpocl_memory_free);
     table->children = list_create();
     return table;
 }
 
-SymbolTable *symbol_table_create_child_for(SymbolTable *this, /*actually a (AstNode*) */void *node) {
+SymbolTable *symbol_table_create_child_for(SymbolTable *self, /*actually a (AstNode*) */void *node) {
     SymbolTable *table = symbol_table_create();
 
     table->owning_node = node;
-    table->parent = this;
-    list_add(this->children, table);
+    table->parent = self;
+    list_add(self->children, table);
 
     return table;
 }
 
-void symbol_table_destroy(SymbolTable *this) {
-    List *entries = map_get_entries(this->symbols);
-    list_foreach(entries, fn_consumer(free_symbol));
+void symbol_table_destroy(SymbolTable *self) {
+    List *entries = map_get_entries(self->symbols);
+    list_foreach(entries, FN_CONSUMER(free_symbol));
     list_destroy(entries);
-    map_destroy(this->symbols);
+    map_destroy(self->symbols);
 
-    list_foreach(this->children, fn_consumer(free_child_table));
-    list_destroy(this->children);
+    list_foreach(self->children, FN_CONSUMER(free_child_table));
+    list_destroy(self->children);
 
-    if (this->owning_node) {
-        this->owning_node->symbols = NULL;
+    if (self->owning_node) {
+        self->owning_node->symbols = NULL;
     }
 
-    free(this);
+    memory_free(self);
 }
 
-void symbol_table_add(SymbolTable *this, Symbol *symbol) {
-    map_put(this->symbols, symbol->name, symbol);
+void symbol_table_add(SymbolTable *self, Symbol *symbol) {
+    map_put(self->symbols, symbol->name, symbol);
 }
 
-bool symbol_table_symbol_exists_in_current_scope(SymbolTable *this, char *name) {
-    return map_is_present(this->symbols, name);
+bool symbol_table_symbol_exists_in_current_scope(SymbolTable *self, char *name) {
+    return map_is_present(self->symbols, name);
 }
 
-bool symbol_table_symbol_exists(SymbolTable *this, char *name) {
-    if (map_is_present(this->symbols, name)) {
+bool symbol_table_symbol_exists(SymbolTable *self, char *name) {
+    if (map_is_present(self->symbols, name)) {
         return true;
     }
-    if (this->parent) {
-        return symbol_table_symbol_exists(this->parent, name);
+    if (self->parent) {
+        return symbol_table_symbol_exists(self->parent, name);
     }
     return false;
 }
 
-Symbol *symbol_table_get(SymbolTable *this, char *name) {
-    return map_get(this->symbols, name);
+Symbol *symbol_table_get(SymbolTable *self, char *name) {
+    return map_get(self->symbols, name);
 }
 
-void symbol_table_dump(SymbolTable *this) {
-    List *values = map_get_values(this->symbols);
+void symbol_table_dump(SymbolTable *self) {
+    List *values = map_get_values(self->symbols);
 
     for (size_t i = 0; i < list_size(values); i++) {
         Symbol *symbol = (Symbol *) list_get(values, i);
@@ -121,8 +138,10 @@ void symbol_table_dump(SymbolTable *this) {
             case SYM_CONST:
                 printf("CONST %s declared at %d:%d\n", symbol->name, node->start_line, node->start_column);
                 break;
+            default:
+                // todo die
+                break;
         }
-
     }
 
     list_destroy(values);

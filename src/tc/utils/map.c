@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <malloc.h>
 #include <string.h>
 #include "headers/map.h"
 
@@ -28,15 +27,17 @@ typedef struct MapEntry {
 } MapEntry;
 
 typedef struct Map {
-    hash_fn_t hash_fn;
-    eq_fn_t eq_fn;
+    CpoclMapOptions opts;
+    hash_fn hash;
+    eq_fn eq;
     MapEntry *buckets[MAP_BUCKETS_COUNT];
 } Map;
 
-Map *map_create(hash_fn_t hash_fn, eq_fn_t eq_fn) {
-    Map *map = malloc(sizeof(Map));
-    map->hash_fn = hash_fn;
-    map->eq_fn = eq_fn;
+Map *map_create_(hash_fn hash, eq_fn eq, CpoclMapOptions options) {
+    Map *map = options.malloc(sizeof(Map));
+    map->opts = options;
+    map->hash = hash;
+    map->eq = eq;
     for (size_t i = 0; i < MAP_BUCKETS_COUNT; i++) {
         map->buckets[i] = NULL;
     }
@@ -44,22 +45,22 @@ Map *map_create(hash_fn_t hash_fn, eq_fn_t eq_fn) {
     return map;
 }
 
-void map_destroy(Map *this) {
+void map_destroy(Map *self) {
     for (size_t i = 0; i < MAP_BUCKETS_COUNT; i++) {
-        MapEntry *entry = this->buckets[i];
+        MapEntry *entry = self->buckets[i];
         while (entry) {
             MapEntry *current = entry;
             entry = entry->next;
-            free(current);
+            self->opts.free(current);
         }
     }
-    free(this);
+    self->opts.free(self);
 }
 
-size_t map_size(Map *this) {
+size_t map_size(Map *self) {
     size_t size = 0;
     for (size_t i = 0; i < MAP_BUCKETS_COUNT; i++) {
-        MapEntry *e = this->buckets[i];
+        MapEntry *e = self->buckets[i];
         while (e) {
             size++;
             e = e->next;
@@ -68,16 +69,16 @@ size_t map_size(Map *this) {
     return size;
 }
 
-bool map_is_empty(Map *this) {
-    return map_size(this) == 0;
+bool map_is_empty(Map *self) {
+    return map_size(self) == 0;
 }
 
-static bool map_key_eq(Map *this, MapEntry *e, void *key, size_t hash) {
-    return e->hash == hash && this->eq_fn(key, e->key);
+static bool map_key_eq(Map *self, MapEntry *e, void *key, size_t hash) {
+    return e->hash == hash && self->eq(key, e->key);
 }
 
-static MapEntry *map_entry_create(void *key, void *value, size_t hash) {
-    MapEntry *entry = malloc(sizeof(MapEntry));
+static MapEntry *map_entry_create(Map *self, void *key, void *value, size_t hash) {
+    MapEntry *entry = self->opts.malloc(sizeof(MapEntry));
     entry->hash = hash;
     entry->next = NULL;
     entry->key = key;
@@ -86,37 +87,37 @@ static MapEntry *map_entry_create(void *key, void *value, size_t hash) {
     return entry;
 }
 
-static void map_entry_destroy(MapEntry *this) {
-    free(this);
+static void map_entry_destroy(Map *self, MapEntry *entry) {
+    self->opts.free(entry);
 }
 
-void *map_put(Map *this, void *key, void *value) {
-    size_t hash = this->hash_fn(key);
+void *map_put(Map *self, void *key, void *value) {
+    size_t hash = self->hash(key);
     size_t bucket_idx = hash % MAP_BUCKETS_COUNT;
 
-    if (this->buckets[bucket_idx]) {
-        MapEntry *e = this->buckets[bucket_idx];
+    if (self->buckets[bucket_idx]) {
+        MapEntry *e = self->buckets[bucket_idx];
         while (true) {
-            if (map_key_eq(this, e, key, hash)) {
+            if (map_key_eq(self, e, key, hash)) {
                 void *old_val = e->value;
                 e->value = value;
                 return old_val;
             } else if (e->next == NULL) {
-                e->next = map_entry_create(key, value, hash);
+                e->next = map_entry_create(self, key, value, hash);
                 return NULL;
             }
             e = e->next;
         }
     } else {
-        this->buckets[bucket_idx] = map_entry_create(key, value, hash);
+        self->buckets[bucket_idx] = map_entry_create(self, key, value, hash);
         return NULL;
     }
 }
 
-void *map_get(Map *this, void *key) {
-    MapEntry *entry = this->buckets[(this->hash_fn(key) % MAP_BUCKETS_COUNT)];
+void *map_get(Map *self, void *key) {
+    MapEntry *entry = self->buckets[(self->hash(key) % MAP_BUCKETS_COUNT)];
     while (entry) {
-        if (entry->hash == this->hash_fn(key) && this->eq_fn(key, entry->key)) {
+        if (entry->hash == self->hash(key) && self->eq(key, entry->key)) {
             return entry->value;
         }
         entry = entry->next;
@@ -124,20 +125,20 @@ void *map_get(Map *this, void *key) {
     return NULL;
 }
 
-void map_remove(Map *this, void *key) {
-    size_t hash = this->hash_fn(key);
+void map_remove(Map *self, void *key) {
+    size_t hash = self->hash(key);
     size_t bucket_idx = hash % MAP_BUCKETS_COUNT;
 
     MapEntry *previous = NULL;
-    MapEntry *entry = this->buckets[bucket_idx];
+    MapEntry *entry = self->buckets[bucket_idx];
     while (entry) {
-        if (entry->hash == this->hash_fn(key) && this->eq_fn(key, entry->key)) {
+        if (entry->hash == self->hash(key) && self->eq(key, entry->key)) {
             if (previous) {
                 previous->next = entry->next;
             } else {
-                this->buckets[bucket_idx] = entry->next;
+                self->buckets[bucket_idx] = entry->next;
             }
-            map_entry_destroy(entry);
+            map_entry_destroy(self, entry);
             return;
         }
         previous = entry;
@@ -145,15 +146,15 @@ void map_remove(Map *this, void *key) {
     }
 }
 
-bool map_is_present(Map *this, void *key) {
-    return map_get(this, key) != NULL;
+bool map_is_present(Map *self, void *key) {
+    return map_get(self, key) != NULL;
 }
 
-List *map_get_keys(Map *this) {
+List *map_get_keys(Map *self) {
     List *keys = list_create();
 
     for (size_t i = 0; i < MAP_BUCKETS_COUNT; i++) {
-        MapEntry *e = this->buckets[i];
+        MapEntry *e = self->buckets[i];
         while (e) {
             list_add(keys, e->key);
             e = e->next;
@@ -163,11 +164,11 @@ List *map_get_keys(Map *this) {
     return keys;
 }
 
-List *map_get_values(Map *this) {
+List *map_get_values(Map *self) {
     List *keys = list_create();
 
     for (size_t i = 0; i < MAP_BUCKETS_COUNT; i++) {
-        MapEntry *e = this->buckets[i];
+        MapEntry *e = self->buckets[i];
         while (e) {
             list_add(keys, e->value);
             e = e->next;
@@ -177,13 +178,13 @@ List *map_get_values(Map *this) {
     return keys;
 }
 
-List *map_get_entries(Map *this) {
+List *map_get_entries(Map *self) {
     List *entries = list_create();
 
     for (size_t i = 0; i < MAP_BUCKETS_COUNT; i++) {
-        MapEntry *e = this->buckets[i];
+        MapEntry *e = self->buckets[i];
         while (e) {
-            Pair *p = malloc(sizeof(Pair));
+            Pair *p = self->opts.malloc(sizeof(Pair));
             p->key = e->key;
             p->value = e->value;
             list_add(entries, p);

@@ -19,28 +19,28 @@
 
 #include <stdbool.h>
 
-typedef void(*fn_biconsumer_t)(void *, void *);
+typedef void(*biconsumer_fn)(void *, void *);
 
-typedef void(*fn_consumer_t)(void *);
+typedef void(*consumer_fn)(void *);
 
 typedef struct {
     union {
-        fn_consumer_t consumer;
-        fn_biconsumer_t biconsumer;
+        consumer_fn consumer;
+        biconsumer_fn biconsumer;
     } fn;
     void *data;
     bool has_data;
-} fn_consumer_closure_t;
+} fn_consumer_closure;
 
-#define fn_consumer_closure(f, d) \
-((fn_consumer_closure_t) { \
-    .fn.biconsumer = (fn_biconsumer_t) (f), \
+#define FN_CONSUMER_CLOSURE(f, d) \
+((fn_consumer_closure) { \
+    .fn.biconsumer = (biconsumer_fn) (f), \
     .data = (d), \
     .has_data = true\
 })
-#define fn_consumer(f) \
-((fn_consumer_closure_t) { \
-    .fn.consumer = (fn_consumer_t) (f), \
+#define FN_CONSUMER(f) \
+((fn_consumer_closure) { \
+    .fn.consumer = (consumer_fn) (f), \
     .data = NULL, \
     .has_data = false \
 })

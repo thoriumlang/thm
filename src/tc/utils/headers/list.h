@@ -17,20 +17,37 @@
 #ifndef THM_LIST_H
 #define THM_LIST_H
 
+#include <malloc.h>
 #include "functions.h"
 
 typedef struct List List;
 
-List *list_create();
+typedef struct CpoclListOptions {
+    void *(*malloc)(size_t);
 
-void list_destroy(List *this);
+    void *(*realloc)(void *, size_t);
 
-void list_add(List *this, void *item);
+    void (*free)(void *);
+} CpoclListOptions;
 
-size_t list_size(List *this);
+#define list_create(...) \
+    list_create_((struct CpoclListOptions) { \
+        .malloc = malloc,       \
+        .realloc = realloc,     \
+        .free = free,           \
+        __VA_ARGS__ \
+    })
 
-void *list_get(List *this, size_t index);
+List *list_create_(CpoclListOptions options);
 
-void list_foreach(List *this, fn_consumer_closure_t consumer_closure);
+void list_destroy(List *self);
+
+void list_add(List *self, void *item);
+
+size_t list_size(List *self);
+
+void *list_get(List *self, size_t index);
+
+void list_foreach(List *self, fn_consumer_closure consumer_closure);
 
 #endif //THM_LIST_H

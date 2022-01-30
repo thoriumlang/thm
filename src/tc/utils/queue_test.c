@@ -130,7 +130,7 @@ static void peek(void **state) {
     assert_int_equal(2, *actual);
 }
 
-int main() {
+int main(void) {
     const struct CMUnitTest tests[] =
             {
                     cmocka_unit_test(enqueue_grows),

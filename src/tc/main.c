@@ -16,21 +16,26 @@
 
 #include <stdio.h>
 #include <stdbool.h>
-#include <stdlib.h>
+#include <string.h>
 #include "lexer.h"
 #include "parser.h"
 #include "ast.h"
 #include "str.h"
 #include "analyser.h"
+#include "memory.h"
 
-void repl();
+void repl(void);
+
+MEMORY_GLOBAL()
 
 int main(int argc, char **argv) {
+    MEMORY_INIT()
     repl();
+    MEMORY_STATS()
     return 0;
 }
 
-void repl() {
+void repl(void) {
     int line = 1;
     char buffer[1024];
     List *asts = list_create();
@@ -45,6 +50,10 @@ void repl() {
             break;
         }
 
+        if (strcmp(buffer, "exit\n") == 0) {
+            break;
+        }
+
         Lexer *lexer = lexer_create(buffer, line++, 1);
         Parser *parser = parser_create(lexer);
         AstRoot *root = parser_parse(parser);
@@ -56,9 +65,9 @@ void repl() {
             continue;
         }
 
-        list_foreach(root->variables, fn_consumer(ast_node_variable_print));
-        list_foreach(root->constants, fn_consumer(ast_node_const_print));
-        list_foreach(root->functions, fn_consumer(ast_node_function_print));
+        list_foreach(root->variables, FN_CONSUMER(ast_node_variable_print));
+        list_foreach(root->constants, FN_CONSUMER(ast_node_const_print));
+        list_foreach(root->functions, FN_CONSUMER(ast_node_function_print));
 
         list_add(asts, root);
         analyzer_analyse(analyser, root);
@@ -67,6 +76,6 @@ void repl() {
     analyser_dump_symbol_table(analyser);
 
     analyzer_destroy(analyser);
-    list_foreach(asts, fn_consumer(ast_root_destroy));
+    list_foreach(asts, FN_CONSUMER(ast_root_destroy));
     list_destroy(asts);
 }

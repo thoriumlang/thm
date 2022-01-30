@@ -21,11 +21,11 @@
 #include <string.h>
 #include "headers/map.h"
 
-List *list_create() {
+List *list_create_(CpoclListOptions options) {
     return NULL;
 }
 
-void list_add(List *this, void *item) {
+void list_add(List *self, void *item) {
     // nothing
 }
 
@@ -117,7 +117,7 @@ static void remove_last(void **state) {
     map_destroy(map);
 }
 
-static void remove(void **state) {
+static void remove_entry(void **state) {
     Map *map = map_create(map_hash_fn_str, map_eq_fn_str);
 
     map_put(map, "key1", "value");
@@ -132,7 +132,7 @@ static void remove(void **state) {
     map_destroy(map);
 }
 
-int main() {
+int main(void) {
     const struct CMUnitTest tests[] =
             {
                     cmocka_unit_test(create),
@@ -143,7 +143,7 @@ int main() {
                     cmocka_unit_test(put_different_key),
                     cmocka_unit_test(get_missing),
                     cmocka_unit_test(remove_last),
-                    cmocka_unit_test(remove),
+                    cmocka_unit_test(remove_entry),
             };
     cmocka_set_message_output(CM_OUTPUT_STDOUT);
     return cmocka_run_group_tests(tests, NULL, NULL);

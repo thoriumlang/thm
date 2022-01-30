@@ -63,6 +63,8 @@ test_tc: target/cmake-build-debug
 	ctest --test-dir target/cmake-build-debug/tc --output-on-failure
 
 #### Maintenance stuff
+config: target/cmake-build-debug
+	ccmake target/cmake-build-debug
 clean_gen:
 	rm -f src/asm/op.rs
 	rm -f src/asm/constants.rs

@@ -63,7 +63,7 @@ static void add_then_size(void **state) {
     list_destroy(list);
 }
 
-int main() {
+int main(void) {
     const struct CMUnitTest tests[] =
             {
                     cmocka_unit_test(add_then_get),

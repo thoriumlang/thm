@@ -21,12 +21,12 @@
 
 typedef struct Analyser Analyser;
 
-Analyser *analyzer_create();
+Analyser *analyzer_create(void);
 
-void analyzer_destroy(Analyser *this);
+void analyzer_destroy(Analyser *self);
 
-bool analyzer_analyse(Analyser *this, AstRoot *root);
+bool analyzer_analyse(Analyser *self, AstRoot *root);
 
-void analyser_dump_symbol_table(Analyser *this);
+void analyser_dump_symbol_table(Analyser *self);
 
 #endif //THM_ANALYSER_H

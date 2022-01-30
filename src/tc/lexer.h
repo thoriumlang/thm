@@ -88,9 +88,9 @@ typedef struct Token {
 
 Lexer *lexer_create(char *source, int line, int column);
 
-void lexer_destroy(Lexer *this);
+void lexer_destroy(Lexer *self);
 
-Token lexer_next(Lexer *this);
+Token lexer_next(Lexer *self);
 
 char *token_type_to_string(ETokenType token_type);
 

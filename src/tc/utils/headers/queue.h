@@ -18,21 +18,36 @@
 #define THM_QUEUE_H
 
 #include <stdbool.h>
+#include <stddef.h>
+#include <malloc.h>
 
 typedef struct Queue Queue;
 
-Queue *queue_create(size_t size);
+typedef struct CpoclQueueOptions {
+    void *(*malloc)(size_t);
 
-void queue_destroy(Queue *this);
+    void (*free)(void *);
+} CpoclQueueOptions;
 
-void queue_enqueue(Queue *this, void *item);
+#define queue_create(size, ...) \
+    queue_create_((size), (struct CpoclQueueOptions) { \
+        .malloc = malloc,       \
+        .free = free,           \
+        __VA_ARGS__ \
+    })
 
-void *queue_dequeue(Queue *this);
+Queue *queue_create_(size_t size, CpoclQueueOptions options);
 
-void *queue_peek(Queue *this, size_t n);
+void queue_destroy(Queue *self);
 
-size_t queue_size(Queue *this);
+void queue_enqueue(Queue *self, void *item);
 
-bool queue_is_empty(Queue *this);
+void *queue_dequeue(Queue *self);
+
+void *queue_peek(Queue *self, size_t n);
+
+size_t queue_size(Queue *self);
+
+bool queue_is_empty(Queue *self);
 
 #endif //THM_QUEUE_H

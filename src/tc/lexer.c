@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 #include "lexer.h"
+#include "memory.h"
 
 typedef struct Lexer {
     char *start;
@@ -26,38 +26,38 @@ typedef struct Lexer {
     int column;
 } Lexer;
 
-static void skip_whitespaces(Lexer *this);
+static void skip_whitespaces(Lexer *self);
 
-static void skip_comment(Lexer *this);
+static void skip_comment(Lexer *self);
 
-static void skip_multiline_comment(Lexer *this);
+static void skip_multiline_comment(Lexer *self);
 
-static bool is_at_end(Lexer *this);
+static bool is_at_end(Lexer *self);
 
 static bool is_digit(char c);
 
 static bool is_alpha(char c);
 
-static char advance(Lexer *this);
+static char advance(Lexer *self);
 
-static bool match(Lexer *this, char expected);
+static bool match(Lexer *self, char expected);
 
-static char peek(Lexer *this, int n);
+static char peek(Lexer *self, int n);
 
-static Token make_token(Lexer *this, ETokenType token_type);
+static Token make_token(Lexer *self, ETokenType token_type);
 
-static Token make_string(Lexer *this, char delim, ETokenType token_type);
+static Token make_string(Lexer *self, char delim, ETokenType token_type);
 
-static Token make_number(Lexer *this);
+static Token make_number(Lexer *self);
 
-static Token make_identifier(Lexer *this);
+static Token make_identifier(Lexer *self);
 
-static Token match_keyword(Lexer *this, int start, int length, const char *rest, ETokenType token_type);
+static Token match_keyword(Lexer *self, int start, int length, const char *rest, ETokenType token_type);
 
-static Token make_error(Lexer *this);
+static Token make_error(Lexer *self);
 
 Lexer *lexer_create(char *source, int line, int column) {
-    Lexer *lexer = malloc(sizeof(Lexer));
+    Lexer *lexer = memory_alloc(sizeof(Lexer));
     lexer->start = source;
     lexer->current = source;
     lexer->line = line;
@@ -65,96 +65,96 @@ Lexer *lexer_create(char *source, int line, int column) {
     return lexer;
 }
 
-void lexer_destroy(Lexer *this) {
-    free(this);
+void lexer_destroy(Lexer *self) {
+    memory_free(self);
 }
 
-Token lexer_next(Lexer *this) {
-    skip_whitespaces(this);
+Token lexer_next(Lexer *self) {
+    skip_whitespaces(self);
 
-    this->start = this->current;
+    self->start = self->current;
 
-    if (is_at_end(this)) {
-        return make_token(this, TOKEN_EOF);
+    if (is_at_end(self)) {
+        return make_token(self, TOKEN_EOF);
     }
-    char c = advance(this);
+    char c = advance(self);
 
     switch (c) {
         case '+':
-            return make_token(this, TOKEN_PLUS);
+            return make_token(self, TOKEN_PLUS);
         case '-':
-            return make_token(this, TOKEN_MINUS);
+            return make_token(self, TOKEN_MINUS);
         case '*':
-            return make_token(this, TOKEN_STAR);
+            return make_token(self, TOKEN_STAR);
         case '/':
-            return make_token(this, TOKEN_SLASH);
+            return make_token(self, TOKEN_SLASH);
         case '[':
-            return make_token(this, TOKEN_LBRACKET);
+            return make_token(self, TOKEN_LBRACKET);
         case ']':
-            return make_token(this, TOKEN_RBRACKET);
+            return make_token(self, TOKEN_RBRACKET);
         case '(':
-            return make_token(this, TOKEN_LPAR);
+            return make_token(self, TOKEN_LPAR);
         case ')':
-            return make_token(this, TOKEN_RPAR);
+            return make_token(self, TOKEN_RPAR);
         case '{':
-            return make_token(this, TOKEN_LBRACE);
+            return make_token(self, TOKEN_LBRACE);
         case '}':
-            return make_token(this, TOKEN_RBRACE);
+            return make_token(self, TOKEN_RBRACE);
         case '&':
-            return make_token(this, match(this, '&') ? TOKEN_AND : TOKEN_AMPERSAND);
+            return make_token(self, match(self, '&') ? TOKEN_AND : TOKEN_AMPERSAND);
         case '|':
-            return make_token(this, match(this, '|') ? TOKEN_OR : TOKEN_PIPE);
+            return make_token(self, match(self, '|') ? TOKEN_OR : TOKEN_PIPE);
         case '^':
-            return make_token(this, TOKEN_CIRC);
+            return make_token(self, TOKEN_CIRC);
         case '!':
-            return make_token(this, match(this, '=') ? TOKEN_NOT_EQUALS : TOKEN_EXCLAM);
+            return make_token(self, match(self, '=') ? TOKEN_NOT_EQUALS : TOKEN_EXCLAM);
         case '=':
-            return make_token(this, match(this, '=') ? TOKEN_EQUALS : TOKEN_EQUAL);
+            return make_token(self, match(self, '=') ? TOKEN_EQUALS : TOKEN_EQUAL);
         case '>':
-            return make_token(this, match(this, '=') ? TOKEN_GT_EQUALS : TOKEN_GT);
+            return make_token(self, match(self, '=') ? TOKEN_GT_EQUALS : TOKEN_GT);
         case '<':
-            return make_token(this, match(this, '=') ? TOKEN_LT_EQUALS : TOKEN_LT);
+            return make_token(self, match(self, '=') ? TOKEN_LT_EQUALS : TOKEN_LT);
         case '@':
-            return make_token(this, TOKEN_AT);
+            return make_token(self, TOKEN_AT);
         case '$':
-            return make_token(this, TOKEN_DOLLAR);
+            return make_token(self, TOKEN_DOLLAR);
         case ':':
-            return make_token(this, match(this, ':') ? TOKEN_CAST : TOKEN_COLON);
+            return make_token(self, match(self, ':') ? TOKEN_CAST : TOKEN_COLON);
         case ';':
-            return make_token(this, TOKEN_SEMICOLON);
+            return make_token(self, TOKEN_SEMICOLON);
         case ',':
-            return make_token(this, TOKEN_COMMA);
+            return make_token(self, TOKEN_COMMA);
         case '"':
-            return make_string(this, '"', TOKEN_ZSTRING);
+            return make_string(self, '"', TOKEN_ZSTRING);
         case '\'':
-            return make_string(this, '\'', TOKEN_STRING);
+            return make_string(self, '\'', TOKEN_STRING);
         default:
             if (is_digit(c)) {
-                return make_number(this);
+                return make_number(self);
             }
             if (is_alpha(c)) {
-                return make_identifier(this);
+                return make_identifier(self);
             }
-            return make_error(this);
+            return make_error(self);
     }
 }
 
-static void skip_whitespaces(Lexer *this) {
+static void skip_whitespaces(Lexer *self) {
     while (true) {
-        char c = peek(this, 0);
+        char c = peek(self, 0);
         switch (c) {
             case '\n':
-                this->line++;
-                this->column = 0;
+                self->line++;
+                self->column = 0;
             case ' ':
             case '\t':
-                advance(this);
+                advance(self);
                 break;
             case '/':
-                if (peek(this, 1) == '/') {
-                    skip_comment(this);
-                } else if (peek(this, 1) == '*') {
-                    skip_multiline_comment(this);
+                if (peek(self, 1) == '/') {
+                    skip_comment(self);
+                } else if (peek(self, 1) == '*') {
+                    skip_multiline_comment(self);
                 } else {
                     return;
                 }
@@ -165,32 +165,32 @@ static void skip_whitespaces(Lexer *this) {
     }
 }
 
-static void skip_comment(Lexer *this) {
-    while (peek(this, 0) != '\n' && !is_at_end(this)) {
-        advance(this);
+static void skip_comment(Lexer *self) {
+    while (peek(self, 0) != '\n' && !is_at_end(self)) {
+        advance(self);
     }
 }
 
-static void skip_multiline_comment(Lexer *this) {
-    while (!is_at_end(this)) {
-        switch (peek(this, 0)) {
+static void skip_multiline_comment(Lexer *self) {
+    while (!is_at_end(self)) {
+        switch (peek(self, 0)) {
             case '*':
-                advance(this);
-                if (peek(this, 0) == '/') {
-                    advance(this);
+                advance(self);
+                if (peek(self, 0) == '/') {
+                    advance(self);
                     return;
                 }
             case '\n':
-                this->line++;
-                this->column = 0;
+                self->line++;
+                self->column = 0;
             default:
-                advance(this);
+                advance(self);
         }
     }
 }
 
-static bool is_at_end(Lexer *this) {
-    return *this->current == '\0';
+static bool is_at_end(Lexer *self) {
+    return *self->current == '\0';
 }
 
 static bool is_digit(char c) {
@@ -201,134 +201,134 @@ static bool is_alpha(char c) {
     return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z';
 }
 
-static char advance(Lexer *this) {
-    this->column++;
-    this->current++;
-    return this->current[-1];
+static char advance(Lexer *self) {
+    self->column++;
+    self->current++;
+    return self->current[-1];
 }
 
-static bool match(Lexer *this, char expected) {
-    if (is_at_end(this)) {
+static bool match(Lexer *self, char expected) {
+    if (is_at_end(self)) {
         return false;
     }
-    if (*this->current != expected) {
+    if (*self->current != expected) {
         return false;
     }
-    advance(this);
+    advance(self);
     return true;
 }
 
-static char peek(Lexer *this, int n) {
-    return this->current[n];
+static char peek(Lexer *self, int n) {
+    return self->current[n];
 }
 
-static Token make_token(Lexer *this, ETokenType token_type) {
+static Token make_token(Lexer *self, ETokenType token_type) {
     Token result;
     result.type = token_type;
-    result.start = this->start;
-    result.line = this->line;
-    result.length = (int) (this->current - this->start);
-    result.column = this->column - result.length;
+    result.start = self->start;
+    result.line = self->line;
+    result.length = (int) (self->current - self->start);
+    result.column = self->column - result.length;
     return result;
 }
 
-static Token make_string(Lexer *this, char delim, ETokenType token_type) {
-    this->start = this->current; // skip the first '
-    while (!is_at_end(this)) {
-        char c = peek(this, 0);
+static Token make_string(Lexer *self, char delim, ETokenType token_type) {
+    self->start = self->current; // skip the first '
+    while (!is_at_end(self)) {
+        char c = peek(self, 0);
         if (c == delim) {
-            Token token = make_token(this, token_type);
-            advance(this);
+            Token token = make_token(self, token_type);
+            advance(self);
             return token;
         }
         if (c == '\n') {
-            this->line++;
-            this->column = 1;
+            self->line++;
+            self->column = 1;
         }
-        advance(this);
+        advance(self);
     }
-    return make_error(this);
+    return make_error(self);
 }
 
-static Token make_number(Lexer *this) {
-    while (is_digit(peek(this, 0))) {
-        advance(this);
+static Token make_number(Lexer *self) {
+    while (is_digit(peek(self, 0))) {
+        advance(self);
     }
-    return make_token(this, TOKEN_NUMBER);
+    return make_token(self, TOKEN_NUMBER);
 }
 
-static Token make_identifier(Lexer *this) {
-    while (is_alpha(peek(this, 0)) || is_digit(peek(this, 0)) || peek(this, 0) == '_') {
-        advance(this);
+static Token make_identifier(Lexer *self) {
+    while (is_alpha(peek(self, 0)) || is_digit(peek(self, 0)) || peek(self, 0) == '_') {
+        advance(self);
     }
-    switch (this->start[0]) {
+    switch (self->start[0]) {
         case 'a':
-            return match_keyword(this, 1, 4, "lias", TOKEN_ALIAS);
+            return match_keyword(self, 1, 4, "lias", TOKEN_ALIAS);
         case 'b':
-            switch (this->start[1]) {
+            switch (self->start[1]) {
                 case 'i':
-                    return match_keyword(this, 2, 5, "tflag", TOKEN_BITFLAG);
+                    return match_keyword(self, 2, 5, "tflag", TOKEN_BITFLAG);
                 case 'y':
-                    return match_keyword(this, 2, 2, "te", TOKEN_BYTE);
+                    return match_keyword(self, 2, 2, "te", TOKEN_BYTE);
             }
         case 'c':
-            return match_keyword(this, 1, 4, "onst", TOKEN_CONST);
+            return match_keyword(self, 1, 4, "onst", TOKEN_CONST);
         case 'e':
-            switch (this->start[1]) {
+            switch (self->start[1]) {
                 case 'l':
-                    return match_keyword(this, 2, 2, "se", TOKEN_ELSE);
+                    return match_keyword(self, 2, 2, "se", TOKEN_ELSE);
                 case 'n':
-                    return match_keyword(this, 2, 2, "um", TOKEN_ENUM);
+                    return match_keyword(self, 2, 2, "um", TOKEN_ENUM);
                 case 'x':
-                    return match_keyword(this, 2, 4, "tern", TOKEN_EXTERN);
+                    return match_keyword(self, 2, 4, "tern", TOKEN_EXTERN);
             }
         case 'f':
-            return match_keyword(this, 1, 1, "n", TOKEN_FN);
+            return match_keyword(self, 1, 1, "n", TOKEN_FN);
         case 'i':
-            return match_keyword(this, 1, 1, "f", TOKEN_IF);
+            return match_keyword(self, 1, 1, "f", TOKEN_IF);
         case 'p':
-            return match_keyword(this, 1, 5, "ublic", TOKEN_PUBLIC);
+            return match_keyword(self, 1, 5, "ublic", TOKEN_PUBLIC);
         case 's':
-            return match_keyword(this, 1, 5, "truct", TOKEN_STRUCT);
+            return match_keyword(self, 1, 5, "truct", TOKEN_STRUCT);
         case 'u':
-            return match_keyword(this, 1, 4, "nion", TOKEN_UNION);
+            return match_keyword(self, 1, 4, "nion", TOKEN_UNION);
         case 'v':
-            switch (this->start[1]) {
+            switch (self->start[1]) {
                 case 'a':
-                    return match_keyword(this, 2, 1, "r", TOKEN_VAR);
+                    return match_keyword(self, 2, 1, "r", TOKEN_VAR);
                 case 'o':
-                    switch (this->start[2]) {
+                    switch (self->start[2]) {
                         case 'i':
-                            return match_keyword(this, 3, 1, "d", TOKEN_VOID);
+                            return match_keyword(self, 3, 1, "d", TOKEN_VOID);
                         case 'l':
-                            return match_keyword(this, 3, 5, "atile", TOKEN_VOLATILE);
+                            return match_keyword(self, 3, 5, "atile", TOKEN_VOLATILE);
                     }
             }
         case 'w':
-            switch (this->start[1]) {
+            switch (self->start[1]) {
                 case 'h':
-                    return match_keyword(this, 2, 3, "ile", TOKEN_WHILE);
+                    return match_keyword(self, 2, 3, "ile", TOKEN_WHILE);
                 case 'o':
-                    return match_keyword(this, 2, 2, "rd", TOKEN_WORD);
+                    return match_keyword(self, 2, 2, "rd", TOKEN_WORD);
             }
     }
-    return make_token(this, TOKEN_IDENTIFIER);
+    return make_token(self, TOKEN_IDENTIFIER);
 }
 
-static Token match_keyword(Lexer *this, int start, int length, const char *rest, ETokenType token_type) {
-    if (this->current - this->start == start + length && memcmp(this->start + start, rest, length) == 0) {
-        return make_token(this, token_type);
+static Token match_keyword(Lexer *self, int start, int length, const char *rest, ETokenType token_type) {
+    if (self->current - self->start == start + length && memcmp(self->start + start, rest, length) == 0) {
+        return make_token(self, token_type);
     }
-    return make_token(this, TOKEN_IDENTIFIER);
+    return make_token(self, TOKEN_IDENTIFIER);
 }
 
-static Token make_error(Lexer *this) {
+static Token make_error(Lexer *self) {
     Token token = {
             .type = TOKEN_ERROR,
-            .start = this->start,
-            .line = this->line,
-            .column = this->column,
-            .length = (int) (this->current - this->start),
+            .start = self->start,
+            .line = self->line,
+            .column = self->column,
+            .length = (int) (self->current - self->start),
     };
 
     return token;

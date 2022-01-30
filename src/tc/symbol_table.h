@@ -22,20 +22,20 @@
 
 typedef struct SymbolTable SymbolTable;
 
-SymbolTable *symbol_table_create();
+SymbolTable *symbol_table_create(void);
 
-SymbolTable *symbol_table_create_child_for(SymbolTable *this, /*actually a (AstNode*) */void *node);
+SymbolTable *symbol_table_create_child_for(SymbolTable *self, /*actually a (AstNode*) */void *node);
 
-void symbol_table_destroy(SymbolTable *this);
+void symbol_table_destroy(SymbolTable *self);
 
-void symbol_table_add(SymbolTable *this, Symbol *symbol);
+void symbol_table_add(SymbolTable *self, Symbol *symbol);
 
-bool symbol_table_symbol_exists_in_current_scope(SymbolTable *this, char *name);
+bool symbol_table_symbol_exists_in_current_scope(SymbolTable *self, char *name);
 
-bool symbol_table_symbol_exists(SymbolTable *this, char *name);
+bool symbol_table_symbol_exists(SymbolTable *self, char *name);
 
-Symbol *symbol_table_get(SymbolTable *this, char *name);
+Symbol *symbol_table_get(SymbolTable *self, char *name);
 
-void symbol_table_dump(SymbolTable *this);
+void symbol_table_dump(SymbolTable *self);
 
 #endif //THM_SYMBOL_TABLE_H

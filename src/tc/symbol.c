@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <malloc.h>
 #include "symbol.h"
+#include "memory.h"
 
 /**
  * Creates a new symbol.
@@ -25,9 +25,9 @@
  * @return a new symbol.
  */
 Symbol *symbol_create(char *name, enum SymbolKind kind, void *ast_node) {
-    Symbol *symbol = malloc(sizeof(Symbol));
+    Symbol *symbol = memory_alloc(sizeof(Symbol));
     symbol->name = name;
     symbol->kind = kind;
-    symbol->ast_node=ast_node;
+    symbol->ast_node = ast_node;
     return symbol;
 }

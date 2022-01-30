@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include <stdlib.h>
 #include <printf.h>
-#include <stdio.h>
 #include "headers/queue.h"
 
 typedef struct Queue {
+    CpoclQueueOptions opts;
+
     void **items;
     size_t items_count;
     size_t size;
@@ -27,9 +27,10 @@ typedef struct Queue {
     size_t tail;
 } Queue;
 
-Queue *queue_create(size_t size) {
-    Queue *queue = malloc(sizeof(Queue));
-    queue->items = malloc(size * sizeof(void *));
+Queue *queue_create_(size_t size, CpoclQueueOptions options) {
+    Queue *queue = options.malloc(sizeof(Queue));
+    queue->opts = options;
+    queue->items = options.malloc(size * sizeof(void *));
     queue->items_count = 0;
     queue->size = size;
     queue->head = 0;
@@ -37,63 +38,59 @@ Queue *queue_create(size_t size) {
     return queue;
 }
 
-void queue_destroy(Queue *this) {
-    void *item;
-    while ((item = queue_dequeue(this)) != NULL) {
-        free(item);
-    }
-    free(this->items);
-    free(this);
+void queue_destroy(Queue *self) {
+    self->opts.free(self->items);
+    self->opts.free(self);
 }
 
-void queue_enqueue(Queue *this, void *item) {
-    if (this->items_count == this->size) {
-        this->size = this->size * 2;
+void queue_enqueue(Queue *self, void *item) {
+    if (self->items_count == self->size) {
+        self->size = self->size * 2;
 
-        void **new_items = malloc(this->size * sizeof(void*));
+        void **new_items = malloc(self->size * sizeof(void *));
         size_t new_head = 0;
 
         void *old_item;
-        while ((old_item = queue_dequeue(this)) != NULL) {
+        while ((old_item = queue_dequeue(self)) != NULL) {
             new_items[new_head++] = old_item;
         }
 
-        free(this->items);
-        this->items = new_items;
-        this->items_count = new_head;
-        this->head = this->items_count;
-        this->tail = 0;
+        self->opts.free(self->items);
+        self->items = new_items;
+        self->items_count = new_head;
+        self->head = self->items_count;
+        self->tail = 0;
     }
 
-    this->items[this->head] = item;
-    this->head = (this->head + 1) % this->size;
-    this->items_count++;
+    self->items[self->head] = item;
+    self->head = (self->head + 1) % self->size;
+    self->items_count++;
 }
 
-void *queue_dequeue(Queue *this) {
-    if (this->items_count == 0) {
+void *queue_dequeue(Queue *self) {
+    if (self->items_count == 0) {
         return NULL;
     }
-    void *item = this->items[this->tail];
+    void *item = self->items[self->tail];
 
-    this->items[this->tail] = NULL;
-    this->tail = (this->tail + 1) % this->size;
-    this->items_count--;
+    self->items[self->tail] = NULL;
+    self->tail = (self->tail + 1) % self->size;
+    self->items_count--;
 
     return item;
 }
 
-void *queue_peek(Queue *this, size_t n) {
-    if (this->items_count < n + 1) {
+void *queue_peek(Queue *self, size_t n) {
+    if (self->items_count < n + 1) {
         return NULL;
     }
-    return this->items[(this->tail + n) % this->size];
+    return self->items[(self->tail + n) % self->size];
 }
 
-size_t queue_size(Queue *this) {
-    return this->items_count;
+size_t queue_size(Queue *self) {
+    return self->items_count;
 }
 
-bool queue_is_empty(Queue *this) {
-    return this->items_count == 0;
+bool queue_is_empty(Queue *self) {
+    return self->items_count == 0;
 }

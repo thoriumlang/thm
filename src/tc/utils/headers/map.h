@@ -20,6 +20,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <string.h>
+#include <malloc.h>
 #include "list.h"
 
 typedef struct Map Map;
@@ -29,31 +30,44 @@ typedef struct Pair {
     void *value;
 } Pair;
 
-typedef size_t(*hash_fn_t)(void *);
+typedef struct CpoclMapOptions {
+    void *(*malloc)(size_t);
 
-typedef bool(*eq_fn_t)(void *, void *);
+    void (*free)(void *);
+} CpoclMapOptions;
 
-Map *map_create(hash_fn_t hash_fn, eq_fn_t eq_fn);
+typedef size_t(*hash_fn)(void *);
 
-void map_destroy(Map *map);
+typedef bool(*eq_fn)(void *, void *);
 
-size_t map_size(Map *this);
+#define map_create(hash_fn, eq_fn, ...) \
+    map_create_((hash_fn), (eq_fn), (struct CpoclMapOptions) { \
+        .malloc = malloc,       \
+        .free = free,           \
+        __VA_ARGS__ \
+    })
 
-bool map_is_empty(Map *this);
+Map *map_create_(hash_fn hash, eq_fn eq, CpoclMapOptions options);
 
-void *map_put(Map *this, void *key, void *value);
+void map_destroy(Map *self);
 
-void *map_get(Map *this, void *key);
+size_t map_size(Map *self);
 
-void map_remove(Map *this, void *key);
+bool map_is_empty(Map *self);
 
-bool map_is_present(Map *this, void *key);
+void *map_put(Map *self, void *key, void *value);
 
-List *map_get_keys(Map *this);
+void *map_get(Map *self, void *key);
 
-List *map_get_values(Map *this);
+void map_remove(Map *self, void *key);
 
-List *map_get_entries(Map *this);
+bool map_is_present(Map *self, void *key);
+
+List *map_get_keys(Map *self);
+
+List *map_get_values(Map *self);
+
+List *map_get_entries(Map *self);
 
 size_t map_hash_fn_str(void *key);
 

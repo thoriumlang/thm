@@ -26,8 +26,8 @@ typedef struct Parser Parser;
 
 Parser *parser_create(Lexer *lexer);
 
-void parser_destroy(Parser *this);
+void parser_destroy(Parser *self);
 
-AstRoot *parser_parse(Parser *this);
+AstRoot *parser_parse(Parser *self);
 
 #endif //THM_PARSER_H

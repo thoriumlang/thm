@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include <stdlib.h>
 #include <queue.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include "parser.h"
 #include "lexer.h"
+#include "memory.h"
 
 typedef struct Parser {
     Lexer *lexer;
@@ -33,67 +33,67 @@ typedef struct Parser {
 
 /**
  * Returns a pointer to the nth next token.
- * @param this the parser instance.
+ * @param self the parser instance.
  * @param n the index of the next token to return; starts at 0.
  * @return the nth next token, NULL if it does not exist.
  */
-static Token *peek(Parser *this, int n) {
-    for (size_t i = queue_size(this->tokens); i < n + 1; i++) {
-        Token token = lexer_next(this->lexer);
-        Token *t = malloc(sizeof(Token));
+static Token *peek(Parser *self, int n) {
+    for (size_t i = queue_size(self->tokens); i < n + 1; i++) {
+        Token token = lexer_next(self->lexer);
+        Token *t = memory_alloc(sizeof(Token));
         memcpy(t, &token, sizeof(Token));
-        queue_enqueue(this->tokens, t);
+        queue_enqueue(self->tokens, t);
     }
-    return queue_peek(this->tokens, n);
+    return queue_peek(self->tokens, n);
 }
 
 /**
  * Returns whether the end of the token stream is reached.
- * @param this the parser insrance
+ * @param self the parser insrance
  * @return true when no tokens are available anymore.
  */
-static bool is_at_end(Parser *this) {
-    return peek(this, 0)->type == TOKEN_EOF;
+static bool is_at_end(Parser *self) {
+    return peek(self, 0)->type == TOKEN_EOF;
 }
 
 /**
  * Consumes and returns the next token. In case there is no next token, returns an EOF token.
- * @param this the parser instance.
+ * @param self the parser instance.
  * @return the next token, or an EOF token is no next token exists.
  */
-static Token advance(Parser *this) {
-    if (queue_is_empty(this->tokens)) {
-        return lexer_next(this->lexer);
+static Token advance(Parser *self) {
+    if (queue_is_empty(self->tokens)) {
+        return lexer_next(self->lexer);
     }
 
-    Token *token_ptr = queue_dequeue(this->tokens);
+    Token *token_ptr = queue_dequeue(self->tokens);
     Token token;
     memcpy(&token, token_ptr, sizeof(Token));
-    free(token_ptr);
+    memory_free(token_ptr);
 
     return token;
 }
 
 /**
  * Returns whether the next token is of the expected type without consuming it.
- * @param this the parser instance.
+ * @param self the parser instance.
  * @param expected the expected next token type.
  * @return true if the next token is of the expected type; false otherwise.
  */
-static bool check(Parser *this, ETokenType expected) {
-    return (peek(this, 0)->type == expected);
+static bool check(Parser *self, ETokenType expected) {
+    return (peek(self, 0)->type == expected);
 }
 
 /**
  * Returns whether any of the n next tokens is of the expected type.
- * @param this the parser instance.
+ * @param self the parser instance.
  * @param expected the expected token type.
  * @param n the amount of next tokens to check.
  * @return true if any of the next n tokens is of the expected type; false otherwise.
  */
-static bool check_within(Parser *this, ETokenType expected, int n) {
+static bool check_within(Parser *self, ETokenType expected, int n) {
     for (int i = 0; i < n; i++) {
-        if (peek(this, i)->type == expected) {
+        if (peek(self, i)->type == expected) {
             return true;
         }
     }
@@ -102,25 +102,25 @@ static bool check_within(Parser *this, ETokenType expected, int n) {
 
 /**
  * Returns whether the next token is of the expected type. If it is, it consumes it, otherwise it does not.
- * @param this
+ * @param self
  * @param expected
  * @return true if the next token is of the expected type; false otherwise.
  */
-static bool match(Parser *this, ETokenType expected) {
-    if (is_at_end(this) || !check(this, expected)) {
+static bool match(Parser *self, ETokenType expected) {
+    if (is_at_end(self) || !check(self, expected)) {
         return false;
     }
-    advance(this);
+    advance(self);
     return true;
 }
 
-static void print_token_expected_error(Parser *this, size_t tokens, ...) {
-    if (this->error_recovery) {
+static void print_token_expected_error(Parser *self, size_t tokens, ...) {
+    if (self->error_recovery) {
         return;
     }
 
-    this->error_found = true;
-    this->error_recovery = true;
+    self->error_found = true;
+    self->error_recovery = true;
 
     va_list argp;
     va_start(argp, tokens);
@@ -139,56 +139,70 @@ static void print_token_expected_error(Parser *this, size_t tokens, ...) {
     if (tokens > 1) {
         fprintf(stderr, " )");
     }
-    Token *token = peek(this, 0);
+    Token *token = peek(self, 0);
     fprintf(stderr, " at %i:%i\n", token->line, token->column);
 }
 
 /**
  * Triggers an error in case the next token is not of the expected type.
- * @param this the parser instance.
+ * @param self the parser instance.
  * @param expected the next token expected type.
  */
-static void expect(Parser *this, ETokenType expected) {
-    if (!match(this, expected)) {
-        print_token_expected_error(this, 1, expected);
+static void expect(Parser *self, ETokenType expected) {
+    if (!match(self, expected)) {
+        print_token_expected_error(self, 1, expected);
     }
 }
 
-static void print_expected_error(Parser *this, const char *expected) {
-    if (this->error_recovery) {
+static void print_expected_error(Parser *self, const char *expected) {
+    if (self->error_recovery) {
         return;
     }
 
-    this->error_found = true;
-    this->error_recovery = true;
+    self->error_found = true;
+    self->error_recovery = true;
 
-    Token *token = peek(this, 0);
+    Token *token = peek(self, 0);
     fprintf(stderr, "Expected %s at %i:%i\n", expected, token->line, token->column);
 }
+
+#ifdef CPOCL_MEMORY_DEBUG
+#undef cpocl_memory_alloc
+#undef cpocl_memory_free
+
+static void *cpocl_memory_alloc(size_t size) {
+    return cpocl_memory_alloc_debug(size, "Parser.Queue", 0);
+}
+
+static void cpocl_memory_free(void *ptr) {
+    cpocl_memory_free_debug(ptr, "Parser.Queue", 0);
+}
+
+#endif
 
 #pragma endregion
 
 #pragma region parsing
 
 // <identifier> := <IDENTIFIER>
-static AstNodeIdentifier *parse_identifier(Parser *this) {
-    if (!check(this, TOKEN_IDENTIFIER)) {
-        print_token_expected_error(this, 1, TOKEN_IDENTIFIER);
+static AstNodeIdentifier *parse_identifier(Parser *self) {
+    if (!check(self, TOKEN_IDENTIFIER)) {
+        print_token_expected_error(self, 1, TOKEN_IDENTIFIER);
         return NULL;
     }
 
-    return ast_node_identifier_create(advance(this));
+    return ast_node_identifier_create(advance(self));
 }
 
 // <type> := <@>* <identifier>
-static AstNodeType *parse_type(Parser *this) {
-    Token *token = peek(this, 0);
+static AstNodeType *parse_type(Parser *self) {
+    Token *token = peek(self, 0);
 
     if (token->type != TOKEN_BYTE &&
         token->type != TOKEN_WORD &&
         token->type != TOKEN_IDENTIFIER &&
         token->type != TOKEN_AT) {
-        print_token_expected_error(this, 4, TOKEN_WORD, TOKEN_BYTE, TOKEN_IDENTIFIER, TOKEN_AT);
+        print_token_expected_error(self, 4, TOKEN_WORD, TOKEN_BYTE, TOKEN_IDENTIFIER, TOKEN_AT);
         return NULL;
     }
 
@@ -196,21 +210,21 @@ static AstNodeType *parse_type(Parser *this) {
     int column = token->column;
 
     int ptr = 0;
-    while (match(this, TOKEN_AT)) {
+    while (match(self, TOKEN_AT)) {
         ptr++;
     }
 
     AstNodeIdentifier *identifier = NULL;
-    token = peek(this, 0);
+    token = peek(self, 0);
     switch (token->type) {
         case TOKEN_IDENTIFIER:
         case TOKEN_WORD:
         case TOKEN_BYTE:
             identifier = ast_node_identifier_create(*token);
-            advance(this);
+            advance(self);
             break;
         default:
-            print_token_expected_error(this, 4, TOKEN_WORD, TOKEN_BYTE, TOKEN_IDENTIFIER, TOKEN_AT);
+            print_token_expected_error(self, 4, TOKEN_WORD, TOKEN_BYTE, TOKEN_IDENTIFIER, TOKEN_AT);
             break;
     }
 
@@ -221,20 +235,20 @@ static AstNodeType *parse_type(Parser *this) {
 }
 
 // <variable> := ( <PUBLIC> | <EXTERN> )? <VOLATILE>? <VAR> <identifier> <:> <type> <;>
-static AstNodeVariable *parse_variable(Parser *this) {
+static AstNodeVariable *parse_variable(Parser *self) {
     AstNodeVariable *node = ast_node_variable_create();
 
-    Token *token = peek(this, 0);
+    Token *token = peek(self, 0);
     node->metadata->start_line = token->line;
     node->metadata->start_column = token->column;
 
     switch (token->type) {
         case TOKEN_PUBLIC:
-            advance(this);
+            advance(self);
             node->pub = true;
             break;
         case TOKEN_EXTERN:
-            advance(this);
+            advance(self);
             node->ext = true;
             break;
         case TOKEN_VOLATILE:
@@ -242,34 +256,34 @@ static AstNodeVariable *parse_variable(Parser *this) {
             // keep for later
             break;
         default:
-            print_token_expected_error(this, 4, TOKEN_PUBLIC, TOKEN_EXTERN, TOKEN_VOLATILE, TOKEN_VAR);
+            print_token_expected_error(self, 4, TOKEN_PUBLIC, TOKEN_EXTERN, TOKEN_VOLATILE, TOKEN_VAR);
             break;
     }
 
-    if (match(this, TOKEN_VOLATILE)) {
+    if (match(self, TOKEN_VOLATILE)) {
         node->vol = true;
     }
 
-    if (!match(this, TOKEN_VAR)) {
-        print_token_expected_error(this, 1, TOKEN_VAR);
+    if (!match(self, TOKEN_VAR)) {
+        print_token_expected_error(self, 1, TOKEN_VAR);
     }
 
-    node->name = parse_identifier(this);
+    node->name = parse_identifier(self);
 
-    if (!match(this, TOKEN_COLON)) {
-        print_token_expected_error(this, 1, TOKEN_COLON);
+    if (!match(self, TOKEN_COLON)) {
+        print_token_expected_error(self, 1, TOKEN_COLON);
     }
 
-    node->type = parse_type(this);
+    node->type = parse_type(self);
 
     // todo add expr
 
-    if (!match(this, TOKEN_SEMICOLON)) {
-        print_token_expected_error(this, 1, TOKEN_SEMICOLON);
+    if (!match(self, TOKEN_SEMICOLON)) {
+        print_token_expected_error(self, 1, TOKEN_SEMICOLON);
         ast_node_variable_destroy(node);
         return NULL;
-    } else if (this->error_recovery) {
-        this->error_recovery = false;
+    } else if (self->error_recovery) {
+        self->error_recovery = false;
         ast_node_variable_destroy(node);
         return NULL;
     } else {
@@ -278,20 +292,20 @@ static AstNodeVariable *parse_variable(Parser *this) {
 }
 
 // <const> := ( <PUBLIC> | <EXTERN> )? <CONST> <IDENTIFIER> <:> <type> <=> <expr> <;>
-static AstNodeConst *parse_const(Parser *this) {
+static AstNodeConst *parse_const(Parser *self) {
     AstNodeConst *node = ast_node_const_create();
 
-    Token *token = peek(this, 0);
+    Token *token = peek(self, 0);
     node->metadata->start_line = token->line;
     node->metadata->start_column = token->column;
 
     switch (token->type) {
         case TOKEN_PUBLIC:
-            advance(this);
+            advance(self);
             node->pub = true;
             break;
         case TOKEN_EXTERN:
-            advance(this);
+            advance(self);
             node->ext = true;
             break;
         default:
@@ -299,30 +313,30 @@ static AstNodeConst *parse_const(Parser *this) {
             break;
     }
 
-    if (!match(this, TOKEN_CONST)) {
-        print_token_expected_error(this, 1, TOKEN_CONST);
+    if (!match(self, TOKEN_CONST)) {
+        print_token_expected_error(self, 1, TOKEN_CONST);
     }
 
-    node->name = parse_identifier(this);
+    node->name = parse_identifier(self);
 
-    if (!match(this, TOKEN_COLON)) {
-        print_token_expected_error(this, 1, TOKEN_COLON);
+    if (!match(self, TOKEN_COLON)) {
+        print_token_expected_error(self, 1, TOKEN_COLON);
     }
 
-    node->type = parse_type(this);
+    node->type = parse_type(self);
 
-    if (!match(this, TOKEN_EQUAL)) {
-        print_token_expected_error(this, 1, TOKEN_EQUAL);
+    if (!match(self, TOKEN_EQUAL)) {
+        print_token_expected_error(self, 1, TOKEN_EQUAL);
     }
 
     // todo expr
 
-    if (!match(this, TOKEN_SEMICOLON)) {
-        print_token_expected_error(this, 1, TOKEN_SEMICOLON);
+    if (!match(self, TOKEN_SEMICOLON)) {
+        print_token_expected_error(self, 1, TOKEN_SEMICOLON);
         ast_node_const_destroy(node);
         return NULL;
-    } else if (this->error_recovery) {
-        this->error_recovery = false;
+    } else if (self->error_recovery) {
+        self->error_recovery = false;
         ast_node_const_destroy(node);
         return NULL;
     } else {
@@ -331,37 +345,37 @@ static AstNodeConst *parse_const(Parser *this) {
 }
 
 // <parameter> := <IDENTIFIER> <:> <type>
-static AstNodeParameter *parse_parameter(Parser *this) {
-    Token *token = peek(this, 0);
+static AstNodeParameter *parse_parameter(Parser *self) {
+    Token *token = peek(self, 0);
     int line = token->line;
     int column = token->column;
 
-    AstNodeIdentifier *identifier = parse_identifier(this);
+    AstNodeIdentifier *identifier = parse_identifier(self);
 
-    if (!match(this, TOKEN_COLON)) {
-        print_token_expected_error(this, 1, TOKEN_COLON);
+    if (!match(self, TOKEN_COLON)) {
+        print_token_expected_error(self, 1, TOKEN_COLON);
     }
 
-    return ast_node_parameter_create(identifier, parse_type(this), line, column);
+    return ast_node_parameter_create(identifier, parse_type(self), line, column);
 }
 
 // <parameters> := ( <parameter> ( <,> <parameter> )* )?
-static AstNodeParameters *parse_parameters(Parser *this) {
+static AstNodeParameters *parse_parameters(Parser *self) {
     // todo allow trailing comma
     AstNodeParameters *node = ast_node_parameters_create();
 
-    Token *token = peek(this, 0);
+    Token *token = peek(self, 0);
     node->metadata->start_line = token->line;
     node->metadata->start_column = token->column;
 
     AstNodeParameter *parameter;
     if (token->type != TOKEN_RPAR) {
-        parameter = parse_parameter(this);
+        parameter = parse_parameter(self);
         if (parameter != NULL) {
             list_add(node->parameters, parameter);
         }
-        while (match(this, TOKEN_COMMA)) {
-            parameter = parse_parameter(this);
+        while (match(self, TOKEN_COMMA)) {
+            parameter = parse_parameter(self);
             if (parameter != NULL) {
                 list_add(node->parameters, parameter);
             }
@@ -371,15 +385,15 @@ static AstNodeParameters *parse_parameters(Parser *this) {
     return node;
 }
 
-static AstNodeStmt *parse_stmt(Parser *this);
+static AstNodeStmt *parse_stmt(Parser *self);
 
 // <stmts> := <stmts>*
-static AstNodeStatements *parse_stmts(Parser *this) {
+static AstNodeStatements *parse_stmts(Parser *self) {
     AstNodeStatements *node = ast_node_stmts_create();
 
     bool first_statement = true;
-    while (!check(this, TOKEN_EOF) && !check(this, TOKEN_RBRACE)) {
-        AstNodeStmt *stmt = parse_stmt(this);
+    while (!check(self, TOKEN_EOF) && !check(self, TOKEN_RBRACE)) {
+        AstNodeStmt *stmt = parse_stmt(self);
         if (stmt != NULL) {
             if (first_statement) {
                 first_statement = false;
@@ -394,20 +408,20 @@ static AstNodeStatements *parse_stmts(Parser *this) {
 }
 
 // <function> != ( <PUBLIC> | <EXTERN> )? <FN> <IDENTIFIER> <(> <parameters> <)> <:> <type> <{> <statements> <}>
-static AstNodeFunction *parse_function(Parser *this) {
+static AstNodeFunction *parse_function(Parser *self) {
     AstNodeFunction *node = ast_node_function_create();
 
-    Token *token = peek(this, 0);
+    Token *token = peek(self, 0);
     node->metadata->start_line = token->line;
     node->metadata->start_column = token->column;
 
     switch (token->type) {
         case TOKEN_PUBLIC:
-            advance(this);
+            advance(self);
             node->pub = true;
             break;
         case TOKEN_EXTERN:
-            advance(this);
+            advance(self);
             node->ext = true;
             break;
         default:
@@ -415,40 +429,40 @@ static AstNodeFunction *parse_function(Parser *this) {
             break;
     }
 
-    if (!match(this, TOKEN_FN)) {
-        print_token_expected_error(this, 1, TOKEN_FN);
+    if (!match(self, TOKEN_FN)) {
+        print_token_expected_error(self, 1, TOKEN_FN);
     }
 
-    node->name = parse_identifier(this);
+    node->name = parse_identifier(self);
 
-    if (!match(this, TOKEN_LPAR)) {
-        print_token_expected_error(this, 1, TOKEN_LPAR);
+    if (!match(self, TOKEN_LPAR)) {
+        print_token_expected_error(self, 1, TOKEN_LPAR);
     }
 
-    node->parameters = parse_parameters(this);
+    node->parameters = parse_parameters(self);
 
-    if (!match(this, TOKEN_RPAR)) {
-        print_token_expected_error(this, 2, TOKEN_COMMA, TOKEN_RPAR);
+    if (!match(self, TOKEN_RPAR)) {
+        print_token_expected_error(self, 2, TOKEN_COMMA, TOKEN_RPAR);
     }
 
-    if (!match(this, TOKEN_COLON)) {
-        print_token_expected_error(this, 1, TOKEN_COLON);
+    if (!match(self, TOKEN_COLON)) {
+        print_token_expected_error(self, 1, TOKEN_COLON);
     }
 
-    node->type = parse_type(this);
+    node->type = parse_type(self);
 
-    if (!match(this, TOKEN_LBRACE)) { // todo may move to stmts?
-        print_token_expected_error(this, 1, TOKEN_LBRACE);
+    if (!match(self, TOKEN_LBRACE)) { // todo may move to stmts?
+        print_token_expected_error(self, 1, TOKEN_LBRACE);
     }
 
-    node->statements = parse_stmts(this);
+    node->statements = parse_stmts(self);
 
-    if (!match(this, TOKEN_RBRACE)) {
-        print_token_expected_error(this, 1, TOKEN_RBRACE);
+    if (!match(self, TOKEN_RBRACE)) {
+        print_token_expected_error(self, 1, TOKEN_RBRACE);
         ast_node_function_destroy(node);
         return NULL;
-    } else if (this->error_recovery) {
-        this->error_recovery = false;
+    } else if (self->error_recovery) {
+        self->error_recovery = false;
         ast_node_function_destroy(node);
         return NULL;
     } else {
@@ -457,27 +471,27 @@ static AstNodeFunction *parse_function(Parser *this) {
 }
 
 // <constStmt> := <CONST> <identifier> <:> <type> <=> <expr> <;>
-static AstNodeStmt *parse_stmt_const(Parser *this) {
+static AstNodeStmt *parse_stmt_const(Parser *self) {
     AstNodeStmt *node = ast_node_stmt_const_create();
 
-    Token *token = peek(this, 0);
+    Token *token = peek(self, 0);
     (*node->metadata)->start_line = token->line;
     (*node->metadata)->start_column = token->column;
 
-    expect(this, TOKEN_CONST);
-    node->constStmt->identifier = parse_identifier(this);
-    expect(this, TOKEN_COLON);
-    node->constStmt->type = parse_type(this);
-    expect(this, TOKEN_EQUAL);
+    expect(self, TOKEN_CONST);
+    node->constStmt->identifier = parse_identifier(self);
+    expect(self, TOKEN_COLON);
+    node->constStmt->type = parse_type(self);
+    expect(self, TOKEN_EQUAL);
 
     // todo expr
 
-    if (!match(this, TOKEN_SEMICOLON)) {
-        print_token_expected_error(this, 1, TOKEN_SEMICOLON);
+    if (!match(self, TOKEN_SEMICOLON)) {
+        print_token_expected_error(self, 1, TOKEN_SEMICOLON);
         ast_node_stmt_destroy(node);
         return NULL;
-    } else if (this->error_recovery) {
-        this->error_recovery = false;
+    } else if (self->error_recovery) {
+        self->error_recovery = false;
         ast_node_stmt_destroy(node);
         return NULL;
     } else {
@@ -486,28 +500,28 @@ static AstNodeStmt *parse_stmt_const(Parser *this) {
 }
 
 // <varStmt> := <VAR> <identifier> <:> <type> ( <=> <expr> )? <;>
-static AstNodeStmt *parse_stmt_var(Parser *this) {
+static AstNodeStmt *parse_stmt_var(Parser *self) {
     AstNodeStmt *node = ast_node_stmt_var_create();
 
-    Token *token = peek(this, 0);
+    Token *token = peek(self, 0);
     (*node->metadata)->start_line = token->line;
     (*node->metadata)->start_column = token->column;
 
-    expect(this, TOKEN_VAR);
-    node->varStmt->identifier = parse_identifier(this);
-    expect(this, TOKEN_COLON);
-    node->varStmt->type = parse_type(this);
+    expect(self, TOKEN_VAR);
+    node->varStmt->identifier = parse_identifier(self);
+    expect(self, TOKEN_COLON);
+    node->varStmt->type = parse_type(self);
 
-    if (match(this, TOKEN_EQUAL)) {
+    if (match(self, TOKEN_EQUAL)) {
         // todo expr
     }
 
-    if (!match(this, TOKEN_SEMICOLON)) {
-        print_token_expected_error(this, 1, TOKEN_SEMICOLON);
+    if (!match(self, TOKEN_SEMICOLON)) {
+        print_token_expected_error(self, 1, TOKEN_SEMICOLON);
         ast_node_stmt_destroy(node);
         return NULL;
-    } else if (this->error_recovery) {
-        this->error_recovery = false;
+    } else if (self->error_recovery) {
+        self->error_recovery = false;
         ast_node_stmt_destroy(node);
         return NULL;
     } else {
@@ -516,25 +530,25 @@ static AstNodeStmt *parse_stmt_var(Parser *this) {
 }
 
 // <assignmentStmt> := <identifier> <=> <expr> <;>
-static AstNodeStmt *parse_stmt_assignment(Parser *this) {
+static AstNodeStmt *parse_stmt_assignment(Parser *self) {
     AstNodeStmt *node = ast_node_stmt_assignment_create();
 
-    Token *token = peek(this, 0);
+    Token *token = peek(self, 0);
     (*node->metadata)->start_line = token->line;
     (*node->metadata)->start_column = token->column;
 
-    node->assignmentStmt->identifier = parse_identifier(this);
+    node->assignmentStmt->identifier = parse_identifier(self);
 
-    expect(this, TOKEN_EQUAL);
+    expect(self, TOKEN_EQUAL);
 
     // todo expr
 
-    if (!match(this, TOKEN_SEMICOLON)) {
-        print_token_expected_error(this, 1, TOKEN_SEMICOLON);
+    if (!match(self, TOKEN_SEMICOLON)) {
+        print_token_expected_error(self, 1, TOKEN_SEMICOLON);
         ast_node_stmt_destroy(node);
         return NULL;
-    } else if (this->error_recovery) {
-        this->error_recovery = false;
+    } else if (self->error_recovery) {
+        self->error_recovery = false;
         ast_node_stmt_destroy(node);
         return NULL;
     } else {
@@ -543,46 +557,46 @@ static AstNodeStmt *parse_stmt_assignment(Parser *this) {
 }
 
 // <ifStmt> := <IF> <(> <expr> <)> <{> <statements> <}> ( <ELSE> ( <ifStmt> | <{> <statements> <}> ) )?
-static AstNodeStmt *parse_stmt_if(Parser *this) {
+static AstNodeStmt *parse_stmt_if(Parser *self) {
     AstNodeStmt *node = ast_node_stmt_if_create();
 
-    Token *token = peek(this, 0);
+    Token *token = peek(self, 0);
     (*node->metadata)->start_line = token->line;
     (*node->metadata)->start_column = token->column;
 
-    expect(this, TOKEN_IF);
-    expect(this, TOKEN_LPAR);
+    expect(self, TOKEN_IF);
+    expect(self, TOKEN_LPAR);
 
     // todo expr
 
-    expect(this, TOKEN_RPAR);
-    expect(this, TOKEN_LBRACE);
+    expect(self, TOKEN_RPAR);
+    expect(self, TOKEN_LBRACE);
 
-    node->ifStmt->true_block = parse_stmts(this);
+    node->ifStmt->true_block = parse_stmts(self);
 
-    expect(this, TOKEN_RBRACE);
+    expect(self, TOKEN_RBRACE);
     bool rbrace_required = false;
 
-    if (match(this, TOKEN_ELSE)) {
-        if (check(this, TOKEN_IF)) {
+    if (match(self, TOKEN_ELSE)) {
+        if (check(self, TOKEN_IF)) {
             node->ifStmt->false_block = ast_node_stmts_create();
-            list_add(node->ifStmt->false_block->stmts, parse_stmt_if(this));
-        } else if (match(this, TOKEN_LBRACE)) {
+            list_add(node->ifStmt->false_block->stmts, parse_stmt_if(self));
+        } else if (match(self, TOKEN_LBRACE)) {
             rbrace_required = true;
-            node->ifStmt->false_block = parse_stmts(this);
+            node->ifStmt->false_block = parse_stmts(self);
         } else {
-            print_token_expected_error(this, 2, TOKEN_IF, TOKEN_LBRACE);
+            print_token_expected_error(self, 2, TOKEN_IF, TOKEN_LBRACE);
         }
     } else {
         node->ifStmt->false_block = ast_node_stmts_create();
     }
 
-    if (rbrace_required && !match(this, TOKEN_RBRACE)) {
-        print_token_expected_error(this, 1, TOKEN_RBRACE);
+    if (rbrace_required && !match(self, TOKEN_RBRACE)) {
+        print_token_expected_error(self, 1, TOKEN_RBRACE);
         ast_node_stmt_destroy(node);
         return NULL;
-    } else if (this->error_recovery) {
-        this->error_recovery = false;
+    } else if (self->error_recovery) {
+        self->error_recovery = false;
         ast_node_stmt_destroy(node);
         return NULL;
     } else {
@@ -591,29 +605,29 @@ static AstNodeStmt *parse_stmt_if(Parser *this) {
 }
 
 // <whileStmt> := <WHILE> <(> <expr> <)> <{> <statements> <}>
-static AstNodeStmt *parse_stmt_while(Parser *this) {
+static AstNodeStmt *parse_stmt_while(Parser *self) {
     AstNodeStmt *node = ast_node_stmt_while_create();
 
-    Token *token = peek(this, 0);
+    Token *token = peek(self, 0);
     (*node->metadata)->start_line = token->line;
     (*node->metadata)->start_column = token->column;
 
-    expect(this, TOKEN_WHILE);
-    expect(this, TOKEN_LPAR);
+    expect(self, TOKEN_WHILE);
+    expect(self, TOKEN_LPAR);
 
     // todo expr
 
-    expect(this, TOKEN_RPAR);
-    expect(this, TOKEN_LBRACE);
+    expect(self, TOKEN_RPAR);
+    expect(self, TOKEN_LBRACE);
 
-    node->whileStmt->block = parse_stmts(this);
+    node->whileStmt->block = parse_stmts(self);
 
-    if (!match(this, TOKEN_RBRACE)) {
-        print_token_expected_error(this, 1, TOKEN_RBRACE);
+    if (!match(self, TOKEN_RBRACE)) {
+        print_token_expected_error(self, 1, TOKEN_RBRACE);
         ast_node_stmt_destroy(node);
         return NULL;
-    } else if (this->error_recovery) {
-        this->error_recovery = false;
+    } else if (self->error_recovery) {
+        self->error_recovery = false;
         ast_node_stmt_destroy(node);
         return NULL;
     } else {
@@ -622,23 +636,23 @@ static AstNodeStmt *parse_stmt_while(Parser *this) {
 }
 
 // <stmt> := ( <;> | <ifStmt> | <whileStmt> | <assignmentStmt> )
-static AstNodeStmt *parse_stmt(Parser *this) {
-    switch (peek(this, 0)->type) {
+static AstNodeStmt *parse_stmt(Parser *self) {
+    switch (peek(self, 0)->type) {
         case TOKEN_SEMICOLON: // just eat it as an empty statement
-            advance(this);
+            advance(self);
             return NULL;
         case TOKEN_CONST:
-            return parse_stmt_const(this);
+            return parse_stmt_const(self);
         case TOKEN_VAR:
-            return parse_stmt_var(this);
+            return parse_stmt_var(self);
         case TOKEN_IDENTIFIER:
-            return parse_stmt_assignment(this);
+            return parse_stmt_assignment(self);
         case TOKEN_IF:
-            return parse_stmt_if(this);
+            return parse_stmt_if(self);
         case TOKEN_WHILE:
-            return parse_stmt_while(this);
+            return parse_stmt_while(self);
         default:
-            print_expected_error(this, "<statement>");
+            print_expected_error(self, "<statement>");
             return NULL;
     }
 }
@@ -648,48 +662,53 @@ static AstNodeStmt *parse_stmt(Parser *this) {
 #pragma region public
 
 Parser *parser_create(Lexer *lexer) {
-    Parser *parser = malloc(sizeof(Parser));
+    Parser *parser = memory_alloc(sizeof(Parser));
     parser->lexer = lexer;
-    parser->tokens = queue_create(4);
+    parser->tokens = queue_create(4,
+                                  .malloc = cpocl_memory_alloc,
+                                  .free = cpocl_memory_free);
     parser->error_recovery = false;
     parser->error_found = false;
     return parser;
 }
 
-void parser_destroy(Parser *this) {
-    queue_destroy(this->tokens);
-    free(this);
+void parser_destroy(Parser *self) {
+    while (!queue_is_empty(self->tokens)) {
+        memory_free(queue_dequeue(self->tokens));
+    }
+    queue_destroy(self->tokens);
+    memory_free(self);
 }
 
-AstRoot *parser_parse(Parser *this) {
+AstRoot *parser_parse(Parser *self) {
     AstRoot *root = ast_root_create();
 
-    while (peek(this, 0)->type != TOKEN_EOF) {
-        while (match(this, TOKEN_SEMICOLON)) {
+    while (peek(self, 0)->type != TOKEN_EOF) {
+        while (match(self, TOKEN_SEMICOLON)) {
             // nothing
         }
-        if (check_within(this, TOKEN_VAR, 3)) {
-            AstNodeVariable *variable = parse_variable(this);
+        if (check_within(self, TOKEN_VAR, 3)) {
+            AstNodeVariable *variable = parse_variable(self);
             if (variable != NULL) {
                 list_add(root->variables, variable);
             }
-        } else if (check_within(this, TOKEN_FN, 2)) {
-            AstNodeFunction *function = parse_function(this);
+        } else if (check_within(self, TOKEN_FN, 2)) {
+            AstNodeFunction *function = parse_function(self);
             if (function != NULL) {
                 list_add(root->functions, function);
             }
-        } else if (check_within(this, TOKEN_CONST, 2)) {
-            AstNodeConst *constant = parse_const(this);
+        } else if (check_within(self, TOKEN_CONST, 2)) {
+            AstNodeConst *constant = parse_const(self);
             if (constant != NULL) {
                 list_add(root->constants, constant);
             }
         } else {
-            print_expected_error(this, "constant, variable or function definition");
-            advance(this);
+            print_expected_error(self, "constant, variable or function definition");
+            advance(self);
         }
     }
 
-    if (this->error_found) {
+    if (self->error_found) {
         ast_root_destroy(root);
         return NULL;
     } else {

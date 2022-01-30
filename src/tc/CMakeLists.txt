@@ -22,6 +22,13 @@ add_executable(tc
 target_link_libraries(tc PRIVATE utils)
 target_link_libraries(tc PRIVATE m)
 
+if (CPOCL_SHORT_NAMES)
+    add_compile_definitions(tc CPOCL_SHORT_NAMES)
+endif ()
+if (CPOCL_MEMORY_DEBUG)
+    add_compile_definitions(tc CPOCL_MEMORY_DEBUG)
+endif ()
+
 SET(VM_DEBUG_MEMORY FALSE CACHE BOOL "Print memory access messages")
 
 if (VM_DEBUG_MEMORY)
@@ -29,5 +36,5 @@ if (VM_DEBUG_MEMORY)
         # use with `export MallocNanoZone=0`
         target_compile_options(tc PRIVATE -fsanitize=address)
         target_link_options(tc PRIVATE -fsanitize=address)
-    endif()
-endif()
+    endif ()
+endif ()

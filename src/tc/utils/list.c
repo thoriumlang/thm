@@ -14,50 +14,51 @@
  * limitations under the License.
  */
 
-#include <stdlib.h>
 #include "headers/list.h"
 
 typedef struct List {
+    CpoclListOptions opts;
     void **items;
     size_t items_count;
 } List;
 
-List *list_create() {
-    List *list = malloc(sizeof(List));
+List *list_create_(CpoclListOptions options) {
+    List *list = options.malloc(sizeof(List));
+    list->opts = options;
     list->items_count = 0;
     list->items = NULL;
     return list;
 }
 
-void list_destroy(List *this) {
-    if (this->items) {
-        free(this->items);
+void list_destroy(List *self) {
+    if (self->items) {
+        self->opts.free(self->items);
     }
-    free(this);
+    self->opts.free(self);
 }
 
-void list_add(List *this, void *item) {
-    this->items = realloc(this->items, sizeof(void *) * ++this->items_count);
-    this->items[this->items_count - 1] = item;
+void list_add(List *self, void *item) {
+    self->items = self->opts.realloc(self->items, sizeof(void *) * ++self->items_count);
+    self->items[self->items_count - 1] = item;
 }
 
-size_t list_size(List *this) {
-    return this->items_count;
+size_t list_size(List *self) {
+    return self->items_count;
 }
 
-void *list_get(List *this, size_t index) {
-    if (index >= this->items_count) {
+void *list_get(List *self, size_t index) {
+    if (index >= self->items_count) {
         return NULL;
     }
-    return this->items[index];
+    return self->items[index];
 }
 
-void list_foreach(List *this, fn_consumer_closure_t consumer_closure) {
-    for (size_t i = 0; i < this->items_count; i++) {
+void list_foreach(List *self, fn_consumer_closure consumer_closure) {
+    for (size_t i = 0; i < self->items_count; i++) {
         if (consumer_closure.has_data) {
-            consumer_closure.fn.biconsumer(this->items[i], consumer_closure.data);
+            consumer_closure.fn.biconsumer(self->items[i], consumer_closure.data);
         } else {
-            consumer_closure.fn.consumer(this->items[i]);
+            consumer_closure.fn.consumer(self->items[i]);
         }
     }
 }
