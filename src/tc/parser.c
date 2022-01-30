@@ -17,6 +17,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include "parser.h"
 #include "lexer.h"
 #include "memory.h"
@@ -83,6 +84,26 @@ static Token advance(Parser *self) {
  */
 static bool check(Parser *self, ETokenType expected) {
     return (peek(self, 0)->type == expected);
+}
+
+/**
+ * Returns whether the next token is any of the expected types without consuming it.
+ * @param self the parser instance.
+ * @param tokens the count of possible tokens
+ * @return true if the next token is of the expected type; false otherwise.
+ */
+static bool check_any(Parser *self, size_t tokens, ...) {
+    va_list argp;
+    va_start(argp, tokens);
+
+    for (size_t i = 0; i < tokens; i++) {
+        ETokenType token = va_arg(argp, ETokenType);
+        if (check(self, token)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -167,7 +188,6 @@ static void print_expected_error(Parser *self, const char *expected) {
     fprintf(stderr, "Expected %s at %i:%i\n", expected, token->line, token->column);
 }
 
-
 static void *parser_memory_alloc(size_t size) {
     return memory_alloc(size);
 }
@@ -228,6 +248,158 @@ static AstNodeType *parse_type(Parser *self) {
         return NULL;
     }
     return ast_node_type_create(ptr, identifier, line, column);
+}
+
+// <number> := <NUMBER>
+static AstNodeNumber *parse_number(Parser *self) {
+    if (!check(self, TOKEN_NUMBER)) {
+        print_token_expected_error(self, 1, TOKEN_NUMBER);
+        return NULL;
+    }
+
+    return ast_node_number_create(advance(self));
+}
+
+typedef enum EPrecedence {
+    PREC_LOWEST = 1,
+    PREC_EQ_CMP = 2,
+    PREC_ORDER_CMP = 3,
+    PREC_SUM = 4,
+    PREC_PRODUCT = 5,
+    PREC_PREFIX = 6,
+    PREC_CALL = 7,
+} EPrecedence;
+
+static EPrecedence get_precedence(EOperator op) {
+    switch (op) {
+        case OPERATOR_plus:
+        case OPERATOR_minus:
+            return PREC_SUM;
+        case OPERATOR_star:
+        case OPERATOR_slash:
+            return PREC_PRODUCT;
+        case OPERATOR_equals:
+            return PREC_EQ_CMP;
+        case OPERATOR_lt:
+        case OPERATOR_gt:
+        case OPERATOR_lt_equals:
+        case OPERATOR_gt_equals:
+            return PREC_ORDER_CMP;
+        case OPERATOR_exclam:
+        case OPERATOR_amp:
+        case OPERATOR_at:
+            return PREC_PREFIX;
+        default:
+            printf("Unsupported operator %d\n", op);
+            exit(1); // todo check error behavior
+    }
+}
+
+static EOperator convert_token_to_operator(Token *token) {
+    switch (token->type) {
+        case TOKEN_PLUS:
+            return OPERATOR_plus;
+        case TOKEN_MINUS:
+            return OPERATOR_minus;
+        case TOKEN_STAR:
+            return OPERATOR_star;
+        default:
+            // todo die
+            return OPERATOR_plus;
+    }
+}
+
+inline static bool next_token_is_operator(Parser *self) {
+    return check_any(self, 3, TOKEN_PLUS, TOKEN_MINUS, TOKEN_STAR);
+}
+
+static AstNodeExpression *parse_infix_expression(Parser *self, AstNodeExpression *left);
+
+// <expression> := <number>
+//               | <identifier>
+//               | ( <expression> <infixExpression> )
+static AstNodeExpression *parse_expression(Parser *self, EPrecedence precedence) {
+    AstNodeExpression *expression = NULL;
+
+    Token *token = peek(self, 0);
+    switch (token->type) {
+        case TOKEN_NUMBER:
+            expression = ast_node_expression_create();
+            expression->kind = EXPRESSION_NUMBER;
+            expression->number_expression = parse_number(self);
+            break;
+        case TOKEN_IDENTIFIER:
+            expression = ast_node_expression_create();
+            expression->kind = EXPRESSION_IDENTIFIER;
+            expression->identifier_expression = parse_identifier(self);
+            break;
+        default:
+            print_token_expected_error(self, 2, TOKEN_NUMBER, TOKEN_IDENTIFIER);
+    }
+
+    if (self->error_recovery) {
+        if (expression != NULL) {
+            ast_node_expression_destroy(expression);
+        }
+        return NULL;
+    } else {
+        while (next_token_is_operator(self) && precedence < get_precedence(convert_token_to_operator(peek(self, 0)))) {
+            if (self->error_recovery) {
+                return NULL;
+            }
+            expression = parse_infix_expression(self, expression);
+        }
+
+        return expression;
+    }
+}
+
+// <operator> := <+> | <-> | <*>
+static AstNodeOperator *parse_operator(Parser *self) {
+    if (!check_any(self, 3, TOKEN_PLUS, TOKEN_MINUS, TOKEN_STAR)) {
+        print_token_expected_error(self, 3, TOKEN_PLUS, TOKEN_MINUS, TOKEN_STAR);
+    }
+
+    Token token = advance(self);
+    AstNodeOperator *node = ast_node_operator_create(convert_token_to_operator(&token));
+
+    node->base.start_line = token.line;
+    node->base.start_column = token.column;
+
+    if (self->error_recovery) {
+        self->error_recovery = false;
+        ast_node_operator_destroy(node);
+        return NULL;
+    } else {
+        return node;
+    }
+}
+
+// <infixExpression> := <+> <expression>
+//                    | <-> <expression>
+//                    | <*> <expression>
+static AstNodeExpression *parse_infix_expression(Parser *self, AstNodeExpression *left) {
+    AstNodeOperator *operator = parse_operator(self);
+    AstNodeExpression *right = parse_expression(self, get_precedence(operator->op));
+
+    if (operator == NULL || right == NULL) {
+        if (left != NULL) {
+            ast_node_expression_destroy(left);
+        }
+        if (operator != NULL) {
+            ast_node_operator_destroy(operator);
+        }
+        if (right != NULL) {
+            ast_node_expression_destroy(right);
+        }
+        return NULL;
+    } else {
+        AstNodeExpression *expression = ast_node_expression_create();
+        expression->kind = EXPRESSION_BINARY;
+        expression->binary_expression = ast_node_binary_expression_create(left, right, operator);
+
+        return expression;
+    }
 }
 
 // <variable> := ( <PUBLIC> | <EXTERN> )? <VOLATILE>? <VAR> <identifier> <:> <type> <;>
@@ -325,7 +497,7 @@ static AstNodeConst *parse_const(Parser *self) {
         print_token_expected_error(self, 1, TOKEN_EQUAL);
     }
 
-    // todo expr
+    node->expression = parse_expression(self, PREC_LOWEST);
 
     if (!match(self, TOKEN_SEMICOLON)) {
         print_token_expected_error(self, 1, TOKEN_SEMICOLON);
@@ -403,7 +575,7 @@ static AstNodeStatements *parse_stmts(Parser *self) {
     return node;
 }
 
-// <function> != ( <PUBLIC> | <EXTERN> )? <FN> <IDENTIFIER> <(> <parameters> <)> <:> <type> <{> <statements> <}>
+// <function> := ( <PUBLIC> | <EXTERN> )? <FN> <IDENTIFIER> <(> <parameters> <)> <:> <type> <{> <statements> <}>
 static AstNodeFunction *parse_function(Parser *self) {
     AstNodeFunction *node = ast_node_function_create();
 
@@ -631,7 +803,10 @@ static AstNodeStmt *parse_stmt_while(Parser *self) {
     }
 }
 
-// <stmt> := ( <;> | <if_stmt> | <while_stmt> | <assignment_stmt> )
+// <stmt> := <;>
+//         | <ifStmt>
+//         | <whileStmt>
+//         | <assignmentStmt>
 static AstNodeStmt *parse_stmt(Parser *self) {
     switch (peek(self, 0)->type) {
         case TOKEN_SEMICOLON: // just eat it as an empty statement

@@ -77,6 +77,129 @@ void ast_node_type_print(AstNodeType *self) {
 
 #pragma endregion
 
+#pragma region AstNodeNumber
+
+AstNodeNumber *ast_node_number_create(Token token) {
+    AstNodeNumber *node = memory_alloc(sizeof(AstNodeNumber));
+    node->base.start_line = token.line;
+    node->base.start_column = token.column;
+    node->value = 0;
+
+    for (const char *c = token.start; c < token.start + token.length; c++) {
+        node->value *= 10;
+        node->value += *c - '0';
+    }
+
+    return node;
+}
+
+void ast_node_number_destroy(AstNodeNumber *self) {
+    memory_free(self);
+}
+
+void ast_node_number_print(AstNodeNumber *self) {
+    printf("%d", self->value);
+}
+
+#pragma endregion
+
+#pragma region AstNodeOperator
+
+AstNodeOperator *ast_node_operator_create(EOperator op) {
+    AstNodeOperator *node = memory_alloc(sizeof(AstNodeOperator));
+    node->op = op;
+    return node;
+}
+
+void ast_node_operator_destroy(AstNodeOperator *self) {
+    memory_free(self);
+}
+
+void ast_node_operator_print(AstNodeOperator *self) {
+    switch (self->op) {
+        case OPERATOR_plus:
+            printf("+");
+            break;
+        case OPERATOR_minus:
+            printf("-");
+            break;
+        case OPERATOR_star:
+            printf("*");
+            break;
+        default:
+            // todo die
+            break;
+    }
+}
+
+#pragma endregion
+
+#pragma region AstNodeBinaryExpression
+
+AstNodeBinaryExpression *ast_node_binary_expression_create(AstNodeExpression *l,
+                                                           AstNodeExpression *r,
+                                                           AstNodeOperator *op) {
+    AstNodeBinaryExpression *node = memory_alloc(sizeof(AstNodeBinaryExpression));
+    node->left = l;
+    node->right = r;
+    node->op = op;
+    return node;
+}
+
+void ast_node_binary_expression_destroy(AstNodeBinaryExpression *self) {
+    ast_node_expression_destroy(self->left);
+    ast_node_expression_destroy(self->right);
+    memory_free(self->op);
+    memory_free(self);
+}
+
+void ast_node_binary_expression_print(AstNodeBinaryExpression *self) {
+    printf("(");
+    ast_node_expression_print(self->left);
+    ast_node_operator_print(self->op);
+    ast_node_expression_print(self->right);
+    printf(")");
+}
+
+#pragma endregion
+
+#pragma region AstNodeExpression
+
+AstNodeExpression *ast_node_expression_create() {
+    return memory_alloc(sizeof(AstNodeExpression));
+}
+
+void ast_node_expression_destroy(AstNodeExpression *self) {
+    switch (self->kind) {
+        case EXPRESSION_NUMBER:
+            ast_node_number_destroy(self->number_expression);
+            break;
+        case EXPRESSION_IDENTIFIER:
+            ast_node_identifier_destroy(self->identifier_expression);
+            break;
+        case EXPRESSION_BINARY:
+            ast_node_binary_expression_destroy(self->binary_expression);
+            break;
+    }
+    memory_free(self);
+}
+
+void ast_node_expression_print(AstNodeExpression *self) {
+    switch (self->kind) {
+        case EXPRESSION_NUMBER:
+            ast_node_number_print(self->number_expression);
+            break;
+        case EXPRESSION_IDENTIFIER:
+            printf("%s", self->identifier_expression->name);
+            break;
+        case EXPRESSION_BINARY:
+            ast_node_binary_expression_print(self->binary_expression);
+            break;
+    }
+}
+
+#pragma endregion
+
 #pragma region AstNodeVariable
 
 AstNodeVariable *ast_node_variable_create(void) {
@@ -125,6 +248,9 @@ void ast_node_const_destroy(AstNodeConst *self) {
     if (self->type != NULL) {
         ast_node_type_destroy(self->type);
     }
+    if (self->expression != NULL) {
+        ast_node_expression_destroy(self->expression);
+    }
     memory_free(self);
 }
 
@@ -134,7 +260,9 @@ void ast_node_const_print(AstNodeConst *self) {
            self->ext ? "external " : "",
            self->name->name);
     ast_node_type_print(self->type);
-    printf(" = <?>;\n");
+    printf(" = ");
+    ast_node_expression_print(self->expression);
+    printf(";\n");
 }
 
 #pragma endregion

@@ -61,6 +61,94 @@ void ast_node_type_print(AstNodeType *self);
 
 #pragma endregion
 
+#pragma region AstNodeNumber
+
+typedef struct AstNodeNumber {
+    AstNode base;
+    int value;
+} AstNodeNumber;
+
+AstNodeNumber *ast_node_number_create(Token token);
+
+void ast_node_number_destroy(AstNodeNumber *self);
+
+void ast_node_number_print(AstNodeNumber *self);
+
+#pragma endregion
+
+typedef struct AstNodeExpression AstNodeExpression;
+
+#pragma region Operator
+
+typedef enum EOperator {
+    OPERATOR_equals,
+    OPERATOR_lt,
+    OPERATOR_lt_equals,
+    OPERATOR_gt,
+    OPERATOR_gt_equals,
+    OPERATOR_plus,
+    OPERATOR_minus,
+    OPERATOR_star,
+    OPERATOR_slash,
+    OPERATOR_exclam,
+    OPERATOR_amp,
+    OPERATOR_at,
+
+} EOperator;
+
+typedef struct AstNodeOperator {
+    AstNode base;
+    EOperator op;
+} AstNodeOperator;
+
+AstNodeOperator *ast_node_operator_create(EOperator op);
+
+void ast_node_operator_destroy(AstNodeOperator *self);
+
+void ast_node_operator_print(AstNodeOperator *self);
+
+#pragma endregion
+
+#pragma region AstNodeBinaryExpression
+
+typedef struct AstNodeBinaryExpression {
+    AstNode base;
+    AstNodeExpression *left;
+    AstNodeExpression *right;
+    AstNodeOperator *op;
+} AstNodeBinaryExpression;
+
+AstNodeBinaryExpression *ast_node_binary_expression_create(AstNodeExpression *l,
+                                                           AstNodeExpression *r,
+                                                           AstNodeOperator *op);
+
+#pragma endregion
+
+#pragma region AstNodeExpression
+
+typedef enum {
+    EXPRESSION_NUMBER,
+    EXPRESSION_IDENTIFIER,
+    EXPRESSION_BINARY
+} EExpressionKind;
+
+typedef struct AstNodeExpression {
+    union {
+        AstNodeNumber *number_expression;
+        AstNodeIdentifier *identifier_expression;
+        AstNodeBinaryExpression *binary_expression;
+    };
+    EExpressionKind kind;
+} AstNodeExpression;
+
+AstNodeExpression *ast_node_expression_create();
+
+void ast_node_expression_destroy(AstNodeExpression *self);
+
+void ast_node_expression_print(AstNodeExpression *self);
+
+#pragma endregion
+
 #pragma region AstNodeVariable
 
 typedef struct {
@@ -88,6 +176,7 @@ typedef struct {
     bool ext;
     AstNodeIdentifier *name;
     AstNodeType *type;
+    AstNodeExpression *expression;
 } AstNodeConst;
 
 AstNodeConst *ast_node_const_create(void);
