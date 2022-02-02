@@ -27,7 +27,11 @@ src/vm/cpu_internal_gen.h: bin/thm_generate_cpu_internal.sh src/common/registers
 	bin/thm_generate_cpu_internal.sh src/common/registers.csv > src/vm/cpu_internal_gen.h
 
 target/cmake-build-debug: src/CMakeLists.txt
-	cmake -DCMAKE_BUILD_TYPE=Debug -Wdev -Wdeprecated -S src -B target/cmake-build-debug
+	cmake -DCMAKE_BUILD_TYPE=Debug \
+          -DCPOCL_SHORT_NAMES=TRUE \
+          -Wdev \
+          -Wdeprecated \
+          -S src -B target/cmake-build-debug
 
 test_thm: thm target/rom.bin target/fact.bin target/fibonacci.bin target/fibonacci_rec.bin target/jumps.bin target/interrupts.bin target/call_convention.bin
 	cmake --build target/cmake-build-debug/vm
