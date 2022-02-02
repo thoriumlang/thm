@@ -18,7 +18,8 @@ add_executable(tc
         utils/headers/list.h
         utils/headers/map.h
         utils/headers/queue.h
-        utils/headers/str.h)
+        utils/headers/str.h
+        utils/headers/macros.h)
 target_link_libraries(tc PRIVATE utils)
 target_link_libraries(tc PRIVATE m)
 

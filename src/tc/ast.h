@@ -82,6 +82,7 @@ typedef struct AstNodeExpression AstNodeExpression;
 
 typedef enum EOperator {
     OPERATOR_equals,
+    OPERATOR_not_equals,
     OPERATOR_lt,
     OPERATOR_lt_equals,
     OPERATOR_gt,

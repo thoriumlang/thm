@@ -126,6 +126,24 @@ void ast_node_operator_print(AstNodeOperator *self) {
         case OPERATOR_star:
             printf("*");
             break;
+        case OPERATOR_equals:
+            printf("==");
+            break;
+        case OPERATOR_not_equals:
+            printf("!=");
+            break;
+        case OPERATOR_gt:
+            printf(">");
+            break;
+        case OPERATOR_gt_equals:
+            printf(">=");
+            break;
+        case OPERATOR_lt:
+            printf("<");
+            break;
+        case OPERATOR_lt_equals:
+            printf("<=");
+            break;
         default:
             // todo die
             break;

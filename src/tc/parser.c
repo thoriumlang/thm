@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include "macros.h"
 #include "parser.h"
 #include "lexer.h"
 #include "memory.h"
@@ -92,7 +93,7 @@ static bool check(Parser *self, ETokenType expected) {
  * @param tokens the count of possible tokens
  * @return true if the next token is of the expected type; false otherwise.
  */
-static bool check_any(Parser *self, size_t tokens, ...) {
+static bool check_any_va_args(Parser *self, size_t tokens, ...) {
     va_list argp;
     va_start(argp, tokens);
 
@@ -105,6 +106,8 @@ static bool check_any(Parser *self, size_t tokens, ...) {
 
     return false;
 }
+
+#define check_any(self, ...) check_any_va_args((self), num_args(__VA_ARGS__), __VA_ARGS__)
 
 /**
  * Returns whether any of the n next tokens is of the expected type.
@@ -136,7 +139,7 @@ static bool match(Parser *self, ETokenType expected) {
     return true;
 }
 
-static void print_token_expected_error(Parser *self, size_t tokens, ...) {
+static void print_token_expected_error_va_args(Parser *self, size_t tokens, ...) {
     if (self->error_recovery) {
         return;
     }
@@ -165,6 +168,8 @@ static void print_token_expected_error(Parser *self, size_t tokens, ...) {
     fprintf(stderr, " at %i:%i\n", token->line, token->column);
 }
 
+#define print_token_expected_error(self, ...) print_token_expected_error_va_args((self), num_args(__VA_ARGS__), __VA_ARGS__)
+
 /**
  * Triggers an error in case the next token is not of the expected type.
  * @param self the parser instance.
@@ -175,6 +180,14 @@ static void expect(Parser *self, ETokenType expected) {
         print_token_expected_error(self, 1, expected);
     }
 }
+
+#define expect_any(self, ...) \
+    {                                   \
+        size_t n_args = num_args(__VA_ARGS__); \
+        if (!check_any_va_args((self), n_args, __VA_ARGS__)) { \
+            print_token_expected_error_va_args((self), n_args, __VA_ARGS__); \
+        }                                   \
+    }
 
 static void print_expected_error(Parser *self, const char *expected) {
     if (self->error_recovery) {
@@ -279,6 +292,7 @@ static EPrecedence get_precedence(EOperator op) {
         case OPERATOR_slash:
             return PREC_PRODUCT;
         case OPERATOR_equals:
+        case OPERATOR_not_equals:
             return PREC_EQ_CMP;
         case OPERATOR_lt:
         case OPERATOR_gt:
@@ -303,14 +317,29 @@ static EOperator convert_token_to_operator(Token *token) {
             return OPERATOR_minus;
         case TOKEN_STAR:
             return OPERATOR_star;
+        case TOKEN_EQUALS:
+            return OPERATOR_equals;
+        case TOKEN_NOT_EQUALS:
+            return OPERATOR_not_equals;
+        case TOKEN_GT:
+            return OPERATOR_gt;
+        case TOKEN_GT_EQUALS:
+            return OPERATOR_gt_equals;
+        case TOKEN_LT:
+            return OPERATOR_lt;
+        case TOKEN_LT_EQUALS:
+            return OPERATOR_lt_equals;
         default:
             // todo die
             return OPERATOR_plus;
     }
 }
 
+#define OPERATORS TOKEN_PLUS, TOKEN_MINUS, TOKEN_STAR, \
+    TOKEN_EQUALS, TOKEN_NOT_EQUALS, \
+    TOKEN_GT, TOKEN_LT, TOKEN_GT_EQUALS, TOKEN_LT_EQUALS
 inline static bool next_token_is_operator(Parser *self) {
-    return check_any(self, 3, TOKEN_PLUS, TOKEN_MINUS, TOKEN_STAR);
+    return check_any(self, OPERATORS);
 }
 
 static AstNodeExpression *parse_infix_expression(Parser *self, AstNodeExpression *left);
@@ -354,11 +383,9 @@ static AstNodeExpression *parse_expression(Parser *self, EPrecedence precedence)
     }
 }
 
-// <operator> := <+> | <-> | <*>
+// <operator> := <+> | <-> | <*> | <==> | <!=> | <>> | <<> | <>=> | <<=>
 static AstNodeOperator *parse_operator(Parser *self) {
-    if (!check_any(self, 3, TOKEN_PLUS, TOKEN_MINUS, TOKEN_STAR)) {
-        print_token_expected_error(self, 3, TOKEN_PLUS, TOKEN_MINUS, TOKEN_STAR);
-    }
+    expect_any(self, OPERATORS);
 
     Token token = advance(self);
     AstNodeOperator *node = ast_node_operator_create(convert_token_to_operator(&token));
@@ -375,9 +402,15 @@ static AstNodeOperator *parse_operator(Parser *self) {
     }
 }
 
-// <infixExpression> := <+> <expression>
-//                    | <-> <expression>
-//                    | <*> <expression>
+// <infixExpression> := <+>  <expression>
+//                    | <->  <expression>
+//                    | <*>  <expression>
+//                    | <==> <expression>
+//                    | <!=> <expression>
+//                    | <>>  <expression>
+//                    | <<>  <expression>
+//                    | <>=> <expression>
+//                    | <<=> <expression>
 static AstNodeExpression *parse_infix_expression(Parser *self, AstNodeExpression *left) {
     AstNodeOperator *operator = parse_operator(self);
     AstNodeExpression *right = parse_expression(self, get_precedence(operator->op));

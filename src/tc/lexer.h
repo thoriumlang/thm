@@ -37,9 +37,9 @@ typedef enum {
     TOKEN_PIPE,
     TOKEN_CIRC,
     TOKEN_EXCLAM,
-    TOKEN_EQUAL,
-    TOKEN_GT,
-    TOKEN_LT,
+    TOKEN_EQUAL,      // =
+    TOKEN_GT,         // >
+    TOKEN_LT,         // <
     TOKEN_AT,
     TOKEN_DOLLAR,
     TOKEN_COLON,
@@ -48,10 +48,10 @@ typedef enum {
     // 2 chars
     TOKEN_AND,
     TOKEN_OR,
-    TOKEN_EQUALS,
-    TOKEN_NOT_EQUALS,
-    TOKEN_GT_EQUALS,
-    TOKEN_LT_EQUALS,
+    TOKEN_EQUALS,     // ==
+    TOKEN_NOT_EQUALS, // !=
+    TOKEN_GT_EQUALS,  // >=
+    TOKEN_LT_EQUALS,  // <=
     TOKEN_CAST,
     // other
     TOKEN_NUMBER,
