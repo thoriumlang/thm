@@ -20,7 +20,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <string.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include "functions.h"
 #include "list.h"
 

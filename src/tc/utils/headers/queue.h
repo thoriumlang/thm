@@ -19,7 +19,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include <malloc.h>
+#include <stdlib.h>
 
 typedef struct CpoclQueue CpoclQueue;
 

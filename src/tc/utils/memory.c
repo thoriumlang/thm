@@ -18,7 +18,6 @@
 #define CPOCL_SHORT_NAMES
 #endif
 
-#include <malloc.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>

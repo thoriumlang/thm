@@ -18,7 +18,7 @@
 #define THM_PAIR_H
 
 #include <stddef.h>
-#include <malloc.h>
+#include <stdlib.h>
 
 typedef struct CpoclPair CpoclPair;
 

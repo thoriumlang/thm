@@ -17,7 +17,7 @@
 #ifndef THM_LIST_H
 #define THM_LIST_H
 
-#include <malloc.h>
+#include <stdlib.h>
 #include "functions.h"
 
 typedef struct CpoclList CpoclList;
