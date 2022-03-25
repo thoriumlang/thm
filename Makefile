@@ -62,6 +62,9 @@ tc: target/cmake-build-debug
 	cmake --build target/cmake-build-debug --target tc
 	ln -fs cmake-build-debug/tc/tc target/tc
 
+tc_syntax:
+	grep '//rule' src/tc/parser.c | sed 's|//rule|  |g'
+
 test_tc: target/cmake-build-debug
 	cmake --build target/cmake-build-debug/tc
 	ctest --test-dir target/cmake-build-debug/tc --output-on-failure
