@@ -467,7 +467,9 @@ static AstNodeVariable *parse_variable(Parser *self) {
 
     node->type = parse_type(self);
 
-    // todo add expr
+    if (match(self, TOKEN_EQUAL)) {
+        node->expression = parse_expression(self, PREC_LOWEST);
+    }
 
     if (!match(self, TOKEN_SEMICOLON)) {
         print_token_expected_error(self, 1, TOKEN_SEMICOLON);
@@ -675,7 +677,7 @@ static AstNodeStmt *parse_stmt_const(Parser *self) {
     node->const_stmt->type = parse_type(self);
     expect(self, TOKEN_EQUAL);
 
-    // todo expr
+    node->const_stmt->expression = parse_expression(self, PREC_LOWEST);
 
     if (!match(self, TOKEN_SEMICOLON)) {
         print_token_expected_error(self, 1, TOKEN_SEMICOLON);
@@ -704,7 +706,7 @@ static AstNodeStmt *parse_stmt_var(Parser *self) {
     node->var_stmt->type = parse_type(self);
 
     if (match(self, TOKEN_EQUAL)) {
-        // todo expr
+        node->var_stmt->expression = parse_expression(self, PREC_LOWEST);
     }
 
     if (!match(self, TOKEN_SEMICOLON)) {

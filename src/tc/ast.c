@@ -235,6 +235,9 @@ void ast_node_variable_destroy(AstNodeVariable *self) {
     if (self->type != NULL) {
         ast_node_type_destroy(self->type);
     }
+    if (self->expression != NULL) {
+        ast_node_expression_destroy(self->expression);
+    }
     memory_free(self);
 }
 
@@ -245,7 +248,9 @@ void ast_node_variable_print(AstNodeVariable *self) {
            self->vol ? "volatile " : "",
            self->name->name);
     ast_node_type_print(self->type);
-    printf(" = <?>;\n");
+    printf(" = ");
+    ast_node_expression_print(self->expression);
+    printf(";\n");
 }
 
 #pragma endregion
@@ -428,6 +433,9 @@ static void ast_node_stmt_const_destroy(AstNodeStmtConst *self) {
     if (self->type != NULL) {
         ast_node_type_destroy(self->type);
     }
+    if (self->expression != NULL) {
+        ast_node_expression_destroy(self->expression);
+    }
     memory_free(self);
 }
 
@@ -456,6 +464,9 @@ static void ast_node_stmt_var_destroy(AstNodeStmtVar *self) {
     if (self->type != NULL) {
         ast_node_type_destroy(self->type);
     }
+    if (self->expression != NULL) {
+        ast_node_expression_destroy(self->expression);
+    }
     memory_free(self);
 }
 
@@ -464,7 +475,9 @@ static void ast_node_stmt_var_print(AstNodeStmtVar *self, int ident) {
     str_repeat(ident_str, " ", ident * 2);
     printf("%svar %s: ", ident_str, self->identifier->name);
     ast_node_type_print(self->type);
-    printf(" = <?>;\n");
+    printf(" = ");
+    ast_node_expression_print(self->expression);
+    printf(";\n");
 }
 
 #pragma endregion

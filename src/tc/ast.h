@@ -156,6 +156,7 @@ typedef struct {
     AstNode base;
     AstNodeType *type;
     AstNodeIdentifier *name;
+    AstNodeExpression *expression;
     bool pub;
     bool ext;
     bool vol;
@@ -256,7 +257,7 @@ typedef struct {
     AstNode base;
     AstNodeIdentifier *identifier;
     AstNodeType *type;
-    // expression
+    AstNodeExpression *expression;
 } AstNodeStmtConst;
 
 AstNodeStmt *ast_node_stmt_const_create(void);
@@ -269,7 +270,7 @@ typedef struct {
     AstNode base;
     AstNodeIdentifier *identifier;
     AstNodeType *type;
-    // expression
+    AstNodeExpression *expression;
 } AstNodeStmtVar;
 
 AstNodeStmt *ast_node_stmt_var_create(void);
