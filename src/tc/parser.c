@@ -666,8 +666,8 @@ static AstNodeStmt *parse_stmt_const(Parser *self) {
     AstNodeStmt *node = ast_node_stmt_const_create();
 
     Token *token = peek(self, 0);
-    ((AstNode *) node)->start_line = token->line;
-    ((AstNode *) node)->start_column = token->column;
+    ((AstNode *) node->const_stmt)->start_line = token->line;
+    ((AstNode *) node->const_stmt)->start_column = token->column;
 
     expect(self, TOKEN_CONST);
     node->const_stmt->identifier = parse_identifier(self);
@@ -695,8 +695,8 @@ static AstNodeStmt *parse_stmt_var(Parser *self) {
     AstNodeStmt *node = ast_node_stmt_var_create();
 
     Token *token = peek(self, 0);
-    ((AstNode *) node)->start_line = token->line;
-    ((AstNode *) node)->start_column = token->column;
+    ((AstNode *) node->var_stmt)->start_line = token->line;
+    ((AstNode *) node->var_stmt)->start_column = token->column;
 
     expect(self, TOKEN_VAR);
     node->var_stmt->identifier = parse_identifier(self);
@@ -725,8 +725,8 @@ static AstNodeStmt *parse_stmt_assignment(Parser *self) {
     AstNodeStmt *node = ast_node_stmt_assignment_create();
 
     Token *token = peek(self, 0);
-    ((AstNode *) node)->start_line = token->line;
-    ((AstNode *) node)->start_column = token->column;
+    ((AstNode *) node->assignment_stmt)->start_line = token->line;
+    ((AstNode *) node->assignment_stmt)->start_column = token->column;
 
     node->assignment_stmt->identifier = parse_identifier(self);
 
@@ -752,8 +752,8 @@ static AstNodeStmt *parse_stmt_if(Parser *self) {
     AstNodeStmt *node = ast_node_stmt_if_create();
 
     Token *token = peek(self, 0);
-    ((AstNode *) node)->start_line = token->line;
-    ((AstNode *) node)->start_column = token->column;
+    ((AstNode *) node->if_stmt)->start_line = token->line;
+    ((AstNode *) node->if_stmt)->start_column = token->column;
 
     expect(self, TOKEN_IF);
     expect(self, TOKEN_LPAR);
@@ -800,8 +800,8 @@ static AstNodeStmt *parse_stmt_while(Parser *self) {
     AstNodeStmt *node = ast_node_stmt_while_create();
 
     Token *token = peek(self, 0);
-    ((AstNode *) node)->start_line = token->line;
-    ((AstNode *) node)->start_column = token->column;
+    ((AstNode *) node->while_stmt)->start_line = token->line;
+    ((AstNode *) node->while_stmt)->start_column = token->column;
 
     expect(self, TOKEN_WHILE);
     expect(self, TOKEN_LPAR);
