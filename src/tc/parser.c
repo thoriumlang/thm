@@ -162,10 +162,10 @@ static void print_token_expected_error_va_args(Parser *self, size_t tokens, ...)
         fprintf(stderr, "<%s>", token_type_to_string(token));
     }
     if (tokens > 1) {
-        fprintf(stderr, " )");
+        fprintf(stderr, " ) ");
     }
     Token *token = peek(self, 0);
-    fprintf(stderr, " at %i:%i\n", token->line, token->column);
+    fprintf(stderr, " but got <%s> at %i:%i\n", token_type_to_string(token->type), token->line, token->column);
 }
 
 #define print_token_expected_error(self, ...) print_token_expected_error_va_args((self), num_args(__VA_ARGS__), __VA_ARGS__)
@@ -177,7 +177,7 @@ static void print_token_expected_error_va_args(Parser *self, size_t tokens, ...)
  */
 static void expect(Parser *self, ETokenType expected) {
     if (!match(self, expected)) {
-        print_token_expected_error(self, 1, expected);
+        print_token_expected_error(self, expected);
     }
 }
 
@@ -216,7 +216,7 @@ static void parser_memory_free(void *ptr) {
 //rule <identifier> := <IDENTIFIER>
 static AstNodeIdentifier *parse_identifier(Parser *self) {
     if (!check(self, TOKEN_IDENTIFIER)) {
-        print_token_expected_error(self, 1, TOKEN_IDENTIFIER);
+        print_token_expected_error(self, TOKEN_IDENTIFIER);
         return NULL;
     }
 
@@ -235,6 +235,7 @@ static AstNodeType *parse_type(Parser *self) {
         return NULL;
     }
 
+    Token *token = peek(self, 0);
     int line = token->line;
     int column = token->column;
 
@@ -253,7 +254,7 @@ static AstNodeType *parse_type(Parser *self) {
             advance(self);
             break;
         default:
-            print_token_expected_error(self, 4, TOKEN_WORD, TOKEN_BYTE, TOKEN_IDENTIFIER, TOKEN_AT);
+            print_token_expected_error(self, TOKEN_WORD, TOKEN_BYTE, TOKEN_IDENTIFIER, TOKEN_AT);
             break;
     }
 
@@ -266,7 +267,7 @@ static AstNodeType *parse_type(Parser *self) {
 //rule <number> := <NUMBER>
 static AstNodeNumber *parse_number(Parser *self) {
     if (!check(self, TOKEN_NUMBER)) {
-        print_token_expected_error(self, 1, TOKEN_NUMBER);
+        print_token_expected_error(self, TOKEN_NUMBER);
         return NULL;
     }
 
@@ -338,6 +339,7 @@ static EOperator convert_token_to_operator(Token *token) {
 #define OPERATORS TOKEN_PLUS, TOKEN_MINUS, TOKEN_STAR, \
     TOKEN_EQUALS, TOKEN_NOT_EQUALS, \
     TOKEN_GT, TOKEN_LT, TOKEN_GT_EQUALS, TOKEN_LT_EQUALS
+
 inline static bool next_token_is_operator(Parser *self) {
     return check_any(self, OPERATORS);
 }
@@ -361,7 +363,7 @@ static AstNodeExpression *parse_expression(Parser *self, EPrecedence precedence)
             expression->identifier_expression = parse_identifier(self);
             break;
         default:
-            print_token_expected_error(self, 2, TOKEN_NUMBER, TOKEN_IDENTIFIER);
+            print_token_expected_error(self, TOKEN_NUMBER, TOKEN_IDENTIFIER);
     }
 
     if (self->error_recovery) {
@@ -427,6 +429,9 @@ static AstNodeExpression *parse_infix_expression(Parser *self, AstNodeExpression
 
 //rule <variable> := ( <PUBLIC> | <EXTERN> )? <VOLATILE>? <VAR> <identifier> <:> <type> <;>
 static AstNodeVariable *parse_variable(Parser *self) {
+    if (!check_within(self, TOKEN_VAR, 3)) {
+        return NULL;
+    }
     AstNodeVariable *node = ast_node_variable_create();
 
     Token *token = peek(self, 0);
@@ -447,7 +452,7 @@ static AstNodeVariable *parse_variable(Parser *self) {
             // keep for later
             break;
         default:
-            print_token_expected_error(self, 4, TOKEN_PUBLIC, TOKEN_EXTERN, TOKEN_VOLATILE, TOKEN_VAR);
+            print_token_expected_error(self, TOKEN_PUBLIC, TOKEN_EXTERN, TOKEN_VOLATILE, TOKEN_VAR);
             break;
     }
 
@@ -456,13 +461,13 @@ static AstNodeVariable *parse_variable(Parser *self) {
     }
 
     if (!match(self, TOKEN_VAR)) {
-        print_token_expected_error(self, 1, TOKEN_VAR);
+        print_token_expected_error(self, TOKEN_VAR);
     }
 
     node->name = parse_identifier(self);
 
     if (!match(self, TOKEN_COLON)) {
-        print_token_expected_error(self, 1, TOKEN_COLON);
+        print_token_expected_error(self, TOKEN_COLON);
     }
 
     node->type = parse_type(self);
@@ -472,7 +477,7 @@ static AstNodeVariable *parse_variable(Parser *self) {
     }
 
     if (!match(self, TOKEN_SEMICOLON)) {
-        print_token_expected_error(self, 1, TOKEN_SEMICOLON);
+        print_token_expected_error(self, TOKEN_SEMICOLON);
         ast_node_variable_destroy(node);
         return NULL;
     } else if (self->error_recovery) {
@@ -486,6 +491,9 @@ static AstNodeVariable *parse_variable(Parser *self) {
 
 //rule <const> := ( <PUBLIC> | <EXTERN> )? <CONST> <IDENTIFIER> <:> <type> <=> <expr> <;>
 static AstNodeConst *parse_const(Parser *self) {
+    if (!check_within(self, TOKEN_CONST, 2)) {
+        return NULL;
+    }
     AstNodeConst *node = ast_node_const_create();
 
     Token *token = peek(self, 0);
@@ -507,25 +515,25 @@ static AstNodeConst *parse_const(Parser *self) {
     }
 
     if (!match(self, TOKEN_CONST)) {
-        print_token_expected_error(self, 1, TOKEN_CONST);
+        print_token_expected_error(self, TOKEN_CONST);
     }
 
     node->name = parse_identifier(self);
 
     if (!match(self, TOKEN_COLON)) {
-        print_token_expected_error(self, 1, TOKEN_COLON);
+        print_token_expected_error(self, TOKEN_COLON);
     }
 
     node->type = parse_type(self);
 
     if (!match(self, TOKEN_EQUAL)) {
-        print_token_expected_error(self, 1, TOKEN_EQUAL);
+        print_token_expected_error(self, TOKEN_EQUAL);
     }
 
     node->expression = parse_expression(self, PREC_LOWEST);
 
     if (!match(self, TOKEN_SEMICOLON)) {
-        print_token_expected_error(self, 1, TOKEN_SEMICOLON);
+        print_token_expected_error(self, TOKEN_SEMICOLON);
         ast_node_const_destroy(node);
         return NULL;
     } else if (self->error_recovery) {
@@ -546,17 +554,20 @@ static AstNodeParameter *parse_parameter(Parser *self) {
     AstNodeIdentifier *identifier = parse_identifier(self);
 
     if (!match(self, TOKEN_COLON)) {
-        print_token_expected_error(self, 1, TOKEN_COLON);
+        print_token_expected_error(self, TOKEN_COLON);
     }
 
     return ast_node_parameter_create(identifier, parse_type(self), line, column);
 }
 
-//rule <parameters> := ( <parameter> ( <,> <parameter> )* )?
+//rule <parameters> := <(> ( <parameter> ( <,> <parameter> )* <,>? )? <)>
 static AstNodeParameters *parse_parameters(Parser *self) {
-    // todo allow trailing comma
-    AstNodeParameters *node = ast_node_parameters_create();
+    if (!match(self, TOKEN_LPAR)) {
+        print_token_expected_error(self, TOKEN_LPAR);
+        return NULL;
+    }
 
+    AstNodeParameters *node = ast_node_parameters_create();
     Token *token = peek(self, 0);
     node->base.start_line = token->line;
     node->base.start_column = token->column;
@@ -575,33 +586,50 @@ static AstNodeParameters *parse_parameters(Parser *self) {
         }
     }
 
-    return node;
-}
+    match(self, TOKEN_COMMA); // eat the last comma, if any
 
-static AstNodeStmt *parse_stmt(Parser *self);
-
-//rule <stmts> := <stmt>*
-static AstNodeStatements *parse_stmts(Parser *self) {
-    AstNodeStatements *node = ast_node_stmts_create();
-
-    bool first_statement = true;
-    while (!check(self, TOKEN_EOF) && !check(self, TOKEN_RBRACE)) {
-        AstNodeStmt *stmt = parse_stmt(self);
-        if (stmt != NULL) {
-            if (first_statement) {
-                first_statement = false;
-                node->base.start_line = ((AstNode *) stmt)->start_line;
-                node->base.start_column = ((AstNode *) stmt)->start_column;
-            }
-            list_add(node->stmts, stmt);
-        }
+    if (!match(self, TOKEN_RPAR)) {
+        print_token_expected_error(self, TOKEN_COMMA, TOKEN_RPAR);
     }
 
     return node;
 }
 
-//rule <function> := ( <PUBLIC> | <EXTERN> )? <FN> <IDENTIFIER> <(> <parameters> <)> <:> <type> <{> <stmts> <}>
+static AstNodeStmt *parse_stmt(Parser *self);
+
+//rule <stmts> := <{> <stmt>* <}>
+static AstNodeStatements *parse_stmts(Parser *self) {
+    if (!match(self, TOKEN_LBRACE)) {
+        print_token_expected_error(self, TOKEN_LBRACE);
+        return NULL;
+    }
+
+    AstNodeStatements *node = ast_node_stmts_create();
+    Token *token = peek(self, 0);
+    node->base.start_line = token->line;
+    node->base.start_column = token->column;
+
+    if (match(self, TOKEN_RBRACE)) {
+        return node;
+    }
+
+    AstNodeStmt *stmt = parse_stmt(self);
+    while (stmt != NULL) {
+        list_add(node->stmts, stmt);
+        if (match(self, TOKEN_RBRACE)) {
+            break;
+        }
+        stmt = parse_stmt(self);
+    }
+
+    return node;
+}
+
+//rule <function> := ( <PUBLIC> | <EXTERN> )? <FN> <IDENTIFIER> <parameters> <:> <type> <stmts>
 static AstNodeFunction *parse_function(Parser *self) {
+    if (!check_within(self, TOKEN_FN, 2)) {
+        return NULL;
+    }
     AstNodeFunction *node = ast_node_function_create();
 
     Token *token = peek(self, 0);
@@ -623,44 +651,27 @@ static AstNodeFunction *parse_function(Parser *self) {
     }
 
     if (!match(self, TOKEN_FN)) {
-        print_token_expected_error(self, 1, TOKEN_FN);
+        print_token_expected_error(self, TOKEN_FN);
     }
 
     node->name = parse_identifier(self);
 
-    if (!match(self, TOKEN_LPAR)) {
-        print_token_expected_error(self, 1, TOKEN_LPAR);
-    }
-
     node->parameters = parse_parameters(self);
 
-    if (!match(self, TOKEN_RPAR)) {
-        print_token_expected_error(self, 2, TOKEN_COMMA, TOKEN_RPAR);
-    }
-
     if (!match(self, TOKEN_COLON)) {
-        print_token_expected_error(self, 1, TOKEN_COLON);
+        print_token_expected_error(self, TOKEN_COLON);
     }
-
     node->type = parse_type(self);
-
-    if (!match(self, TOKEN_LBRACE)) { // todo may move to stmts?
-        print_token_expected_error(self, 1, TOKEN_LBRACE);
-    }
 
     node->statements = parse_stmts(self);
 
-    if (!match(self, TOKEN_RBRACE)) {
-        print_token_expected_error(self, 1, TOKEN_RBRACE);
-        ast_node_function_destroy(node);
-        return NULL;
-    } else if (self->error_recovery) {
+    if (self->error_recovery) {
         self->error_recovery = false;
         ast_node_function_destroy(node);
         return NULL;
-    } else {
-        return node;
     }
+
+    return node;
 }
 
 //rule <stmt_const> := <CONST> <identifier> <:> <type> <=> <expr> <;>
@@ -680,7 +691,7 @@ static AstNodeStmt *parse_stmt_const(Parser *self) {
     node->const_stmt->expression = parse_expression(self, PREC_LOWEST);
 
     if (!match(self, TOKEN_SEMICOLON)) {
-        print_token_expected_error(self, 1, TOKEN_SEMICOLON);
+        print_token_expected_error(self, TOKEN_SEMICOLON);
         ast_node_stmt_destroy(node);
         return NULL;
     } else if (self->error_recovery) {
@@ -710,7 +721,7 @@ static AstNodeStmt *parse_stmt_var(Parser *self) {
     }
 
     if (!match(self, TOKEN_SEMICOLON)) {
-        print_token_expected_error(self, 1, TOKEN_SEMICOLON);
+        print_token_expected_error(self, TOKEN_SEMICOLON);
         ast_node_stmt_destroy(node);
         return NULL;
     } else if (self->error_recovery) {
@@ -737,7 +748,7 @@ static AstNodeStmt *parse_stmt_assignment(Parser *self) {
     // todo expr
 
     if (!match(self, TOKEN_SEMICOLON)) {
-        print_token_expected_error(self, 1, TOKEN_SEMICOLON);
+        print_token_expected_error(self, TOKEN_SEMICOLON);
         ast_node_stmt_destroy(node);
         return NULL;
     } else if (self->error_recovery) {
@@ -778,14 +789,14 @@ static AstNodeStmt *parse_stmt_if(Parser *self) {
             rbrace_required = true;
             node->if_stmt->false_block = parse_stmts(self);
         } else {
-            print_token_expected_error(self, 2, TOKEN_IF, TOKEN_LBRACE);
+            print_token_expected_error(self, TOKEN_IF, TOKEN_LBRACE);
         }
     } else {
         node->if_stmt->false_block = ast_node_stmts_create();
     }
 
     if (rbrace_required && !match(self, TOKEN_RBRACE)) {
-        print_token_expected_error(self, 1, TOKEN_RBRACE);
+        print_token_expected_error(self, TOKEN_RBRACE);
         ast_node_stmt_destroy(node);
         return NULL;
     } else if (self->error_recovery) {
@@ -816,7 +827,7 @@ static AstNodeStmt *parse_stmt_while(Parser *self) {
     node->while_stmt->block = parse_stmts(self);
 
     if (!match(self, TOKEN_RBRACE)) {
-        print_token_expected_error(self, 1, TOKEN_RBRACE);
+        print_token_expected_error(self, TOKEN_RBRACE);
         ast_node_stmt_destroy(node);
         return NULL;
     } else if (self->error_recovery) {
@@ -845,7 +856,8 @@ static AstNodeStmt *parse_stmt(Parser *self) {
         case TOKEN_WHILE:
             return parse_stmt_while(self);
         default:
-            print_expected_error(self, "<statement>");
+            print_token_expected_error(self, TOKEN_SEMICOLON, TOKEN_CONST, TOKEN_VAR, TOKEN_IDENTIFIER,
+                                             TOKEN_IF, TOKEN_WHILE);
             return NULL;
     }
 }
@@ -882,25 +894,30 @@ AstRoot *parser_parse(Parser *self) {
         while (match(self, TOKEN_SEMICOLON)) {
             // nothing
         }
-        if (check_within(self, TOKEN_VAR, 3)) {
-            AstNodeVariable *variable = parse_variable(self);
-            if (variable != NULL) {
-                list_add(root->variables, variable);
-            }
-        } else if (check_within(self, TOKEN_FN, 2)) {
-            AstNodeFunction *function = parse_function(self);
-            if (function != NULL) {
-                list_add(root->functions, function);
-            }
-        } else if (check_within(self, TOKEN_CONST, 2)) {
-            AstNodeConst *constant = parse_const(self);
-            if (constant != NULL) {
-                list_add(root->constants, constant);
-            }
-        } else {
-            print_expected_error(self, "constant, variable or function definition");
-            advance(self);
+
+        // here, we try to parse a function, a variable or a const by calling each parse functions sequentially.
+        // we restart the loop as soon as one returned something; if all returned NULL we have an error.
+
+        AstNodeVariable *variable = parse_variable(self);
+        if (variable != NULL) {
+            list_add(root->variables, variable);
+            continue;
         }
+
+        AstNodeFunction *function = parse_function(self);
+        if (function != NULL) {
+            list_add(root->functions, function);
+            continue;
+        }
+
+        AstNodeConst *constant = parse_const(self);
+        if (constant != NULL) {
+            list_add(root->constants, constant);
+            continue;
+        }
+
+        print_expected_error(self, "constant, variable or function definition");
+        advance(self);
     }
 
     if (self->error_found) {
