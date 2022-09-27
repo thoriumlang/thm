@@ -226,16 +226,6 @@ static AstNodeIdentifier *parse_identifier(Parser *self) {
 //rule <type> := <@>* <identifier>
 static AstNodeType *parse_type(Parser *self) {
     Token *token = peek(self, 0);
-
-    if (token->type != TOKEN_BYTE &&
-        token->type != TOKEN_WORD &&
-        token->type != TOKEN_IDENTIFIER &&
-        token->type != TOKEN_AT) {
-        print_token_expected_error(self, 4, TOKEN_WORD, TOKEN_BYTE, TOKEN_IDENTIFIER, TOKEN_AT);
-        return NULL;
-    }
-
-    Token *token = peek(self, 0);
     int line = token->line;
     int column = token->column;
 
