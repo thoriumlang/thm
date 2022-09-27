@@ -444,7 +444,9 @@ static void ast_node_stmt_const_print(AstNodeStmtConst *self, int ident) {
     str_repeat(ident_str, " ", ident * 2);
     printf("%sconst %s: ", ident_str, self->identifier->name);
     ast_node_type_print(self->type);
-    printf(" = <?>;\n");
+    printf(" = ");
+    ast_node_expression_print(self->expression);
+    printf(";\n");
 }
 
 #pragma endregion
@@ -475,8 +477,10 @@ static void ast_node_stmt_var_print(AstNodeStmtVar *self, int ident) {
     str_repeat(ident_str, " ", ident * 2);
     printf("%svar %s: ", ident_str, self->identifier->name);
     ast_node_type_print(self->type);
-    printf(" = ");
-    ast_node_expression_print(self->expression);
+    if (self->expression != NULL) {
+        printf(" = ");
+        ast_node_expression_print(self->expression);
+    }
     printf(";\n");
 }
 
