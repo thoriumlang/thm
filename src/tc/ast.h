@@ -293,7 +293,7 @@ AstNodeStmt *ast_node_stmt_assignment_create(void);
 
 typedef struct {
     AstNode base;
-    // condition
+    AstNodeExpression *expression;
     AstNodeStatements *true_block;
     AstNodeStatements *false_block;
 } AstNodeStmtIf;

@@ -824,7 +824,7 @@ static AstNodeStmt *parse_stmt_assignment(Parser *self) {
 }
 
 /**
- * rule [stmt_if] := [IF] [(] [expr] [)] [{] [stmts] [}] ( [ELSE] ( [stmt_if] | [{] [stmts] [}] ) )?
+ * rule [stmt_if] := [IF] [(] [expr] [)] [stmts] ( [ELSE] ( [stmt_if] | [stmts] ) )?
  * @param self
  * @return
  */
@@ -837,36 +837,22 @@ static AstNodeStmt *parse_stmt_if(Parser *self) {
 
     expect(self, TOKEN_IF);
     expect(self, TOKEN_LPAR);
-
-    // todo expr
-
+    node->if_stmt->expression = parse_expression(self, PREC_LOWEST);
     expect(self, TOKEN_RPAR);
-    expect(self, TOKEN_LBRACE);
-
     node->if_stmt->true_block = parse_stmts(self);
-
-    expect(self, TOKEN_RBRACE);
-    bool rbrace_required = false;
 
     if (match(self, TOKEN_ELSE)) {
         if (check(self, TOKEN_IF)) {
             node->if_stmt->false_block = ast_node_stmts_create();
             list_add(node->if_stmt->false_block->stmts, parse_stmt_if(self));
-        } else if (match(self, TOKEN_LBRACE)) {
-            rbrace_required = true;
+        } else if (check(self, TOKEN_LBRACE)) {
             node->if_stmt->false_block = parse_stmts(self);
-        } else {
-            print_token_expected_error(self, TOKEN_IF, TOKEN_LBRACE);
         }
     } else {
         node->if_stmt->false_block = ast_node_stmts_create();
     }
 
-    if (rbrace_required && !match(self, TOKEN_RBRACE)) {
-        print_token_expected_error(self, TOKEN_RBRACE);
-        ast_node_stmt_destroy(node);
-        return NULL;
-    } else if (self->error_recovery) {
+    if (self->error_recovery) {
         self->error_recovery = false;
         ast_node_stmt_destroy(node);
         return NULL;
@@ -874,6 +860,7 @@ static AstNodeStmt *parse_stmt_if(Parser *self) {
         assert(node != NULL);
         assert(node->kind == STMT_IF);
         assert(node->if_stmt != NULL);
+        assert(node->if_stmt->expression != NULL);
         assert(node->if_stmt->true_block != NULL);
         assert(node->if_stmt->false_block != NULL);
         return node;

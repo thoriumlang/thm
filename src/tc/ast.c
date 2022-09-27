@@ -531,22 +531,28 @@ static void ast_node_stmt_assignment_print(AstNodeStmtAssignment *self, int iden
 #pragma region AstNodeStmtIf
 
 AstNodeStmt *ast_node_stmt_if_create(void) {
-    AstNodeStmt *node = ast_node_stmt_create(STMT_IF);
-//todo remove    node->if_stmt->true_block = ast_node_stmts_create();
-//todo remove    node->if_stmt->false_block = ast_node_stmts_create();
-    return node;
+    return ast_node_stmt_create(STMT_IF);
 }
 
 static void ast_node_stmt_if_destroy(AstNodeStmtIf *self) {
-    ast_node_stmts_destroy(self->true_block);
-    ast_node_stmts_destroy(self->false_block);
+    if (self->expression != NULL) {
+        ast_node_expression_destroy(self->expression);
+    }
+    if (self->true_block != NULL) {
+        ast_node_stmts_destroy(self->true_block);
+    }
+    if (self->false_block != NULL) {
+        ast_node_stmts_destroy(self->false_block);
+    }
     memory_free(self);
 }
 
 static void ast_node_stmt_if_print(AstNodeStmtIf *self, int ident) {
     char *ident_str = calloc(ident * 2 + 1, sizeof(char));
     str_repeat(ident_str, " ", ident * 2);
-    printf("%sif (<?>) {\n", ident_str);
+    printf("%sif (", ident_str);
+    ast_node_expression_print(self->expression);
+    printf(") {\n");
     for (size_t i = 0; i < list_size(self->true_block->stmts); i++) {
         ast_node_stmt_print(list_get(self->true_block->stmts, i), ident + 1);
     }
