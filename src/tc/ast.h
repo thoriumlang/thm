@@ -317,11 +317,11 @@ AstNodeStmt *ast_node_stmt_while_create(void);
 #pragma region AstNodeStmt
 
 typedef enum {
-    CONST,
-    VAR,
-    ASSIGNMENT,
-    IF,
-    WHILE,
+    STMT_CONST,
+    STMT_VAR,
+    STMT_ASSIGNMENT,
+    STMT_IF,
+    STMT_WHILE,
 } EStmtKind;
 
 typedef struct AstNodeStmt {

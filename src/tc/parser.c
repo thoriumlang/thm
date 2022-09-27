@@ -741,7 +741,7 @@ static AstNodeStmt *parse_stmt_const(Parser *self) {
         return NULL;
     } else {
         assert(node != NULL);
-        assert(node->kind == CONST);
+        assert(node->kind == STMT_CONST);
         assert(node->const_stmt != NULL);
         assert(node->const_stmt->identifier != NULL);
         assert(node->const_stmt->type != NULL);
@@ -781,7 +781,7 @@ static AstNodeStmt *parse_stmt_var(Parser *self) {
         return NULL;
     } else {
         assert(node != NULL);
-        assert(node->kind == VAR);
+        assert(node->kind == STMT_VAR);
         assert(node->var_stmt != NULL);
         assert(node->var_stmt->identifier != NULL);
         assert(node->var_stmt->type != NULL);
@@ -815,7 +815,7 @@ static AstNodeStmt *parse_stmt_assignment(Parser *self) {
         return NULL;
     } else {
         assert(node != NULL);
-        assert(node->kind == ASSIGNMENT);
+        assert(node->kind == STMT_ASSIGNMENT);
         assert(node->assignment_stmt != NULL);
         assert(node->assignment_stmt->identifier != NULL);
         assert(node->assignment_stmt->expression != NULL);
@@ -872,7 +872,7 @@ static AstNodeStmt *parse_stmt_if(Parser *self) {
         return NULL;
     } else {
         assert(node != NULL);
-        assert(node->kind == IF);
+        assert(node->kind == STMT_IF);
         assert(node->if_stmt != NULL);
         assert(node->if_stmt->true_block != NULL);
         assert(node->if_stmt->false_block != NULL);
@@ -912,7 +912,7 @@ static AstNodeStmt *parse_stmt_while(Parser *self) {
         return NULL;
     } else {
         assert(node != NULL);
-        assert(node->kind == WHILE);
+        assert(node->kind == STMT_WHILE);
         assert(node->while_stmt != NULL);
         return node;
     }

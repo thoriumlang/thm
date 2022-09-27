@@ -169,27 +169,27 @@ bool analyzer_analyse(Analyser *self, AstRoot *root) {
         for (size_t s = 0; s < list_size(f->statements->stmts); s++) {
             AstNodeStmt *stmt = (AstNodeStmt *) list_get(f->statements->stmts, s);
             switch (stmt->kind) {
-                case CONST:
+                case STMT_CONST:
                     symbol_table_add(
                             f->base.symbols,
                             symbol_create(stmt->const_stmt->identifier->name, SYM_CONST, stmt)
                     );
                     break;
-                case VAR:
+                case STMT_VAR:
                     symbol_table_add(
                             f->base.symbols,
                             symbol_create(stmt->var_stmt->identifier->name, SYM_VAR, stmt)
                     );
                     break;
-                case ASSIGNMENT:
+                case STMT_ASSIGNMENT:
                     if (!symbol_table_symbol_exists(f->base.symbols, stmt->assignment_stmt->identifier->name)) {
                         sprintf(buffer, "identifier '%s' not defined", stmt->assignment_stmt->identifier->name);
                         print_error(self, buffer, stmt->base);
                     }
                     break;
-                case IF:
+                case STMT_IF:
                     break;
-                case WHILE:
+                case STMT_WHILE:
                     break;
                 default:
                     break;

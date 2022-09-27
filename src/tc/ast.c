@@ -16,6 +16,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <assert.h>
 #include "ast.h"
 #include "lexer.h"
 #include "str.h"
@@ -414,6 +415,25 @@ void ast_node_function_print(AstNodeFunction *self, int ident) {
 
 static AstNodeStmt *ast_node_stmt_create(EStmtKind kind) {
     AstNodeStmt *node = memory_alloc(sizeof(AstNodeStmt));
+    switch (kind) {
+        case STMT_ASSIGNMENT:
+            node->assignment_stmt = memory_alloc(sizeof(AstNodeStmtAssignment));
+            break;
+        case STMT_CONST:
+            node->assignment_stmt = memory_alloc(sizeof(AstNodeStmtConst));
+            break;
+        case STMT_VAR:
+            node->assignment_stmt = memory_alloc(sizeof(AstNodeStmtVar));
+            break;
+        case STMT_IF:
+            node->assignment_stmt = memory_alloc(sizeof(AstNodeStmtIf));
+            break;
+        case STMT_WHILE:
+            node->assignment_stmt = memory_alloc(sizeof(AstNodeStmtWhile));
+            break;
+        default:
+            assert(false);
+    }
     node->kind = kind;
     return node;
 }
@@ -421,9 +441,7 @@ static AstNodeStmt *ast_node_stmt_create(EStmtKind kind) {
 #pragma region AstNodeStmtConst
 
 AstNodeStmt *ast_node_stmt_const_create(void) {
-    AstNodeStmt *node = ast_node_stmt_create(CONST);
-    node->const_stmt = memory_alloc(sizeof(AstNodeStmtConst));
-    return node;
+    return ast_node_stmt_create(STMT_CONST);
 }
 
 static void ast_node_stmt_const_destroy(AstNodeStmtConst *self) {
@@ -454,9 +472,7 @@ static void ast_node_stmt_const_print(AstNodeStmtConst *self, int ident) {
 #pragma region AstNodeStmtVar
 
 AstNodeStmt *ast_node_stmt_var_create(void) {
-    AstNodeStmt *node = ast_node_stmt_create(VAR);
-    node->var_stmt = memory_alloc(sizeof(AstNodeStmtVar));
-    return node;
+    return ast_node_stmt_create(STMT_VAR);
 }
 
 static void ast_node_stmt_var_destroy(AstNodeStmtVar *self) {
@@ -489,9 +505,7 @@ static void ast_node_stmt_var_print(AstNodeStmtVar *self, int ident) {
 #pragma region AstNodeStmtAssignment
 
 AstNodeStmt *ast_node_stmt_assignment_create(void) {
-    AstNodeStmt *node = ast_node_stmt_create(ASSIGNMENT);
-    node->assignment_stmt = memory_alloc(sizeof(AstNodeStmtAssignment));
-    return node;
+    return ast_node_stmt_create(STMT_ASSIGNMENT);
 }
 
 static void ast_node_stmt_assignment_destroy(AstNodeStmtAssignment *self) {
@@ -517,10 +531,9 @@ static void ast_node_stmt_assignment_print(AstNodeStmtAssignment *self, int iden
 #pragma region AstNodeStmtIf
 
 AstNodeStmt *ast_node_stmt_if_create(void) {
-    AstNodeStmt *node = ast_node_stmt_create(IF);
-    node->if_stmt = memory_alloc(sizeof(AstNodeStmtIf));
-    node->if_stmt->true_block = ast_node_stmts_create();
-    node->if_stmt->false_block = ast_node_stmts_create();
+    AstNodeStmt *node = ast_node_stmt_create(STMT_IF);
+//todo remove    node->if_stmt->true_block = ast_node_stmts_create();
+//todo remove    node->if_stmt->false_block = ast_node_stmts_create();
     return node;
 }
 
@@ -553,8 +566,7 @@ static void ast_node_stmt_if_print(AstNodeStmtIf *self, int ident) {
 #pragma region AstNodeStmtWhile
 
 AstNodeStmt *ast_node_stmt_while_create(void) {
-    AstNodeStmt *node = ast_node_stmt_create(WHILE);
-    node->while_stmt = memory_alloc(sizeof(AstNodeStmtWhile));
+    AstNodeStmt *node = ast_node_stmt_create(STMT_WHILE);
     node->while_stmt->block = ast_node_stmts_create();
     return node;
 }
@@ -580,19 +592,19 @@ static void ast_node_stmt_while_print(AstNodeStmtWhile *self, int ident) {
 
 void ast_node_stmt_destroy(AstNodeStmt *self) {
     switch (self->kind) {
-        case CONST:
+        case STMT_CONST:
             ast_node_stmt_const_destroy(self->const_stmt);
             break;
-        case VAR:
+        case STMT_VAR:
             ast_node_stmt_var_destroy(self->var_stmt);
             break;
-        case ASSIGNMENT:
+        case STMT_ASSIGNMENT:
             ast_node_stmt_assignment_destroy(self->assignment_stmt);
             break;
-        case IF:
+        case STMT_IF:
             ast_node_stmt_if_destroy(self->if_stmt);
             break;
-        case WHILE:
+        case STMT_WHILE:
             ast_node_while_stmt_destroy(self->while_stmt);
             break;
         default:
@@ -603,19 +615,19 @@ void ast_node_stmt_destroy(AstNodeStmt *self) {
 
 void ast_node_stmt_print(AstNodeStmt *self, int ident) {
     switch (self->kind) {
-        case CONST:
+        case STMT_CONST:
             ast_node_stmt_const_print(self->const_stmt, ident);
             break;
-        case VAR:
+        case STMT_VAR:
             ast_node_stmt_var_print(self->var_stmt, ident);
             break;
-        case ASSIGNMENT:
+        case STMT_ASSIGNMENT:
             ast_node_stmt_assignment_print(self->assignment_stmt, ident);
             break;
-        case IF:
+        case STMT_IF:
             ast_node_stmt_if_print(self->if_stmt, ident);
             break;
-        case WHILE:
+        case STMT_WHILE:
             ast_node_stmt_while_print(self->while_stmt, ident);
             break;
         default:
