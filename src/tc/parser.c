@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "macros.h"
 #include "parser.h"
 #include "lexer.h"
@@ -345,8 +346,8 @@ static AstNodeExpression *parse_infix_expression(Parser *self, AstNodeExpression
 /**
  * rule [expression] := [number] | [identifier] | ( [number] | [identifier] ) [infixExpression]
  * @param self
- * @param precedence
- * @return
+ * @param precedence start with <code>PREC_LOWEST</code>
+ * @return a parsed expression or <code>NULL</code> if expression was not parsed successfully
  */
 static AstNodeExpression *parse_expression(Parser *self, EPrecedence precedence) {
     AstNodeExpression *expression = NULL;
@@ -380,6 +381,10 @@ static AstNodeExpression *parse_expression(Parser *self, EPrecedence precedence)
             expression = parse_infix_expression(self, expression);
         }
 
+        assert(expression != NULL);
+        assert(expression->kind != EXPRESSION_NUMBER || expression->number_expression != NULL);
+        assert(expression->kind != EXPRESSION_BINARY || expression->binary_expression != NULL);
+        assert(expression->kind != EXPRESSION_IDENTIFIER || expression->identifier_expression != NULL);
         return expression;
     }
 }
@@ -390,7 +395,7 @@ static AstNodeExpression *parse_expression(Parser *self, EPrecedence precedence)
  * @return
  */
 static AstNodeOperator *parse_operator(Parser *self) {
-    expect_any(self, OPERATORS);
+    expect_any(self, OPERATORS)
 
     Token token = advance(self);
     AstNodeOperator *node = ast_node_operator_create(convert_token_to_operator(&token));
@@ -735,6 +740,12 @@ static AstNodeStmt *parse_stmt_const(Parser *self) {
         ast_node_stmt_destroy(node);
         return NULL;
     } else {
+        assert(node != NULL);
+        assert(node->kind == CONST);
+        assert(node->const_stmt != NULL);
+        assert(node->const_stmt->identifier != NULL);
+        assert(node->const_stmt->type != NULL);
+        assert(node->const_stmt->expression != NULL);
         return node;
     }
 }
@@ -769,6 +780,11 @@ static AstNodeStmt *parse_stmt_var(Parser *self) {
         ast_node_stmt_destroy(node);
         return NULL;
     } else {
+        assert(node != NULL);
+        assert(node->kind == VAR);
+        assert(node->var_stmt != NULL);
+        assert(node->var_stmt->identifier != NULL);
+        assert(node->var_stmt->type != NULL);
         return node;
     }
 }
@@ -800,6 +816,11 @@ static AstNodeStmt *parse_stmt_assignment(Parser *self) {
         ast_node_stmt_destroy(node);
         return NULL;
     } else {
+        assert(node != NULL);
+        assert(node->kind == ASSIGNMENT);
+        assert(node->assignment_stmt != NULL);
+        assert(node->assignment_stmt->identifier != NULL);
+        assert(node->assignment_stmt->expression != NULL);
         return node;
     }
 }
@@ -852,6 +873,11 @@ static AstNodeStmt *parse_stmt_if(Parser *self) {
         ast_node_stmt_destroy(node);
         return NULL;
     } else {
+        assert(node != NULL);
+        assert(node->kind == IF);
+        assert(node->if_stmt != NULL);
+        assert(node->if_stmt->true_block != NULL);
+        assert(node->if_stmt->false_block != NULL);
         return node;
     }
 }
@@ -887,6 +913,9 @@ static AstNodeStmt *parse_stmt_while(Parser *self) {
         ast_node_stmt_destroy(node);
         return NULL;
     } else {
+        assert(node != NULL);
+        assert(node->kind == WHILE);
+        assert(node->while_stmt != NULL);
         return node;
     }
 }
@@ -913,7 +942,7 @@ static AstNodeStmt *parse_stmt(Parser *self) {
             return parse_stmt_while(self);
         default:
             print_token_expected_error(self, TOKEN_SEMICOLON, TOKEN_CONST, TOKEN_VAR, TOKEN_IDENTIFIER,
-                                             TOKEN_IF, TOKEN_WHILE);
+                                       TOKEN_IF, TOKEN_WHILE);
             return NULL;
     }
 }
