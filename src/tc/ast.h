@@ -282,7 +282,7 @@ AstNodeStmt *ast_node_stmt_var_create(void);
 typedef struct {
     AstNode base;
     AstNodeIdentifier *identifier;
-    // expression
+    AstNodeExpression *expression;
 } AstNodeStmtAssignment;
 
 AstNodeStmt *ast_node_stmt_assignment_create(void);

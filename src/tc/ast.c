@@ -498,13 +498,18 @@ static void ast_node_stmt_assignment_destroy(AstNodeStmtAssignment *self) {
     if (self->identifier != NULL) {
         ast_node_identifier_destroy(self->identifier);
     }
+    if (self->expression != NULL) {
+        ast_node_expression_destroy(self->expression);
+    }
     memory_free(self);
 }
 
 static void ast_node_stmt_assignment_print(AstNodeStmtAssignment *self, int ident) {
     char *ident_str = calloc(ident * 2 + 1, sizeof(char));
     str_repeat(ident_str, " ", ident * 2);
-    printf("%s%s = <?>;\n", ident_str, self->identifier->name);
+    printf("%s%s = ", ident_str, self->identifier->name);
+    ast_node_expression_print(self->expression);
+    printf(";\n");
 }
 
 #pragma endregion

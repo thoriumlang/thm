@@ -802,10 +802,8 @@ static AstNodeStmt *parse_stmt_assignment(Parser *self) {
     node->base->start_column = token->column;
 
     node->assignment_stmt->identifier = parse_identifier(self);
-
     expect(self, TOKEN_EQUAL);
-
-    // todo expr
+    node->assignment_stmt->expression = parse_expression(self, PREC_LOWEST);
 
     if (!match(self, TOKEN_SEMICOLON)) {
         print_token_expected_error(self, TOKEN_SEMICOLON);
