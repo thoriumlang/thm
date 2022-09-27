@@ -860,6 +860,7 @@ static AstNodeStmt *parse_stmt_if(Parser *self) {
         assert(node != NULL);
         assert(node->kind == STMT_IF);
         assert(node->if_stmt != NULL);
+        // fixme: fn z():word{ if 1) { } else if (2) { } } crashes (error_recovery flag reset where/when it should not)
         assert(node->if_stmt->expression != NULL);
         assert(node->if_stmt->true_block != NULL);
         assert(node->if_stmt->false_block != NULL);
@@ -868,7 +869,7 @@ static AstNodeStmt *parse_stmt_if(Parser *self) {
 }
 
 /**
- * rule [stmt_while] := [WHILE] [(] [expr] [)] [{] [stmts] [}]
+ * rule [stmt_while] := [WHILE] [(] [expr] [)] [stmts]
  * @param self
  * @return
  */
@@ -881,19 +882,11 @@ static AstNodeStmt *parse_stmt_while(Parser *self) {
 
     expect(self, TOKEN_WHILE);
     expect(self, TOKEN_LPAR);
-
-    // todo expr
-
+    node->while_stmt->expression = parse_expression(self, PREC_LOWEST);
     expect(self, TOKEN_RPAR);
-    expect(self, TOKEN_LBRACE);
-
     node->while_stmt->block = parse_stmts(self);
 
-    if (!match(self, TOKEN_RBRACE)) {
-        print_token_expected_error(self, TOKEN_RBRACE);
-        ast_node_stmt_destroy(node);
-        return NULL;
-    } else if (self->error_recovery) {
+    if (self->error_recovery) {
         self->error_recovery = false;
         ast_node_stmt_destroy(node);
         return NULL;
@@ -901,6 +894,8 @@ static AstNodeStmt *parse_stmt_while(Parser *self) {
         assert(node != NULL);
         assert(node->kind == STMT_WHILE);
         assert(node->while_stmt != NULL);
+        assert(node->while_stmt->block != NULL);
+        assert(node->while_stmt->expression != NULL);
         return node;
     }
 }

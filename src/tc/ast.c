@@ -572,20 +572,25 @@ static void ast_node_stmt_if_print(AstNodeStmtIf *self, int ident) {
 #pragma region AstNodeStmtWhile
 
 AstNodeStmt *ast_node_stmt_while_create(void) {
-    AstNodeStmt *node = ast_node_stmt_create(STMT_WHILE);
-    node->while_stmt->block = ast_node_stmts_create();
-    return node;
+    return ast_node_stmt_create(STMT_WHILE);
 }
 
 static void ast_node_while_stmt_destroy(AstNodeStmtWhile *self) {
-    ast_node_stmts_destroy(self->block);
+    if (self->expression != NULL) {
+        ast_node_expression_destroy(self->expression);
+    }
+    if (self->block != NULL) {
+        ast_node_stmts_destroy(self->block);
+    }
     memory_free(self);
 }
 
 static void ast_node_stmt_while_print(AstNodeStmtWhile *self, int ident) {
     char *ident_str = calloc(ident * 2 + 1, sizeof(char));
     str_repeat(ident_str, " ", ident * 2);
-    printf("%swhile (<?>) {\n", ident_str);
+    printf("%swhile (", ident_str);
+    ast_node_expression_print(self->expression);
+    printf(") {\n");
     for (size_t i = 0; i < list_size(self->block->stmts); i++) {
         ast_node_stmt_print(list_get(self->block->stmts, i), ident + 1);
     }
