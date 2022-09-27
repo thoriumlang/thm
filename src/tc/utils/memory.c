@@ -26,6 +26,8 @@
 #ifdef CPOCL_MEMORY_DEBUG
 #pragma region Debug enabled
 
+#include <stdio.h>
+
 extern CpoclMemory *CPOCL_GLOBAL;
 
 enum MEMORY_BLOCK_FLAGS {

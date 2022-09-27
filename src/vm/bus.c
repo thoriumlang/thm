@@ -16,7 +16,6 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
-#include <assert.h>
 #include "vmarch.h"
 #include "memory.h"
 #include "bus.h"
