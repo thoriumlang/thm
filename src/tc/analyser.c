@@ -184,7 +184,7 @@ bool analyzer_analyse(Analyser *self, AstRoot *root) {
                 case ASSIGNMENT:
                     if (!symbol_table_symbol_exists(f->base.symbols, stmt->assignment_stmt->identifier->name)) {
                         sprintf(buffer, "identifier '%s' not defined", stmt->assignment_stmt->identifier->name);
-                        print_error(self, buffer, (AstNode *) stmt);
+                        print_error(self, buffer, stmt->base);
                     }
                     break;
                 case IF:

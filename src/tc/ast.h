@@ -326,6 +326,7 @@ typedef enum {
 
 typedef struct AstNodeStmt {
     union {
+        AstNode *base; // points to the AstNode field of each following "subtypes" of AstNodeStmt
         AstNodeStmtConst *const_stmt;
         AstNodeStmtVar *var_stmt;
         AstNodeStmtAssignment *assignment_stmt;
