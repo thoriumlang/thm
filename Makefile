@@ -1,4 +1,4 @@
-all: tc test_tha test_thm demo_screen
+all: tc test_tha test_thm demo_screen doc
 
 release: install_release
 

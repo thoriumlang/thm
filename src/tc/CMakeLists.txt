@@ -21,13 +21,16 @@ add_executable(tc
         utils/headers/str.h
         utils/headers/macros.h)
 target_link_libraries(tc PRIVATE utils)
-target_link_libraries(tc PRIVATE m)
+target_link_libraries(tc PRIVATE m) # for log10 and floor
 
 if (CPOCL_SHORT_NAMES)
     add_compile_definitions(tc CPOCL_SHORT_NAMES)
 endif ()
 if (CPOCL_MEMORY_DEBUG)
     add_compile_definitions(tc CPOCL_MEMORY_DEBUG)
+endif ()
+if (CPOCL_MEMORY_WARN)
+    add_compile_definitions(tc CPOCL_MEMORY_WARN)
 endif ()
 
 #set(CC_WARN_FLAGS -Werror -Wall -Wextra -Wpedantic -Wformat=2 -Wno-unused-parameter
