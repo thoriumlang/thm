@@ -213,7 +213,9 @@ static void parser_memory_free(void *ptr) {
 
 #pragma region parsing
 
-//rule <identifier> := <IDENTIFIER>
+/**
+ * rule [identifier] := [IDENTIFIER]
+ */
 static AstNodeIdentifier *parse_identifier(Parser *self) {
     if (!check(self, TOKEN_IDENTIFIER)) {
         print_token_expected_error(self, TOKEN_IDENTIFIER);
@@ -223,7 +225,9 @@ static AstNodeIdentifier *parse_identifier(Parser *self) {
     return ast_node_identifier_create(advance(self));
 }
 
-//rule <type> := <@>* <identifier>
+/**
+ * rule [type] := [@]* [identifier]
+ */
 static AstNodeType *parse_type(Parser *self) {
     Token *token = peek(self, 0);
     int line = token->line;
@@ -254,7 +258,9 @@ static AstNodeType *parse_type(Parser *self) {
     return ast_node_type_create(ptr, identifier, line, column);
 }
 
-//rule <number> := <NUMBER>
+/**
+ * rule [number] := [NUMBER]
+ */
 static AstNodeNumber *parse_number(Parser *self) {
     if (!check(self, TOKEN_NUMBER)) {
         print_token_expected_error(self, TOKEN_NUMBER);
@@ -336,7 +342,12 @@ inline static bool next_token_is_operator(Parser *self) {
 
 static AstNodeExpression *parse_infix_expression(Parser *self, AstNodeExpression *left);
 
-//rule <expression> := <number> | <identifier> | ( <number> | <identifier> ) <infixExpression>
+/**
+ * rule [expression] := [number] | [identifier] | ( [number] | [identifier] ) [infixExpression]
+ * @param self
+ * @param precedence
+ * @return
+ */
 static AstNodeExpression *parse_expression(Parser *self, EPrecedence precedence) {
     AstNodeExpression *expression = NULL;
 
@@ -373,7 +384,11 @@ static AstNodeExpression *parse_expression(Parser *self, EPrecedence precedence)
     }
 }
 
-//rule <operator> := <+> | <-> | <*> | <==> | <!=> | <>> | <<> | <>=> | <<=>
+/**
+ * rule [operator] := [+] | [-] | [*] | [==] | [!=] | [&gt;] | [&lt;] | [&gt;=] | [&lt;=]
+ * @param self
+ * @return
+ */
 static AstNodeOperator *parse_operator(Parser *self) {
     expect_any(self, OPERATORS);
 
@@ -392,7 +407,12 @@ static AstNodeOperator *parse_operator(Parser *self) {
     }
 }
 
-//rule <infixExpression> := <operator> <expression>
+/**
+ * rule [infixExpression] := [operator] [expression]
+ * @param self
+ * @param left
+ * @return
+ */
 static AstNodeExpression *parse_infix_expression(Parser *self, AstNodeExpression *left) {
     AstNodeOperator *operator = parse_operator(self);
     AstNodeExpression *right = parse_expression(self, get_precedence(operator->op));
@@ -417,7 +437,11 @@ static AstNodeExpression *parse_infix_expression(Parser *self, AstNodeExpression
     }
 }
 
-//rule <variable> := ( <PUBLIC> | <EXTERN> )? <VOLATILE>? <VAR> <identifier> <:> <type> <;>
+/**
+ * rule [variable] := ( [PUBLIC] | [EXTERN] )? [VOLATILE]? [VAR] [identifier] [:] [type] [;]
+ * @param self
+ * @return
+ */
 static AstNodeVariable *parse_variable(Parser *self) {
     if (!check_within(self, TOKEN_VAR, 3)) {
         return NULL;
@@ -479,7 +503,9 @@ static AstNodeVariable *parse_variable(Parser *self) {
     }
 }
 
-//rule <const> := ( <PUBLIC> | <EXTERN> )? <CONST> <IDENTIFIER> <:> <type> <=> <expr> <;>
+/**
+ * rule [const] := ( [PUBLIC] | [EXTERN] )? [CONST] [IDENTIFIER] [:] [type] [=] [expr] [;]
+ */
 static AstNodeConst *parse_const(Parser *self) {
     if (!check_within(self, TOKEN_CONST, 2)) {
         return NULL;
@@ -535,7 +561,11 @@ static AstNodeConst *parse_const(Parser *self) {
     }
 }
 
-//rule <parameter> := <IDENTIFIER> <:> <type>
+/**
+ * rule [parameter] := [IDENTIFIER] [:] [type]
+ * @param self
+ * @return
+ */
 static AstNodeParameter *parse_parameter(Parser *self) {
     Token *token = peek(self, 0);
     int line = token->line;
@@ -550,7 +580,11 @@ static AstNodeParameter *parse_parameter(Parser *self) {
     return ast_node_parameter_create(identifier, parse_type(self), line, column);
 }
 
-//rule <parameters> := <(> ( <parameter> ( <,> <parameter> )* <,>? )? <)>
+/**
+ * rule [parameters] := [(] ( [parameter] ( [,] [parameter] )* [,]? )? [)]
+ * @param self
+ * @return
+ */
 static AstNodeParameters *parse_parameters(Parser *self) {
     if (!match(self, TOKEN_LPAR)) {
         print_token_expected_error(self, TOKEN_LPAR);
@@ -587,7 +621,11 @@ static AstNodeParameters *parse_parameters(Parser *self) {
 
 static AstNodeStmt *parse_stmt(Parser *self);
 
-//rule <stmts> := <{> <stmt>* <}>
+/**
+ * rule [stmts] := [{] [stmt]* [}]
+ * @param self
+ * @return
+ */
 static AstNodeStatements *parse_stmts(Parser *self) {
     if (!match(self, TOKEN_LBRACE)) {
         print_token_expected_error(self, TOKEN_LBRACE);
@@ -615,7 +653,11 @@ static AstNodeStatements *parse_stmts(Parser *self) {
     return node;
 }
 
-//rule <function> := ( <PUBLIC> | <EXTERN> )? <FN> <IDENTIFIER> <parameters> <:> <type> <stmts>
+/**
+ * rule [function] := ( [PUBLIC] | [EXTERN] )? [FN] [IDENTIFIER] [parameters] [:] [type] [stmts]
+ * @param self
+ * @return
+ */
 static AstNodeFunction *parse_function(Parser *self) {
     if (!check_within(self, TOKEN_FN, 2)) {
         return NULL;
@@ -664,7 +706,11 @@ static AstNodeFunction *parse_function(Parser *self) {
     return node;
 }
 
-//rule <stmt_const> := <CONST> <identifier> <:> <type> <=> <expr> <;>
+/**
+ * rule [stmt_const] := [CONST] [identifier] [:] [type] [=] [expr] [;]
+ * @param self
+ * @return
+ */
 static AstNodeStmt *parse_stmt_const(Parser *self) {
     AstNodeStmt *node = ast_node_stmt_const_create();
 
@@ -693,7 +739,11 @@ static AstNodeStmt *parse_stmt_const(Parser *self) {
     }
 }
 
-//rule <stmt_var> := <VAR> <identifier> <:> <type> ( <=> <expr> )? <;>
+/**
+ * rule [stmt_var] := [VAR] [identifier] [:] [type] ( [=] [expr] )? [;]
+ * @param self
+ * @return
+ */
 static AstNodeStmt *parse_stmt_var(Parser *self) {
     AstNodeStmt *node = ast_node_stmt_var_create();
 
@@ -723,7 +773,11 @@ static AstNodeStmt *parse_stmt_var(Parser *self) {
     }
 }
 
-//rule <stmt_assignment> := <identifier> <=> <expr> <;>
+/**
+ * rule [stmt_assignment] := [identifier] [=] [expr] [;]
+ * @param self
+ * @return
+ */
 static AstNodeStmt *parse_stmt_assignment(Parser *self) {
     AstNodeStmt *node = ast_node_stmt_assignment_create();
 
@@ -750,7 +804,11 @@ static AstNodeStmt *parse_stmt_assignment(Parser *self) {
     }
 }
 
-// <stmt_if> := <IF> <(> <expr> <)> <{> <stmts> <}> ( <ELSE> ( <stmt_if> | <{> <stmts> <}> ) )?
+/**
+ * rule [stmt_if] := [IF] [(] [expr] [)] [{] [stmts] [}] ( [ELSE] ( [stmt_if] | [{] [stmts] [}] ) )?
+ * @param self
+ * @return
+ */
 static AstNodeStmt *parse_stmt_if(Parser *self) {
     AstNodeStmt *node = ast_node_stmt_if_create();
 
@@ -798,7 +856,11 @@ static AstNodeStmt *parse_stmt_if(Parser *self) {
     }
 }
 
-//rule <stmt_while> := <WHILE> <(> <expr> <)> <{> <stmts> <}>
+/**
+ * rule [stmt_while] := [WHILE] [(] [expr] [)] [{] [stmts] [}]
+ * @param self
+ * @return
+ */
 static AstNodeStmt *parse_stmt_while(Parser *self) {
     AstNodeStmt *node = ast_node_stmt_while_create();
 
@@ -829,7 +891,11 @@ static AstNodeStmt *parse_stmt_while(Parser *self) {
     }
 }
 
-//rule <stmt> := <;> | <stmt_const> | <stmt_var> | <stmt_assignment> | <stmt_if> | <stmt_while>
+/**
+ * rule [stmt] := [;] | [stmt_const] | [stmt_var] | [stmt_assignment] | [stmt_if] | [stmt_while]
+ * @param self
+ * @return
+ */
 static AstNodeStmt *parse_stmt(Parser *self) {
     switch (peek(self, 0)->type) {
         case TOKEN_SEMICOLON: // just eat it as an empty statement
