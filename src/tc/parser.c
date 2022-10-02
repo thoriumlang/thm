@@ -245,11 +245,12 @@ static AstNodeType *parse_type(Parser *self) {
         case TOKEN_IDENTIFIER:
         case TOKEN_WORD:
         case TOKEN_BYTE:
+        case TOKEN_VOID:
             identifier = ast_node_identifier_create(*token);
             advance(self);
             break;
         default:
-            print_token_expected_error(self, TOKEN_WORD, TOKEN_BYTE, TOKEN_IDENTIFIER, TOKEN_AT);
+            print_token_expected_error(self, TOKEN_VOID, TOKEN_WORD, TOKEN_BYTE, TOKEN_IDENTIFIER, TOKEN_AT);
             break;
     }
 
