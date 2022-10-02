@@ -351,6 +351,7 @@ AstNodeStatements *ast_node_stmts_create(void) {
 }
 
 void ast_node_stmts_destroy(AstNodeStatements *self) {
+    list_foreach(self->stmts, FN_CONSUMER(ast_node_stmt_destroy));
     list_destroy(self->stmts);
     memory_free(self);
 }
@@ -622,6 +623,7 @@ void ast_node_stmt_destroy(AstNodeStmt *self) {
             printf("<unknown statement>;\n"); // todo die
             break;
     }
+    memory_free(self);
 }
 
 void ast_node_stmt_print(AstNodeStmt *self, int ident) {
