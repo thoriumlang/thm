@@ -9,6 +9,7 @@ set(CMAKE_C_STANDARD 11)
 add_executable(tc
         main.c
         lexer.c lexer.h
+        cmdline.c cmdline.h
         parser.c parser.h
         analyser.c analyser.h
         symbol.c symbol.h

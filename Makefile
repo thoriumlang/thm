@@ -57,8 +57,11 @@ doc: bin/*.lua bin/thi/*.lua src/common/instructions.thi
 	mkdir -p target/doc
 	bin/thi.lua src/common/instructions.thi doc
 
+src/tc/cmdline.c: src/tc/opts.ggo
+	gengetopt --output-dir=src/tc/ --input=src/tc/opts.ggo
+
 #### TC
-tc: target/cmake-build-debug
+tc: target/cmake-build-debug src/tc/cmdline.c
 	cmake --build target/cmake-build-debug --target tc
 	ln -fs cmake-build-debug/tc/tc target/tc
 

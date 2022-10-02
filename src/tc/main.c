@@ -20,20 +20,95 @@
 #include "lexer.h"
 #include "parser.h"
 #include "ast.h"
-#include "str.h"
 #include "analyser.h"
 #include "list.h"
 #include "memory.h"
+#include "cmdline.h"
 
 void repl(void);
 
 MEMORY_GLOBAL()
 
+void compile(char *);
+
 int main(int argc, char **argv) {
     MEMORY_INIT()
-    repl();
+
+    struct gengetopt_args_info args_info;
+    if (cmdline_parser(argc, argv, &args_info) != 0) {
+        return 1;
+    }
+
+    if (args_info.input_given) {
+        compile(args_info.input_arg);
+    } else {
+        repl();
+    }
+
     MEMORY_STATS()
     return 0;
+}
+
+long get_file_size(FILE *file) {
+    if (fseek(file, 0, SEEK_END) != 0) {
+        return -1;
+    }
+    long sz = ftell(file);
+    if (sz == -1) {
+        return -1;
+    }
+    if (fseek(file, 0, SEEK_SET) != 0) {
+        return -1;
+    }
+    return sz;
+}
+
+char *read_file(char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        return NULL;
+    }
+
+    long file_sz = get_file_size(file);
+    if (file_sz == -1) {
+        return NULL;
+    }
+
+    char *file_content = memory_alloc(file_sz + 1);
+    if (fread(file_content, 1, file_sz, file) != file_sz) {
+        free(file_content);
+        return NULL;
+    }
+    file_content[file_sz] = 0;
+
+    return file_content;
+}
+
+void compile(char *filename) {
+    char *file_content;
+    if ((file_content = read_file(filename)) == NULL) {
+        fprintf(stderr, "Unable to read %s\n", filename);
+        exit(1);
+    }
+
+    Analyser *analyser = analyzer_create();
+    Lexer *lexer = lexer_create(file_content, 1, 1);
+    Parser *parser = parser_create(lexer);
+    AstRoot *root = parser_parse(parser);
+
+    parser_destroy(parser);
+    lexer_destroy(lexer);
+
+    if (root == NULL) {
+        fprintf(stderr,"Found syntax errors in %s", filename);
+        exit(1);
+    }
+
+    analyzer_analyse(analyser, root);
+    analyser_dump_symbol_table(analyser);
+    analyzer_destroy(analyser);
+    ast_root_destroy(root);
+    memory_free(file_content);
 }
 
 void repl(void) {

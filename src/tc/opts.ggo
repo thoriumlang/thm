@@ -1,0 +1,14 @@
+package "tc"
+version "dev"
+purpose "compiles tc source files to thm binary files"
+usage "tc"
+description "compiles tc source files to thm binary files"
+versiontext ""
+
+args ""
+
+option "input" i "input file"
+	details="<detailed description>"
+	string
+	typestr="filename"
+	optional

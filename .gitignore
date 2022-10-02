@@ -6,6 +6,8 @@ src/asm/constants.rs
 src/vm/ops_array.h
 src/vm/cpu_internal_gen.h
 
+src/tc/cmdline.*
+
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles
