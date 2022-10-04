@@ -21,6 +21,7 @@
 #include "lexer.h"
 #include "str.h"
 #include "memory.h"
+#include "list.h"
 
 #pragma region AstNodeIdentifier
 
@@ -328,7 +329,7 @@ void ast_node_parameter_destroy(AstNodeParameter *self) {
 
 AstNodeParameters *ast_node_parameters_create(void) {
     AstNodeParameters *node = memory_alloc(sizeof(AstNodeParameters));
-    node->parameters = list_create();
+    node->parameters = list_create(); // FIXME make sure it's freed
     return node;
 }
 
@@ -346,7 +347,7 @@ void ast_node_parameters_destroy(AstNodeParameters *self) {
 
 AstNodeStatements *ast_node_stmts_create(void) {
     AstNodeStatements *node = memory_alloc(sizeof(AstNodeStatements));
-    node->stmts = list_create();
+    node->stmts = list_create(); // FIXME make sure it's freed
     return node;
 }
 
@@ -655,9 +656,9 @@ void ast_node_stmt_print(AstNodeStmt *self, int ident) {
 
 AstRoot *ast_root_create(void) {
     AstRoot *node = memory_alloc(sizeof(AstRoot));
-    node->variables = list_create();
-    node->constants = list_create();
-    node->functions = list_create();
+    node->variables = list_create(); // FIXME make sure it's freed
+    node->constants = list_create(); // FIXME make sure it's freed
+    node->functions = list_create(); // FIXME make sure it's freed
     return node;
 }
 

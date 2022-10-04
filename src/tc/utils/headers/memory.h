@@ -56,11 +56,11 @@ void cpocl_memory_free_debug(void *ptr, char *file, int line);
 
 void *cpocl_memory_realloc_debug(void *ptr, size_t new_size, char *file, int line);
 
-void *cpocl_memory_alloc_nodebug(size_t size);
-
-void cpocl_memory_free_nodebug(void *ptr);
-
-void *cpocl_memory_realloc_nodebug(void *ptr, size_t new_size);
+//void *cpocl_memory_alloc_nodebug(size_t size);
+//
+//void cpocl_memory_free_nodebug(void *ptr);
+//
+//void *cpocl_memory_realloc_nodebug(void *ptr, size_t new_size);
 
 #pragma endregion
 #else // CPOCL_MEMORY_DEBUG

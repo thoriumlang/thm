@@ -23,6 +23,8 @@
 #include <stdbool.h>
 #include "headers/memory.h"
 
+// fixme improve this (#define malloc et al.)
+
 #ifdef CPOCL_MEMORY_DEBUG
 #pragma region Debug enabled
 
@@ -189,17 +191,17 @@ void *cpocl_memory_realloc_debug(void *ptr, size_t new_size, char *file, int lin
     return (void *) (((int8_t *) block) + sizeof(MemoryBlock));
 }
 
-void *cpocl_memory_alloc_nodebug(size_t size) {
-    return cpocl_memory_alloc_debug(size, (char *) &"?", 0);
-}
-
-void cpocl_memory_free_nodebug(void *ptr) {
-    cpocl_memory_free_debug(ptr, (char *) &"?", 0);
-}
-
-void *cpocl_memory_realloc_nodebug(void *ptr, size_t new_size) {
-    return cpocl_memory_realloc_debug(ptr, new_size, (char *) &"?", 0);
-}
+//void *cpocl_memory_alloc_nodebug(size_t size) {
+//    return cpocl_memory_alloc_debug(size, (char *) &"?", 0);
+//}
+//
+//void cpocl_memory_free_nodebug(void *ptr) {
+//    cpocl_memory_free_debug(ptr, (char *) &"?", 0);
+//}
+//
+//void *cpocl_memory_realloc_nodebug(void *ptr, size_t new_size) {
+//    return cpocl_memory_realloc_debug(ptr, new_size, (char *) &"?", 0);
+//}
 
 #pragma endregion
 #else

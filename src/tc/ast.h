@@ -18,7 +18,7 @@
 #define THM_AST_H
 
 #include <stdbool.h>
-#include <list.h>
+#include "list.h"
 #include "lexer.h"
 #include "symbol_table.h"
 
