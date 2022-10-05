@@ -106,7 +106,10 @@ void compile(char *filename) {
     }
 
     analyzer_analyse(analyser, root);
+
+    ast_print(root);
     analyser_dump_symbol_table(analyser);
+
     analyzer_destroy(analyser);
     ast_root_destroy(root);
     free(file_content);
@@ -133,6 +136,9 @@ void repl(void) {
 
         Lexer *lexer = lexer_create(buffer, line++, 1);
         Parser *parser = parser_create(lexer);
+        // todo should we "parser_parse_into(parser, ast) or should we ast_take_*() and ast_append_*()?. With only one
+        //  AST we can analyze the whole session and maybe even replace symbols... the while thing might even be useless
+        //  as we're not implementing an actual REPL here...
         AstRoot *root = parser_parse(parser);
 
         parser_destroy(parser);
@@ -142,9 +148,7 @@ void repl(void) {
             continue;
         }
 
-        list_foreach(root->variables, FN_CONSUMER(ast_node_variable_print));
-        list_foreach(root->constants, FN_CONSUMER(ast_node_const_print));
-        list_foreach(root->functions, FN_CONSUMER(ast_node_function_print));
+        ast_print(root);
 
         list_add(asts, root);
         analyzer_analyse(analyser, root);

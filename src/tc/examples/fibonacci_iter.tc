@@ -1,0 +1,14 @@
+
+fn main(): void {
+
+}
+
+fn f(i: word): word {
+    if (i == 0) {
+        //return 0;
+    }
+    else if (i == 1) {
+        //return 1;
+    }
+    //return f(i - 1) + f(i - 2);
+}

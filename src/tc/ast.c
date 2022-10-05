@@ -662,6 +662,12 @@ AstRoot *ast_root_create(void) {
     return node;
 }
 
+void ast_print(AstRoot *self) {
+    list_foreach(self->variables, FN_CONSUMER(ast_node_variable_print));
+    list_foreach(self->constants, FN_CONSUMER(ast_node_const_print));
+    list_foreach(self->functions, FN_CONSUMER(ast_node_function_print));
+}
+
 void ast_root_destroy(AstRoot *self) {
     list_foreach(self->constants, FN_CONSUMER(ast_node_const_destroy));
     list_destroy(self->constants);

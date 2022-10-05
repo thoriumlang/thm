@@ -25,6 +25,7 @@
 #pragma region AstNode
 
 typedef struct AstNode {
+    // todo might be helpful to have a kind...
     int start_line;
     int start_column;
     SymbolTable *symbols;
@@ -352,6 +353,8 @@ typedef struct {
 } AstRoot;
 
 AstRoot *ast_root_create(void);
+
+void ast_print(AstRoot *self);
 
 void ast_root_destroy(AstRoot *self);
 
