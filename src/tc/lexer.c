@@ -289,6 +289,8 @@ static Token make_identifier(Lexer *self) {
             return match_keyword(self, 1, 1, "f", TOKEN_IF);
         case 'p':
             return match_keyword(self, 1, 5, "ublic", TOKEN_PUBLIC);
+        case 'r':
+            return match_keyword(self, 1, 5, "eturn", TOKEN_RETURN);
         case 's':
             return match_keyword(self, 1, 5, "truct", TOKEN_STRUCT);
         case 'u':

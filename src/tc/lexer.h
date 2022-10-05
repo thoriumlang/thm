@@ -69,6 +69,7 @@ typedef enum {
     TOKEN_FN,
     TOKEN_IF,
     TOKEN_PUBLIC,
+    TOKEN_RETURN,
     TOKEN_STRUCT,
     TOKEN_UNION,
     TOKEN_VAR,

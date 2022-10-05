@@ -303,6 +303,18 @@ AstNodeStmt *ast_node_stmt_if_create(void);
 
 #pragma endregion
 
+#pragma region AstNodeStmtReturn
+
+typedef struct {
+    AstNode base;
+    AstNodeExpression *expression;
+    AstNodeStatements *block;
+} AstNodeStmtReturn;
+
+AstNodeStmt *ast_node_stmt_return_create(void);
+
+#pragma endregion
+
 #pragma region AstNodeStmtWhile
 
 typedef struct {
@@ -322,6 +334,7 @@ typedef enum {
     STMT_VAR,
     STMT_ASSIGNMENT,
     STMT_IF,
+    STMT_RETURN,
     STMT_WHILE,
 } EStmtKind;
 
@@ -332,6 +345,7 @@ typedef struct AstNodeStmt {
         AstNodeStmtVar *var_stmt;
         AstNodeStmtAssignment *assignment_stmt;
         AstNodeStmtIf *if_stmt;
+        AstNodeStmtReturn *return_stmt;
         AstNodeStmtWhile *while_stmt;
     };
     EStmtKind kind;

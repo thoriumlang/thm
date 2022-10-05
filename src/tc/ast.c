@@ -420,6 +420,7 @@ void ast_node_function_print(AstNodeFunction *self, int ident) {
 
 static AstNodeStmt *ast_node_stmt_create(EStmtKind kind) {
     AstNodeStmt *node = malloc(sizeof(AstNodeStmt));
+    node->kind = kind;
     switch (kind) {
         case STMT_ASSIGNMENT:
             node->assignment_stmt = malloc(sizeof(AstNodeStmtAssignment));
@@ -433,13 +434,15 @@ static AstNodeStmt *ast_node_stmt_create(EStmtKind kind) {
         case STMT_IF:
             node->assignment_stmt = malloc(sizeof(AstNodeStmtIf));
             break;
+        case STMT_RETURN:
+            node->return_stmt = malloc(sizeof(AstNodeStmtReturn));
+            break;
         case STMT_WHILE:
             node->assignment_stmt = malloc(sizeof(AstNodeStmtWhile));
             break;
         default:
             assert(false);
     }
-    node->kind = kind;
     return node;
 }
 
@@ -574,6 +577,29 @@ static void ast_node_stmt_if_print(AstNodeStmtIf *self, int ident) {
 
 #pragma endregion
 
+#pragma region AstNodeStmtReturn
+
+AstNodeStmt *ast_node_stmt_return_create(void) {
+    return ast_node_stmt_create(STMT_RETURN);
+}
+
+static void ast_node_stmt_return_destroy(AstNodeStmtReturn *self) {
+    if (self->expression != NULL) {
+        ast_node_expression_destroy(self->expression);
+    }
+    free(self);
+}
+
+static void ast_node_stmt_return_print(AstNodeStmtReturn *self, int ident) {
+    char *ident_str = calloc(ident * 2 + 1, sizeof(char));
+    str_repeat(ident_str, " ", ident * 2);
+    printf("%sreturn ", ident_str);
+    ast_node_expression_print(self->expression);
+    printf(";\n");
+}
+
+#pragma endregion
+
 #pragma region AstNodeStmtWhile
 
 AstNodeStmt *ast_node_stmt_while_create(void) {
@@ -620,6 +646,9 @@ void ast_node_stmt_destroy(AstNodeStmt *self) {
         case STMT_IF:
             ast_node_stmt_if_destroy(self->if_stmt);
             break;
+        case STMT_RETURN:
+            ast_node_stmt_return_destroy(self->return_stmt);
+            break;
         case STMT_WHILE:
             ast_node_while_stmt_destroy(self->while_stmt);
             break;
@@ -642,6 +671,9 @@ void ast_node_stmt_print(AstNodeStmt *self, int ident) {
             break;
         case STMT_IF:
             ast_node_stmt_if_print(self->if_stmt, ident);
+            break;
+        case STMT_RETURN:
+            ast_node_stmt_return_print(self->return_stmt, ident);
             break;
         case STMT_WHILE:
             ast_node_stmt_while_print(self->while_stmt, ident);

@@ -860,6 +860,36 @@ static AstNodeStmt *parse_stmt_if(Parser *self) {
 }
 
 /**
+ * rule [stmt_return] := [RETURN] [expr] [;]
+ * @param self
+ * @return
+ */
+static AstNodeStmt *parse_stmt_return(Parser * self) {
+    AstNodeStmt *node = ast_node_stmt_return_create();
+
+    Token *token = peek(self, 0);
+    node->base->start_line = token->line;
+    node->base->start_column = token->column;
+
+    expect(self, TOKEN_RETURN);
+
+    node->return_stmt->expression = parse_expression(self, PREC_LOWEST);
+
+    expect(self, TOKEN_SEMICOLON);
+
+    if (self->error_recovery) {
+        self->error_recovery = false;
+        ast_node_stmt_destroy(node);
+        return NULL;
+    } else {
+        assert(node != NULL);
+        assert(node->kind == STMT_RETURN);
+        assert(node->return_stmt->expression != NULL);
+        return node;
+    }
+}
+
+/**
  * rule [stmt_while] := [WHILE] [(] [expr] [)] [stmts]
  * @param self
  * @return
@@ -909,6 +939,8 @@ static AstNodeStmt *parse_stmt(Parser *self) {
             return parse_stmt_assignment(self);
         case TOKEN_IF:
             return parse_stmt_if(self);
+        case TOKEN_RETURN:
+            return parse_stmt_return(self);
         case TOKEN_WHILE:
             return parse_stmt_while(self);
         default:
