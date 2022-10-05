@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef THM_MEMORY_H
-#define THM_MEMORY_H
+#ifndef CPOCL_MEMORY_H
+#define CPOCL_MEMORY_H
 
 #include <stddef.h>
+#include <stdlib.h>
 
 typedef struct CpoclMemory CpoclMemory;
 
@@ -25,24 +26,27 @@ typedef struct CpoclMemory CpoclMemory;
 #define CPOCL_GLOBAL cpocl_memory
 #endif
 
+// defaults
+#define CPOCL_MEMORY_GLOBAL() /*noop*/
+#define CPOCL_MEMORY_INIT() /*noop*/
+#define CPOCL_MEMORY_STATS() /*noop*/
+
 #ifdef CPOCL_MEMORY_DEBUG
-#pragma region Debug enabled
+#undef CPOCL_MEMORY_GLOBAL
 #define CPOCL_MEMORY_GLOBAL() CpoclMemory *CPOCL_GLOBAL;
+
+#undef CPOCL_MEMORY_INIT
 #define CPOCL_MEMORY_INIT() CPOCL_GLOBAL = cpocl_memory_create();
+
+#undef CPOCL_MEMORY_STATS
 #define CPOCL_MEMORY_STATS() cpocl_memory_print_stats(CPOCL_GLOBAL);
 
-#define cpocl_memory_alloc(size) cpocl_memory_alloc_debug((size), __FILE__, __LINE__)
-#define cpocl_memory_free(ptr) cpocl_memory_free_debug((ptr), __FILE__, __LINE__)
-#define cpocl_memory_realloc(ptr, size) cpocl_memory_realloc_debug((ptr), (size), __FILE__, __LINE__)
+#define malloc(size) cpocl_memory_malloc_int((size), __FILE__, __LINE__)
 
-#ifdef CPOCL_SHORT_NAMES
-#define memory_create() cpocl_memory_create()
-#define memory_destroy(self) cpocl_memory_destroy((self))
-#define memory_print_stats(self) cpocl_memory_print_stats((self))
-#define memory_alloc(size) cpocl_memory_alloc_debug((size), __FILE__, __LINE__)
-#define memory_free(ptr) cpocl_memory_free_debug((ptr), __FILE__, __LINE__)
-#define memory_realloc(ptr, size) cpocl_memory_realloc_debug((ptr), (size), __FILE__, __LINE__)
-#endif // CPOCL_SHORT_NAMES
+#define free(ptr) cpocl_memory_free_int((ptr), __FILE__, __LINE__)
+
+#define realloc(ptr, size) cpocl_memory_realloc_int((ptr), (size), __FILE__, __LINE__)
+#endif
 
 CpoclMemory *cpocl_memory_create(void);
 
@@ -50,44 +54,23 @@ void cpocl_memory_destroy(CpoclMemory *self);
 
 void cpocl_memory_print_stats(CpoclMemory *self);
 
-void *cpocl_memory_alloc_debug(size_t size, char *file, int line);
+void *cpocl_memory_malloc_int(size_t size, const char *file, int line);
 
-void cpocl_memory_free_debug(void *ptr, char *file, int line);
+void cpocl_memory_free_int(void *ptr, const char *file, int line);
 
-void *cpocl_memory_realloc_debug(void *ptr, size_t new_size, char *file, int line);
+void *cpocl_memory_realloc_int(void *ptr, size_t new_size, const char *file, int line);
 
-//void *cpocl_memory_alloc_nodebug(size_t size);
-//
-//void cpocl_memory_free_nodebug(void *ptr);
-//
-//void *cpocl_memory_realloc_nodebug(void *ptr, size_t new_size);
-
-#pragma endregion
-#else // CPOCL_MEMORY_DEBUG
-#pragma region Debug disabled
-#define CPOCL_MEMORY_GLOBAL() /*noop*/
-#define CPOCL_MEMORY_INIT() /*noop*/
-#define CPOCL_MEMORY_STATS() /*noop*/
-
-#ifdef CPOCL_SHORT_NAMES
-#define memory_alloc(size) cpocl_memory_alloc((size))
-#define memory_free(ptr) cpocl_memory_free((ptr))
-#define memory_realloc(ptr, size) cpocl_memory_realloc((ptr), (size))
-#endif // CPOCL_SHORT_NAMES
-
-void *cpocl_memory_alloc(size_t size);
-
-void cpocl_memory_free(void *ptr);
-
-void *cpocl_memory_realloc(void *ptr, size_t new_size);
-
-#pragma endregion
-#endif // CPOCL_MEMORY_DEBUG
+#define cpocl_memory_malloc(size) cpocl_memory_malloc_int((size), __FILE__, __LINE__)
+#define cpocl_memory_free(ptr) cpocl_memory_free_int((ptr), __FILE__, __LINE__)
+#define cpocl_memory_realloc(ptr, size) cpocl_memory_realloc_int((ptr), (size), __FILE__, __LINE__)
 
 #ifdef CPOCL_SHORT_NAMES
 #define MEMORY_GLOBAL() CPOCL_MEMORY_GLOBAL()
 #define MEMORY_INIT() CPOCL_MEMORY_INIT()
 #define MEMORY_STATS() CPOCL_MEMORY_STATS()
+#define memory_malloc(size) cpocl_memory_malloc_int((size), __FILE__, __LINE__)
+#define memory_free(ptr) cpocl_memory_free_int((ptr), __FILE__, __LINE__)
+#define memory_realloc(ptr, size) cpocl_memory_realloc_int((ptr), (size), __FILE__, __LINE__)
 #endif // CPOCL_SHORT_NAMES
 
-#endif //THM_MEMORY_H
+#endif //CPOCL_MEMORY_H

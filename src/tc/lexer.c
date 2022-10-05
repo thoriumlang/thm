@@ -57,7 +57,7 @@ static Token match_keyword(Lexer *self, int start, int length, const char *rest,
 static Token make_error(Lexer *self);
 
 Lexer *lexer_create(char *source, int line, int column) {
-    Lexer *lexer = memory_alloc(sizeof(Lexer));
+    Lexer *lexer = malloc(sizeof(Lexer));
     lexer->start = source;
     lexer->current = source;
     lexer->line = line;
@@ -66,7 +66,7 @@ Lexer *lexer_create(char *source, int line, int column) {
 }
 
 void lexer_destroy(Lexer *self) {
-    memory_free(self);
+    free(self);
 }
 
 Token lexer_next(Lexer *self) {

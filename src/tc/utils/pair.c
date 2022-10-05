@@ -18,24 +18,23 @@
 #define CPOCL_SHORT_NAMES
 #endif
 
+#include "headers/memory.h"
 #include "headers/pair.h"
 
 typedef struct CpoclPair {
-    CpoclPairOptions opts;
     void *a;
     void *b;
 } CpoclPair;
 
-CpoclPair *cpocl_pair_create_with_opts(void *a, void *b, CpoclPairOptions options) {
-    CpoclPair *pair = options.malloc(sizeof(CpoclPair));
-    pair->opts = options;
+CpoclPair *cpocl_pair_create(void *a, void *b) {
+    CpoclPair *pair = malloc(sizeof(CpoclPair));
     pair->a = a;
     pair->b = b;
     return pair;
 }
 
 void cpocl_pair_destroy(CpoclPair *self) {
-    self->opts.free(self);
+    free(self);
 }
 
 void cpocl_pair_set_a(CpoclPair *self, void *ptr) {

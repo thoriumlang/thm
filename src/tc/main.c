@@ -74,9 +74,9 @@ Result *read_file(char *filename) {
         return result_create_error("unable to get file size");
     }
 
-    char *file_content = memory_alloc(file_sz + 1);
+    char *file_content = malloc(file_sz + 1);
     if (fread(file_content, 1, file_sz, file) != file_sz) {
-        memory_free(file_content);
+        free(file_content);
         return result_create_error("unable to read file content");
     }
     file_content[file_sz] = 0;
@@ -109,7 +109,7 @@ void compile(char *filename) {
     analyser_dump_symbol_table(analyser);
     analyzer_destroy(analyser);
     ast_root_destroy(root);
-    memory_free(file_content);
+    free(file_content);
 }
 
 void repl(void) {

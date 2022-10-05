@@ -21,14 +21,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include "headers/memory.h"
 
-// fixme improve this (#define malloc et al.)
-
-#ifdef CPOCL_MEMORY_DEBUG
-#pragma region Debug enabled
-
-#include <stdio.h>
+#undef malloc
+#undef free
+#undef realloc
 
 extern CpoclMemory *CPOCL_GLOBAL;
 
@@ -72,6 +70,10 @@ void cpocl_memory_destroy(CpoclMemory *self) {
 }
 
 void cpocl_memory_print_stats(CpoclMemory *self) {
+#ifndef CPOCL_MEMORY_DEBUG
+    return;
+#endif
+
     bool print_stats = true;
 #ifdef CPOCL_MEMORY_WARN
     print_stats = self->allocated > 0;
@@ -103,7 +105,11 @@ void cpocl_memory_print_stats(CpoclMemory *self) {
     }
 }
 
-void *cpocl_memory_alloc_debug(size_t size, char *file, int line) {
+void *cpocl_memory_malloc_int(size_t size, const char *file, int line) {
+#ifndef CPOCL_MEMORY_DEBUG
+    return malloc(size);
+#endif
+
 #ifndef CPOCL_MEMORY_WARN
     fprintf(stderr, "%s:%d: allocating %lu bytes\n",
             file, line, size);
@@ -135,7 +141,11 @@ void *cpocl_memory_alloc_debug(size_t size, char *file, int line) {
     return (void *) (((int8_t *) block) + sizeof(MemoryBlock));
 }
 
-void cpocl_memory_free_debug(void *ptr, char *file, int line) {
+void cpocl_memory_free_int(void *ptr, const char *file, int line) {
+#ifndef CPOCL_MEMORY_DEBUG
+    free(ptr);
+    return;
+#endif
     MemoryBlock *block = (void *) ((int8_t *) ptr - sizeof(MemoryBlock));
 
     if ((block->flags & MEMORY_BLOCK_FLAGS_freed) == MEMORY_BLOCK_FLAGS_freed) {
@@ -162,9 +172,12 @@ void cpocl_memory_free_debug(void *ptr, char *file, int line) {
     CPOCL_GLOBAL->allocated -= block->size;
 }
 
-void *cpocl_memory_realloc_debug(void *ptr, size_t new_size, char *file, int line) {
+void *cpocl_memory_realloc_int(void *ptr, size_t new_size, const char *file, int line) {
+#ifndef CPOCL_MEMORY_DEBUG
+    return realloc(ptr, new_size);
+#endif
     if (ptr == NULL) {
-        return cpocl_memory_alloc_debug(new_size, file, line);
+        return cpocl_memory_malloc_int(new_size, file, line);
     }
 
     MemoryBlock *block = (void *) (((int8_t *) ptr) - sizeof(MemoryBlock));
@@ -190,34 +203,3 @@ void *cpocl_memory_realloc_debug(void *ptr, size_t new_size, char *file, int lin
 
     return (void *) (((int8_t *) block) + sizeof(MemoryBlock));
 }
-
-//void *cpocl_memory_alloc_nodebug(size_t size) {
-//    return cpocl_memory_alloc_debug(size, (char *) &"?", 0);
-//}
-//
-//void cpocl_memory_free_nodebug(void *ptr) {
-//    cpocl_memory_free_debug(ptr, (char *) &"?", 0);
-//}
-//
-//void *cpocl_memory_realloc_nodebug(void *ptr, size_t new_size) {
-//    return cpocl_memory_realloc_debug(ptr, new_size, (char *) &"?", 0);
-//}
-
-#pragma endregion
-#else
-#pragma region Debug disabled
-
-inline void *cpocl_memory_alloc(size_t size) {
-    return malloc(size);
-}
-
-inline void cpocl_memory_free(void *ptr) {
-    free(ptr);
-}
-
-inline void *cpocl_memory_realloc(void *ptr, size_t new_size) {
-    return realloc(ptr, new_size);
-}
-
-#pragma endregion
-#endif

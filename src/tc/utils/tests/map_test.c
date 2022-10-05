@@ -20,8 +20,10 @@
 #include <cmocka.h>
 #include <string.h>
 #include "../headers/map.h"
+#include "../headers/memory.h"
 
-List *cpocl_list_create_with_opts(CpoclListOptions options) {
+MEMORY_GLOBAL()
+List *cpocl_list_create(void) {
     return NULL;
 }
 
@@ -133,6 +135,7 @@ static void remove_entry(void **state) {
 }
 
 int main(void) {
+    MEMORY_INIT()
     const struct CMUnitTest tests[] =
             {
                     cmocka_unit_test(create),

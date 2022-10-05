@@ -87,7 +87,7 @@ static char *mangle_function_name(AstNodeFunction *node) {
         }
     }
 
-    char *buffer = memory_alloc(buffer_size);
+    char *buffer = malloc(buffer_size);
     char *pos = buffer;
 
     memcpy(pos, "fn_", 4);
@@ -117,8 +117,6 @@ static char *mangle_function_name(AstNodeFunction *node) {
         *(pos - 1) = 0;
     }
 
-//    printf("%lu %lu\n", buffer_size, strlen(buffer));
-
     return buffer;
 }
 
@@ -132,7 +130,7 @@ static void insert_function_in_symbols_table(AstNodeFunction *node, Analyser *se
                 ((AstNode *) symbol->ast_node)->start_line,
                 ((AstNode *) symbol->ast_node)->start_column);
         print_error(self, buffer, &node->base);
-        memory_free(name);
+        free(name);
         return;
     }
 
@@ -145,14 +143,14 @@ static void insert_function_in_symbols_table(AstNodeFunction *node, Analyser *se
 #pragma region public
 
 Analyser *analyzer_create(void) {
-    Analyser *analyser = memory_alloc(sizeof(Analyser));
+    Analyser *analyser = malloc(sizeof(Analyser));
     analyser->symbols = symbol_table_create();
     return analyser;
 }
 
 void analyzer_destroy(Analyser *self) {
     symbol_table_destroy(self->symbols);
-    memory_free(self);
+    free(self);
 }
 
 bool analyzer_analyse(Analyser *self, AstRoot *root) {

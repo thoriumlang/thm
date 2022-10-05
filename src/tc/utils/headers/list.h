@@ -17,28 +17,11 @@
 #ifndef THM_LIST_H
 #define THM_LIST_H
 
-#include <stdlib.h>
 #include "functions.h"
 
 typedef struct CpoclList CpoclList;
 
-typedef struct CpoclListOptions {
-    void *(*malloc)(size_t);
-
-    void *(*realloc)(void *, size_t);
-
-    void (*free)(void *);
-} CpoclListOptions;
-
-#define cpocl_list_create(...) \
-    cpocl_list_create_with_opts((struct CpoclListOptions) { \
-        .malloc = malloc,       \
-        .realloc = realloc,     \
-        .free = free,           \
-        __VA_ARGS__             \
-    })
-
-CpoclList *cpocl_list_create_with_opts(CpoclListOptions options);
+CpoclList *cpocl_list_create(void);
 
 void cpocl_list_destroy(CpoclList *self);
 
@@ -52,9 +35,8 @@ void cpocl_list_foreach(CpoclList *self, fn_consumer_closure consumer_closure);
 
 #ifdef CPOCL_SHORT_NAMES
 #define List CpoclList
-#define ListOptions CpoclListOptions
 #define list_create cpocl_list_create
-#define list_create_with_opts cpocl_list_create_with_opts
+#define list_create cpocl_list_create
 #define list_destroy cpocl_list_destroy
 #define list_add cpocl_list_add
 #define list_size cpocl_list_size

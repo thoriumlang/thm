@@ -18,10 +18,10 @@
 #include <setjmp.h>
 #include <stddef.h>
 #include <cmocka.h>
-
-#define CPOCL_SHORT_NAMES 1
 #include "../headers/result.h"
+#include "../headers/memory.h"
 
+MEMORY_GLOBAL()
 static void result_success(void **state) {
     int val = 1;
 
@@ -58,6 +58,7 @@ static void result_get_error_fails_if_success(void **state) {
 // todo https://api.cmocka.org/group__cmocka__mock__assert.html
 
 int main(void) {
+    MEMORY_INIT()
     const struct CMUnitTest tests[] =
             {
                     cmocka_unit_test(result_success),

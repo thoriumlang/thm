@@ -19,7 +19,7 @@
 #endif
 
 #include <assert.h>
-#include <stdlib.h>
+#include "headers/memory.h"
 #include "headers/result.h"
 
 #ifdef ASSERT_MOCK

@@ -33,11 +33,11 @@ typedef struct SymbolTable {
 static void free_symbol(Pair *e) {
     switch (((Symbol *) pair_get_value(e))->kind) {
         case SYM_FN:
-            memory_free(pair_get_value(e));
-            memory_free(pair_get_key(e));
+            free(pair_get_value(e));
+            free(pair_get_key(e));
             break;
         default:
-            memory_free(pair_get_value(e));
+            free(pair_get_value(e));
             // key is allocated in the scope of the AST and hence freed in the scope of the AST
             break;
     }
@@ -47,35 +47,15 @@ static void free_child_table(SymbolTable *t) {
     symbol_table_destroy(t);
 }
 
-static void *st_memory_alloc(size_t size) {
-    return cpocl_memory_alloc(size);
-}
-
-static void *st_memory_realloc(void *ptr, size_t size) {
-    return cpocl_memory_realloc(ptr, size);
-}
-
-static void st_memory_free(void *ptr) {
-    cpocl_memory_free(ptr);
-}
-
 #pragma endregion
 
 #pragma region public
 
 SymbolTable *symbol_table_create(void) {
-    SymbolTable *table = memory_alloc(sizeof(SymbolTable));
+    SymbolTable *table = malloc(sizeof(SymbolTable));
     table->parent = NULL;
-    table->symbols = map_create(map_hash_fn_str, map_eq_fn_str,
-                                .malloc = st_memory_alloc,
-                                .realloc = st_memory_realloc,
-                                .free = st_memory_free
-    );
-    table->children = list_create(
-            .malloc = st_memory_alloc,
-            .realloc = st_memory_realloc,
-            .free = st_memory_free
-    );
+    table->symbols = map_create(map_hash_fn_str, map_eq_fn_str);
+    table->children = list_create();
     return table;
 }
 
@@ -103,7 +83,7 @@ void symbol_table_destroy(SymbolTable *self) {
         self->owning_node->symbols = NULL;
     }
 
-    memory_free(self);
+    free(self);
 }
 
 void symbol_table_add(SymbolTable *self, Symbol *symbol) {

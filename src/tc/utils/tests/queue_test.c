@@ -19,6 +19,9 @@
 #include <stddef.h>
 #include <cmocka.h>
 #include "../headers/queue.h"
+#include "../headers/memory.h"
+
+MEMORY_GLOBAL()
 
 static void enqueue_grows(void **state) {
     Queue *queue = queue_create(1);
@@ -131,6 +134,7 @@ static void peek(void **state) {
 }
 
 int main(void) {
+    MEMORY_INIT()
     const struct CMUnitTest tests[] =
             {
                     cmocka_unit_test(enqueue_grows),

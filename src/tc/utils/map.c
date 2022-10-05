@@ -19,6 +19,7 @@
 #endif
 
 #include <string.h>
+#include "headers/memory.h"
 #include "headers/map.h"
 #include "headers/pair.h"
 
@@ -32,15 +33,13 @@ typedef struct CpoclMapEntry {
 } CpoclMapEntry;
 
 typedef struct CpoclMap {
-    CpoclMapOptions opts;
     cpocl_hash_fn hash;
     cpocl_eq_fn eq;
     CpoclMapEntry *buckets[MAP_BUCKETS_COUNT];
 } CpoclMap;
 
-CpoclMap *cpocl_map_create_with_opts(cpocl_hash_fn hash, cpocl_eq_fn eq, CpoclMapOptions options) {
-    CpoclMap *map = options.malloc(sizeof(CpoclMap));
-    map->opts = options;
+CpoclMap *cpocl_map_create(cpocl_hash_fn hash, cpocl_eq_fn eq) {
+    CpoclMap *map = malloc(sizeof(CpoclMap));
     map->hash = hash;
     map->eq = eq;
     for (size_t i = 0; i < MAP_BUCKETS_COUNT; i++) {
@@ -56,10 +55,10 @@ void cpocl_map_destroy(CpoclMap *self) {
         while (entry) {
             CpoclMapEntry *current = entry;
             entry = entry->next;
-            self->opts.free(current);
+            free(current);
         }
     }
-    self->opts.free(self);
+    free(self);
 }
 
 size_t cpocl_map_size(CpoclMap *self) {
@@ -83,7 +82,7 @@ static bool cpocl_map_key_eq(CpoclMap *self, CpoclMapEntry *e, void *key, size_t
 }
 
 static CpoclMapEntry *cpocl_map_entry_create(CpoclMap *self, void *key, void *value, size_t hash) {
-    CpoclMapEntry *entry = self->opts.malloc(sizeof(CpoclMapEntry));
+    CpoclMapEntry *entry = malloc(sizeof(CpoclMapEntry));
     entry->hash = hash;
     entry->next = NULL;
     entry->key = key;
@@ -93,7 +92,7 @@ static CpoclMapEntry *cpocl_map_entry_create(CpoclMap *self, void *key, void *va
 }
 
 static void cpocl_map_entry_destroy(CpoclMap *self, CpoclMapEntry *entry) {
-    self->opts.free(entry);
+    free(entry);
 }
 
 void *cpocl_map_put(CpoclMap *self, void *key, void *value) {
@@ -156,11 +155,7 @@ bool cpocl_map_is_present(CpoclMap *self, void *key) {
 }
 
 static inline CpoclList *make_list(CpoclMap *self) {
-    return cpocl_list_create_with_opts((CpoclListOptions) {
-            .malloc = self->opts.malloc,
-            .realloc = self->opts.realloc,
-            .free = self->opts.free
-    });
+    return cpocl_list_create();
 }
 
 CpoclList *cpocl_map_get_keys(CpoclMap *self) {
@@ -197,10 +192,7 @@ CpoclList *cpocl_map_get_entries(CpoclMap *self) {
     for (size_t i = 0; i < MAP_BUCKETS_COUNT; i++) {
         CpoclMapEntry *e = self->buckets[i];
         while (e) {
-            Pair *p = pair_create_with_opts(e->key, e->value, (CpoclPairOptions) {
-                    .malloc = self->opts.malloc,
-                    .free = self->opts.free
-            });
+            Pair *p = pair_create(e->key, e->value);
             cpocl_list_add(entries, p);
             e = e->next;
         }

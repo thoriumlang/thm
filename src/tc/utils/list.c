@@ -18,17 +18,17 @@
 #define CPOCL_SHORT_NAMES
 #endif
 
+#include <stddef.h>
 #include "headers/list.h"
+#include "headers/memory.h"
 
 typedef struct CpoclList {
-    CpoclListOptions opts;
     void **items;
     size_t items_count;
 } CpoclList;
 
-CpoclList *cpocl_list_create_with_opts(CpoclListOptions options) {
-    CpoclList *list = options.malloc(sizeof(CpoclList));
-    list->opts = options;
+CpoclList *cpocl_list_create(void) {
+    CpoclList *list = malloc(sizeof(CpoclList));
     list->items_count = 0;
     list->items = NULL;
     return list;
@@ -36,13 +36,13 @@ CpoclList *cpocl_list_create_with_opts(CpoclListOptions options) {
 
 void cpocl_list_destroy(CpoclList *self) {
     if (self->items) {
-        self->opts.free(self->items);
+        free(self->items);
     }
-    self->opts.free(self);
+    free(self);
 }
 
 void cpocl_list_add(CpoclList *self, void *item) {
-    self->items = self->opts.realloc(self->items, sizeof(void *) * ++self->items_count);
+    self->items = realloc(self->items, sizeof(void *) * ++self->items_count);
     self->items[self->items_count - 1] = item;
 }
 

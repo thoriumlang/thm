@@ -44,7 +44,7 @@ typedef struct Parser {
 static Token *peek(Parser *self, int n) {
     for (size_t i = queue_size(self->tokens); i < n + 1; i++) {
         Token token = lexer_next(self->lexer);
-        Token *t = memory_alloc(sizeof(Token));
+        Token *t = malloc(sizeof(Token));
         memcpy(t, &token, sizeof(Token));
         queue_enqueue(self->tokens, t);
     }
@@ -73,7 +73,7 @@ static Token advance(Parser *self) {
     Token *token_ptr = queue_dequeue(self->tokens);
     Token token;
     memcpy(&token, token_ptr, sizeof(Token));
-    memory_free(token_ptr);
+    free(token_ptr);
 
     return token;
 }
@@ -200,14 +200,6 @@ static void print_expected_error(Parser *self, const char *expected) {
 
     Token *token = peek(self, 0);
     fprintf(stderr, "Expected %s at %i:%i\n", expected, token->line, token->column);
-}
-
-static void *parser_memory_alloc(size_t size) {
-    return memory_alloc(size);
-}
-
-static void parser_memory_free(void *ptr) {
-    memory_free(ptr);
 }
 
 #pragma endregion
@@ -933,13 +925,9 @@ static AstNodeStmt *parse_stmt(Parser *self) {
 #pragma region public
 
 Parser *parser_create(Lexer *lexer) {
-    Parser *parser = memory_alloc(sizeof(Parser));
+    Parser *parser = malloc(sizeof(Parser));
     parser->lexer = lexer;
-    parser->tokens = queue_create(
-            4,
-            .malloc = parser_memory_alloc,
-            .free = parser_memory_free
-    );
+    parser->tokens = queue_create(4);
     parser->error_recovery = false;
     parser->error_found = false;
     return parser;
@@ -947,10 +935,10 @@ Parser *parser_create(Lexer *lexer) {
 
 void parser_destroy(Parser *self) {
     while (!queue_is_empty(self->tokens)) {
-        memory_free(queue_dequeue(self->tokens));
+        free(queue_dequeue(self->tokens));
     }
     queue_destroy(self->tokens);
-    memory_free(self);
+    free(self);
 }
 
 AstRoot *parser_parse(Parser *self) {

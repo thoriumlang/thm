@@ -26,9 +26,9 @@
 #pragma region AstNodeIdentifier
 
 AstNodeIdentifier *ast_node_identifier_create(Token token) {
-    AstNodeIdentifier *node = memory_alloc(sizeof(AstNodeIdentifier));
+    AstNodeIdentifier *node = malloc(sizeof(AstNodeIdentifier));
 
-    node->name = memory_alloc(token.length * sizeof(char) + 1);
+    node->name = malloc(token.length * sizeof(char) + 1);
     memcpy(node->name, token.start, token.length);
     node->name[token.length] = 0;
 
@@ -39,9 +39,9 @@ AstNodeIdentifier *ast_node_identifier_create(Token token) {
 
 void ast_node_identifier_destroy(AstNodeIdentifier *self) {
     if (self->name != NULL) {
-        memory_free(self->name);
+        free(self->name);
     }
-    memory_free(self);
+    free(self);
 }
 
 #pragma endregion
@@ -53,7 +53,7 @@ AstNodeType *ast_node_type_create(int ptr, AstNodeIdentifier *identifier, int li
         return NULL;
     }
 
-    AstNodeType *node = memory_alloc(sizeof(AstNodeType));
+    AstNodeType *node = malloc(sizeof(AstNodeType));
 
     node->ptr = ptr;
     node->identifier = identifier;
@@ -67,7 +67,7 @@ void ast_node_type_destroy(AstNodeType *self) {
     if (self->identifier != NULL) {
         ast_node_identifier_destroy(self->identifier);
     }
-    memory_free(self);
+    free(self);
 }
 
 void ast_node_type_print(AstNodeType *self) {
@@ -82,7 +82,7 @@ void ast_node_type_print(AstNodeType *self) {
 #pragma region AstNodeNumber
 
 AstNodeNumber *ast_node_number_create(Token token) {
-    AstNodeNumber *node = memory_alloc(sizeof(AstNodeNumber));
+    AstNodeNumber *node = malloc(sizeof(AstNodeNumber));
     node->base.start_line = token.line;
     node->base.start_column = token.column;
     node->value = 0;
@@ -96,7 +96,7 @@ AstNodeNumber *ast_node_number_create(Token token) {
 }
 
 void ast_node_number_destroy(AstNodeNumber *self) {
-    memory_free(self);
+    free(self);
 }
 
 void ast_node_number_print(AstNodeNumber *self) {
@@ -108,13 +108,13 @@ void ast_node_number_print(AstNodeNumber *self) {
 #pragma region AstNodeOperator
 
 AstNodeOperator *ast_node_operator_create(EOperator op) {
-    AstNodeOperator *node = memory_alloc(sizeof(AstNodeOperator));
+    AstNodeOperator *node = malloc(sizeof(AstNodeOperator));
     node->op = op;
     return node;
 }
 
 void ast_node_operator_destroy(AstNodeOperator *self) {
-    memory_free(self);
+    free(self);
 }
 
 void ast_node_operator_print(AstNodeOperator *self) {
@@ -159,7 +159,7 @@ void ast_node_operator_print(AstNodeOperator *self) {
 AstNodeBinaryExpression *ast_node_binary_expression_create(AstNodeExpression *l,
                                                            AstNodeExpression *r,
                                                            AstNodeOperator *op) {
-    AstNodeBinaryExpression *node = memory_alloc(sizeof(AstNodeBinaryExpression));
+    AstNodeBinaryExpression *node = malloc(sizeof(AstNodeBinaryExpression));
     node->left = l;
     node->right = r;
     node->op = op;
@@ -169,8 +169,8 @@ AstNodeBinaryExpression *ast_node_binary_expression_create(AstNodeExpression *l,
 void ast_node_binary_expression_destroy(AstNodeBinaryExpression *self) {
     ast_node_expression_destroy(self->left);
     ast_node_expression_destroy(self->right);
-    memory_free(self->op);
-    memory_free(self);
+    free(self->op);
+    free(self);
 }
 
 void ast_node_binary_expression_print(AstNodeBinaryExpression *self) {
@@ -186,7 +186,7 @@ void ast_node_binary_expression_print(AstNodeBinaryExpression *self) {
 #pragma region AstNodeExpression
 
 AstNodeExpression *ast_node_expression_create() {
-    return memory_alloc(sizeof(AstNodeExpression));
+    return malloc(sizeof(AstNodeExpression));
 }
 
 void ast_node_expression_destroy(AstNodeExpression *self) {
@@ -201,7 +201,7 @@ void ast_node_expression_destroy(AstNodeExpression *self) {
             ast_node_binary_expression_destroy(self->binary_expression);
             break;
     }
-    memory_free(self);
+    free(self);
 }
 
 void ast_node_expression_print(AstNodeExpression *self) {
@@ -223,7 +223,7 @@ void ast_node_expression_print(AstNodeExpression *self) {
 #pragma region AstNodeVariable
 
 AstNodeVariable *ast_node_variable_create(void) {
-    AstNodeVariable *node = memory_alloc(sizeof(AstNodeVariable));
+    AstNodeVariable *node = malloc(sizeof(AstNodeVariable));
     node->pub = false;
     node->ext = false;
     node->vol = false;
@@ -240,7 +240,7 @@ void ast_node_variable_destroy(AstNodeVariable *self) {
     if (self->expression != NULL) {
         ast_node_expression_destroy(self->expression);
     }
-    memory_free(self);
+    free(self);
 }
 
 void ast_node_variable_print(AstNodeVariable *self) {
@@ -260,7 +260,7 @@ void ast_node_variable_print(AstNodeVariable *self) {
 #pragma region AstNodeConst
 
 AstNodeConst *ast_node_const_create(void) {
-    AstNodeConst *node = memory_alloc(sizeof(AstNodeConst));
+    AstNodeConst *node = malloc(sizeof(AstNodeConst));
     node->ext = false;
     node->pub = false;
     return node;
@@ -276,7 +276,7 @@ void ast_node_const_destroy(AstNodeConst *self) {
     if (self->expression != NULL) {
         ast_node_expression_destroy(self->expression);
     }
-    memory_free(self);
+    free(self);
 }
 
 void ast_node_const_print(AstNodeConst *self) {
@@ -296,7 +296,7 @@ void ast_node_const_print(AstNodeConst *self) {
 
 AstNodeParameter *ast_node_parameter_create(AstNodeIdentifier *identifier, AstNodeType *type, int line, int column) {
     if (identifier && type) {
-        AstNodeParameter *node = memory_alloc(sizeof(AstNodeParameter));
+        AstNodeParameter *node = malloc(sizeof(AstNodeParameter));
 
         node->name = identifier;
         node->type = type;
@@ -320,7 +320,7 @@ void ast_node_parameter_destroy(AstNodeParameter *self) {
     if (self->type != NULL) {
         ast_node_type_destroy(self->type);
     }
-    memory_free(self);
+    free(self);
 }
 
 #pragma endregion
@@ -328,7 +328,7 @@ void ast_node_parameter_destroy(AstNodeParameter *self) {
 #pragma region AstNodeParameters
 
 AstNodeParameters *ast_node_parameters_create(void) {
-    AstNodeParameters *node = memory_alloc(sizeof(AstNodeParameters));
+    AstNodeParameters *node = malloc(sizeof(AstNodeParameters));
     node->parameters = list_create(); // FIXME make sure it's freed
     return node;
 }
@@ -338,7 +338,7 @@ void ast_node_parameters_destroy(AstNodeParameters *self) {
         list_foreach(self->parameters, FN_CONSUMER(ast_node_parameter_destroy));
         list_destroy(self->parameters);
     }
-    memory_free(self);
+    free(self);
 }
 
 #pragma endregion
@@ -346,7 +346,7 @@ void ast_node_parameters_destroy(AstNodeParameters *self) {
 #pragma region AstNodeStatements
 
 AstNodeStatements *ast_node_stmts_create(void) {
-    AstNodeStatements *node = memory_alloc(sizeof(AstNodeStatements));
+    AstNodeStatements *node = malloc(sizeof(AstNodeStatements));
     node->stmts = list_create(); // FIXME make sure it's freed
     return node;
 }
@@ -354,7 +354,7 @@ AstNodeStatements *ast_node_stmts_create(void) {
 void ast_node_stmts_destroy(AstNodeStatements *self) {
     list_foreach(self->stmts, FN_CONSUMER(ast_node_stmt_destroy));
     list_destroy(self->stmts);
-    memory_free(self);
+    free(self);
 }
 
 #pragma endregion
@@ -362,7 +362,7 @@ void ast_node_stmts_destroy(AstNodeStatements *self) {
 #pragma region AstNodeFunction
 
 AstNodeFunction *ast_node_function_create(void) {
-    AstNodeFunction *node = memory_alloc(sizeof(AstNodeFunction));
+    AstNodeFunction *node = malloc(sizeof(AstNodeFunction));
     node->pub = false;
     node->ext = false;
     return node;
@@ -381,7 +381,7 @@ void ast_node_function_destroy(AstNodeFunction *self) {
     if (self->statements != NULL) {
         ast_node_stmts_destroy(self->statements);
     }
-    memory_free(self);
+    free(self);
 }
 
 void ast_node_function_print(AstNodeFunction *self, int ident) {
@@ -416,22 +416,22 @@ void ast_node_function_print(AstNodeFunction *self, int ident) {
 #pragma endregion
 
 static AstNodeStmt *ast_node_stmt_create(EStmtKind kind) {
-    AstNodeStmt *node = memory_alloc(sizeof(AstNodeStmt));
+    AstNodeStmt *node = malloc(sizeof(AstNodeStmt));
     switch (kind) {
         case STMT_ASSIGNMENT:
-            node->assignment_stmt = memory_alloc(sizeof(AstNodeStmtAssignment));
+            node->assignment_stmt = malloc(sizeof(AstNodeStmtAssignment));
             break;
         case STMT_CONST:
-            node->assignment_stmt = memory_alloc(sizeof(AstNodeStmtConst));
+            node->assignment_stmt = malloc(sizeof(AstNodeStmtConst));
             break;
         case STMT_VAR:
-            node->assignment_stmt = memory_alloc(sizeof(AstNodeStmtVar));
+            node->assignment_stmt = malloc(sizeof(AstNodeStmtVar));
             break;
         case STMT_IF:
-            node->assignment_stmt = memory_alloc(sizeof(AstNodeStmtIf));
+            node->assignment_stmt = malloc(sizeof(AstNodeStmtIf));
             break;
         case STMT_WHILE:
-            node->assignment_stmt = memory_alloc(sizeof(AstNodeStmtWhile));
+            node->assignment_stmt = malloc(sizeof(AstNodeStmtWhile));
             break;
         default:
             assert(false);
@@ -456,7 +456,7 @@ static void ast_node_stmt_const_destroy(AstNodeStmtConst *self) {
     if (self->expression != NULL) {
         ast_node_expression_destroy(self->expression);
     }
-    memory_free(self);
+    free(self);
 }
 
 static void ast_node_stmt_const_print(AstNodeStmtConst *self, int ident) {
@@ -487,7 +487,7 @@ static void ast_node_stmt_var_destroy(AstNodeStmtVar *self) {
     if (self->expression != NULL) {
         ast_node_expression_destroy(self->expression);
     }
-    memory_free(self);
+    free(self);
 }
 
 static void ast_node_stmt_var_print(AstNodeStmtVar *self, int ident) {
@@ -517,7 +517,7 @@ static void ast_node_stmt_assignment_destroy(AstNodeStmtAssignment *self) {
     if (self->expression != NULL) {
         ast_node_expression_destroy(self->expression);
     }
-    memory_free(self);
+    free(self);
 }
 
 static void ast_node_stmt_assignment_print(AstNodeStmtAssignment *self, int ident) {
@@ -546,7 +546,7 @@ static void ast_node_stmt_if_destroy(AstNodeStmtIf *self) {
     if (self->false_block != NULL) {
         ast_node_stmts_destroy(self->false_block);
     }
-    memory_free(self);
+    free(self);
 }
 
 static void ast_node_stmt_if_print(AstNodeStmtIf *self, int ident) {
@@ -584,7 +584,7 @@ static void ast_node_while_stmt_destroy(AstNodeStmtWhile *self) {
     if (self->block != NULL) {
         ast_node_stmts_destroy(self->block);
     }
-    memory_free(self);
+    free(self);
 }
 
 static void ast_node_stmt_while_print(AstNodeStmtWhile *self, int ident) {
@@ -624,7 +624,7 @@ void ast_node_stmt_destroy(AstNodeStmt *self) {
             printf("<unknown statement>;\n"); // todo die
             break;
     }
-    memory_free(self);
+    free(self);
 }
 
 void ast_node_stmt_print(AstNodeStmt *self, int ident) {
@@ -655,7 +655,7 @@ void ast_node_stmt_print(AstNodeStmt *self, int ident) {
 #pragma region AstRoot
 
 AstRoot *ast_root_create(void) {
-    AstRoot *node = memory_alloc(sizeof(AstRoot));
+    AstRoot *node = malloc(sizeof(AstRoot));
     node->variables = list_create(); // FIXME make sure it's freed
     node->constants = list_create(); // FIXME make sure it's freed
     node->functions = list_create(); // FIXME make sure it's freed
@@ -669,7 +669,7 @@ void ast_root_destroy(AstRoot *self) {
     list_destroy(self->variables);
     list_foreach(self->functions, FN_CONSUMER(ast_node_function_destroy));
     list_destroy(self->functions);
-    memory_free(self);
+    free(self);
 }
 
 #pragma endregion

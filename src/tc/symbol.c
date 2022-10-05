@@ -25,7 +25,7 @@
  * @return a new symbol.
  */
 Symbol *symbol_create(char *name, enum SymbolKind kind, void *ast_node) {
-    Symbol *symbol = memory_alloc(sizeof(Symbol));
+    Symbol *symbol = malloc(sizeof(Symbol));
     symbol->name = name;
     symbol->kind = kind;
     symbol->ast_node = ast_node;

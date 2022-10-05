@@ -17,32 +17,12 @@
 #ifndef THM_MAP_H
 #define THM_MAP_H
 
-#include <stddef.h>
-#include <stdbool.h>
-#include <string.h>
-#include <stdlib.h>
 #include "functions.h"
 #include "list.h"
 
 typedef struct CpoclMap CpoclMap;
 
-typedef struct CpoclMapOptions {
-    void *(*malloc)(size_t);
-
-    void *(*realloc)(void *, size_t);
-
-    void (*free)(void *);
-} CpoclMapOptions;
-
-#define cpocl_map_create(hash_fn, eq_fn, ...) \
-    cpocl_map_create_with_opts((hash_fn), (eq_fn), (struct CpoclMapOptions) { \
-        .malloc = malloc,       \
-        .realloc = realloc,     \
-        .free = free,           \
-        __VA_ARGS__             \
-    })
-
-CpoclMap *cpocl_map_create_with_opts(cpocl_hash_fn hash, cpocl_eq_fn eq, CpoclMapOptions options);
+CpoclMap *cpocl_map_create(cpocl_hash_fn hash, cpocl_eq_fn eq);
 
 void cpocl_map_destroy(CpoclMap *self);
 
@@ -70,9 +50,8 @@ bool cpocl_map_eq_fn_str(void *a, void *b);
 
 #ifdef CPOCL_SHORT_NAMES
 #define Map CpoclMap
-#define MapOptions CpoclMapOptions
 #define map_create cpocl_map_create
-#define map_create_with_opts cpocl_map_create_with_opts
+#define map_create cpocl_map_create
 #define map_destroy cpocl_map_destroy
 #define map_size cpocl_map_size
 #define map_is_empty cpocl_map_is_empty

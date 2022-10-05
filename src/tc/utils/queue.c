@@ -19,11 +19,11 @@
 #endif
 
 #include <printf.h>
+#include <stdbool.h>
+#include "headers/memory.h"
 #include "headers/queue.h"
 
 typedef struct CpoclQueue {
-    CpoclQueueOptions opts;
-
     void **items;
     size_t items_count;
     size_t size;
@@ -31,10 +31,9 @@ typedef struct CpoclQueue {
     size_t tail;
 } CpoclQueue;
 
-CpoclQueue *cpocl_queue_create_with_opts(size_t size, CpoclQueueOptions options) {
-    CpoclQueue *queue = options.malloc(sizeof(CpoclQueue));
-    queue->opts = options;
-    queue->items = options.malloc(size * sizeof(void *));
+CpoclQueue *cpocl_queue_create(size_t size) {
+    CpoclQueue *queue = malloc(sizeof(CpoclQueue));
+    queue->items = malloc(size * sizeof(void *));
     queue->items_count = 0;
     queue->size = size;
     queue->head = 0;
@@ -43,15 +42,15 @@ CpoclQueue *cpocl_queue_create_with_opts(size_t size, CpoclQueueOptions options)
 }
 
 void cpocl_queue_destroy(CpoclQueue *self) {
-    self->opts.free(self->items);
-    self->opts.free(self);
+    free(self->items);
+    free(self);
 }
 
 void cpocl_queue_enqueue(CpoclQueue *self, void *item) {
     if (self->items_count == self->size) {
         self->size = self->size * 2;
 
-        void **new_items = self->opts.malloc(self->size * sizeof(void *));
+        void **new_items = malloc(self->size * sizeof(void *));
         size_t new_head = 0;
 
         void *old_item;
@@ -59,7 +58,7 @@ void cpocl_queue_enqueue(CpoclQueue *self, void *item) {
             new_items[new_head++] = old_item;
         }
 
-        self->opts.free(self->items);
+        free(self->items);
         self->items = new_items;
         self->items_count = new_head;
         self->head = self->items_count;

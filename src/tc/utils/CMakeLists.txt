@@ -45,19 +45,19 @@ if (CPOCL_MEMORY_WARN)
     add_compile_definitions(utils CPOCL_MEMORY_WARN)
 endif ()
 
-add_executable(queue_test tests/queue_test.c queue.c)
+add_executable(queue_test memory.c tests/queue_test.c queue.c)
 target_compile_features(queue_test PRIVATE c_std_99)
 target_link_libraries(queue_test PRIVATE cmocka-static)
 
-add_executable(list_test tests/list_test.c list.c)
+add_executable(list_test memory.c tests/list_test.c list.c)
 target_compile_features(list_test PRIVATE c_std_99)
 target_link_libraries(list_test PRIVATE cmocka-static)
 
-add_executable(map_test tests/map_test.c map.c pair.c)
+add_executable(map_test memory.c tests/map_test.c map.c pair.c)
 target_compile_features(map_test PRIVATE c_std_99)
 target_link_libraries(map_test PRIVATE cmocka-static)
 
-add_executable(result_test tests/result_test.c result.c)
+add_executable(result_test memory.c tests/result_test.c result.c)
 target_compile_features(result_test PRIVATE c_std_99)
 target_link_libraries(result_test PRIVATE cmocka-static)
 

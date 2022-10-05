@@ -19,7 +19,9 @@
 #include <stddef.h>
 #include <cmocka.h>
 #include "../headers/list.h"
+#include "../headers/memory.h"
 
+MEMORY_GLOBAL()
 static void add_then_get(void **state) {
     List *list = list_create();
     int item = 1;
@@ -64,6 +66,7 @@ static void add_then_size(void **state) {
 }
 
 int main(void) {
+    MEMORY_INIT()
     const struct CMUnitTest tests[] =
             {
                     cmocka_unit_test(add_then_get),
