@@ -15,6 +15,7 @@
  */
 
 #include <stdio.h>
+#include <assert.h>
 #include "symbol_table.h"
 #include "map.h"
 #include "ast.h"
@@ -125,8 +126,7 @@ void symbol_table_dump(SymbolTable *self) {
                 printf("CONST %s declared at %d:%d\n", symbol->name, node->start_line, node->start_column);
                 break;
             default:
-                // todo die
-                break;
+                assert(false);
         }
     }
 

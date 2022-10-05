@@ -295,8 +295,7 @@ static EPrecedence get_precedence(EOperator op) {
         case OPERATOR_at:
             return PREC_PREFIX;
         default:
-            printf("Unsupported operator %d\n", op);
-            exit(1); // todo check error behavior
+            assert(false);
     }
 }
 
@@ -321,8 +320,7 @@ static EOperator convert_token_to_operator(Token *token) {
         case TOKEN_LT_EQUALS:
             return OPERATOR_lt_equals;
         default:
-            // todo die
-            return OPERATOR_plus;
+            assert(false);
     }
 }
 

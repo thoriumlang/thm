@@ -147,8 +147,7 @@ void ast_node_operator_print(AstNodeOperator *self) {
             printf("<=");
             break;
         default:
-            // todo die
-            break;
+            assert(false);
     }
 }
 
@@ -200,6 +199,8 @@ void ast_node_expression_destroy(AstNodeExpression *self) {
         case EXPRESSION_BINARY:
             ast_node_binary_expression_destroy(self->binary_expression);
             break;
+        default:
+            assert(false);
     }
     free(self);
 }
@@ -215,6 +216,8 @@ void ast_node_expression_print(AstNodeExpression *self) {
         case EXPRESSION_BINARY:
             ast_node_binary_expression_print(self->binary_expression);
             break;
+        default:
+            assert(false);
     }
 }
 
@@ -621,8 +624,7 @@ void ast_node_stmt_destroy(AstNodeStmt *self) {
             ast_node_while_stmt_destroy(self->while_stmt);
             break;
         default:
-            printf("<unknown statement>;\n"); // todo die
-            break;
+            assert(false);
     }
     free(self);
 }
@@ -645,8 +647,7 @@ void ast_node_stmt_print(AstNodeStmt *self, int ident) {
             ast_node_stmt_while_print(self->while_stmt, ident);
             break;
         default:
-            printf("<unknown statement>;\n"); // todo die
-            break;
+            assert(false);
     }
 }
 

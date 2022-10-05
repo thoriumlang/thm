@@ -16,6 +16,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <assert.h>
 #include "functions.h"
 #include "analyser.h"
 #include "symbol_table.h"
@@ -190,8 +191,7 @@ bool analyzer_analyse(Analyser *self, AstRoot *root) {
                 case STMT_WHILE:
                     break;
                 default:
-                    break;
-                    // todo die
+                    assert(false);
             }
         }
 

@@ -16,6 +16,7 @@
 
 #include <stdbool.h>
 #include <string.h>
+#include <assert.h>
 #include "lexer.h"
 #include "memory.h"
 
@@ -441,6 +442,6 @@ char *token_type_to_string(ETokenType token_type) {
         case TOKEN_WORD:
             return "word";
         default:
-            return "???";
+            assert(false);
     }
 }
