@@ -9,7 +9,8 @@ add_library(utils STATIC
         pair.c headers/pair.h
         map.c headers/map.h
         queue.c headers/queue.h
-        memory.c headers/memory.h)
+        memory.c headers/memory.h
+        result.c headers/result.h)
 
 set(CC_WARN_FLAGS -Werror -Wall -Wextra -Wpedantic -Wformat=2 -Wno-unused-parameter
         -Wshadow -Wwrite-strings -Wstrict-prototypes -Wold-style-definition
@@ -56,6 +57,11 @@ add_executable(map_test tests/map_test.c map.c pair.c)
 target_compile_features(map_test PRIVATE c_std_99)
 target_link_libraries(map_test PRIVATE cmocka-static)
 
+add_executable(result_test tests/result_test.c result.c)
+target_compile_features(result_test PRIVATE c_std_99)
+target_link_libraries(result_test PRIVATE cmocka-static)
+
 add_test(NAME queue_test COMMAND queue_test)
 add_test(NAME list_test COMMAND list_test)
 add_test(NAME map_test COMMAND map_test)
+add_test(NAME result_test COMMAND result_test)

@@ -24,6 +24,7 @@
 #include "list.h"
 #include "memory.h"
 #include "cmdline.h"
+#include "result.h"
 
 void repl(void);
 
@@ -33,7 +34,6 @@ void compile(char *);
 
 int main(int argc, char **argv) {
     MEMORY_INIT()
-
     struct gengetopt_args_info args_info;
     if (cmdline_parser(argc, argv, &args_info) != 0) {
         return 1;
@@ -63,34 +63,35 @@ long get_file_size(FILE *file) {
     return sz;
 }
 
-char *read_file(char *filename) {
+Result *read_file(char *filename) {
     FILE *file = fopen(filename, "r");
     if (!file) {
-        return NULL;
+        return result_create_error("unable to open file");
     }
 
     long file_sz = get_file_size(file);
     if (file_sz == -1) {
-        return NULL;
+        return result_create_error("unable to get file size");
     }
 
     char *file_content = memory_alloc(file_sz + 1);
     if (fread(file_content, 1, file_sz, file) != file_sz) {
-        free(file_content);
-        return NULL;
+        memory_free(file_content);
+        return result_create_error("unable to read file content");
     }
     file_content[file_sz] = 0;
 
-    return file_content;
+    return result_create_success(file_content);
 }
 
 void compile(char *filename) {
-    char *file_content;
-    if ((file_content = read_file(filename)) == NULL) {
-        fprintf(stderr, "Unable to read %s\n", filename);
+    Result *file_content_result = read_file(filename);
+    if (!result_is_success(file_content_result)) {
+        fprintf(stderr, "Unable to read %s: %s\n", filename, (char *) result_get_error(file_content_result));
         exit(1);
     }
 
+    char *file_content = result_unwrap(file_content_result);
     Analyser *analyser = analyzer_create();
     Lexer *lexer = lexer_create(file_content, 1, 1);
     Parser *parser = parser_create(lexer);
@@ -100,7 +101,7 @@ void compile(char *filename) {
     lexer_destroy(lexer);
 
     if (root == NULL) {
-        fprintf(stderr,"Found syntax errors in %s", filename);
+        fprintf(stderr, "Found syntax errors in %s", filename);
         exit(1);
     }
 
