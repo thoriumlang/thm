@@ -332,28 +332,32 @@ inline static bool next_token_is_operator(Parser *self) {
     return check_any(self, OPERATORS);
 }
 
+static AstNodeFunctionCall *parse_function_call(Parser *self);
 static AstNodeExpression *parse_infix_expression(Parser *self, AstNodeExpression *left);
 
 /**
- * rule [expression] := [number] | [identifier] | ( [number] | [identifier] ) [infixExpression]
+ * rule [expression] := [number] | [identifier] | [call] | ( [number] | [identifier] | [call] ) [infixExpression]
  * @param self
  * @param precedence start with <code>PREC_LOWEST</code>
  * @return a parsed expression or <code>NULL</code> if expression was not parsed successfully
  */
 static AstNodeExpression *parse_expression(Parser *self, EPrecedence precedence) {
-    AstNodeExpression *expression = NULL;
+    AstNodeExpression *expression = ast_node_expression_create();
 
     Token *token = peek(self, 0);
     switch (token->type) {
         case TOKEN_NUMBER:
-            expression = ast_node_expression_create();
             expression->kind = EXPRESSION_NUMBER;
             expression->number_expression = parse_number(self);
             break;
         case TOKEN_IDENTIFIER:
-            expression = ast_node_expression_create();
-            expression->kind = EXPRESSION_IDENTIFIER;
-            expression->identifier_expression = parse_identifier(self);
+            if (peek(self, 1)->type == TOKEN_LPAR) {
+                expression->kind = EXPRESSION_FUNCTION_CALL;
+                expression->function_call_expression = parse_function_call(self);
+            } else {
+                expression->kind = EXPRESSION_IDENTIFIER;
+                expression->identifier_expression = parse_identifier(self);
+            }
             break;
         default:
             print_token_expected_error(self, TOKEN_NUMBER, TOKEN_IDENTIFIER);
@@ -376,8 +380,53 @@ static AstNodeExpression *parse_expression(Parser *self, EPrecedence precedence)
         assert(expression->kind != EXPRESSION_NUMBER || expression->number_expression != NULL);
         assert(expression->kind != EXPRESSION_BINARY || expression->binary_expression != NULL);
         assert(expression->kind != EXPRESSION_IDENTIFIER || expression->identifier_expression != NULL);
+        assert(expression->kind != EXPRESSION_FUNCTION_CALL || expression->function_call_expression != NULL);
         return expression;
     }
+}
+
+/**
+ * rule [function_call] := [(] ( [expression] [,] ) [)]
+ * @param self 
+ * @return 
+ */
+static AstNodeFunctionCall *parse_function_call(Parser *self) {
+    AstNodeFunctionCall *node = ast_node_function_call_create();
+
+    Token *token = peek(self, 0);
+    node->base.start_line = token->line;
+    node->base.start_column = token->column;
+
+    node->function_name = parse_identifier(self);
+    expect(self, TOKEN_LPAR);
+
+    if (peek(self, 0)->type != TOKEN_RPAR) {
+        AstNodeExpression *parameter = parse_expression(self, PREC_LOWEST);
+        if (parameter != NULL) {
+            list_add(node->parameters, parameter);
+        }
+        while (match(self, TOKEN_COMMA)) {
+            if (peek(self, 0)->type == TOKEN_RPAR) {
+                break;
+            }
+            parameter = parse_expression(self, PREC_LOWEST);
+            if (parameter != NULL) {
+                list_add(node->parameters, parameter);
+            }
+        }
+    }
+
+    expect_any(self, TOKEN_COMMA, TOKEN_RPAR);
+    advance(self);
+
+    if (self->error_recovery) {
+        if (node != NULL) {
+            ast_node_function_call_destroy(node);
+        }
+        return NULL;
+    }
+
+    return node;
 }
 
 /**
@@ -606,6 +655,7 @@ static AstNodeParameters *parse_parameters(Parser *self) {
         }
     }
 
+    // fixme wrong, we ate the last on in the match already
     match(self, TOKEN_COMMA); // eat the last comma, if any
 
     if (!match(self, TOKEN_RPAR)) {
@@ -815,6 +865,32 @@ static AstNodeStmt *parse_stmt_assignment(Parser *self) {
 }
 
 /**
+ * rule [stmt_function_call] := [function_call] [;]
+ * @param self
+ * @return
+ */
+static AstNodeStmt* parse_stmt_function_call(Parser*self) {
+    AstNodeStmt *node = ast_node_stmt_function_call_create();
+
+    node->function_call_stmt->call = parse_function_call(self);
+
+    expect(self, TOKEN_SEMICOLON);
+
+    if (self->error_recovery) {
+        self->error_recovery = false;
+        ast_node_stmt_destroy(node);
+        return NULL;
+    } else {
+        assert(node != NULL);
+        assert(node->kind == STMT_FUNCTION_CALL);
+        assert(node->function_call_stmt != NULL);
+        assert(node->function_call_stmt->call != NULL);
+        return node;
+    }
+
+}
+
+/**
  * rule [stmt_if] := [IF] [(] [expr] [)] [stmts] ( [ELSE] ( [stmt_if] | [stmts] ) )?
  * @param self
  * @return
@@ -864,7 +940,7 @@ static AstNodeStmt *parse_stmt_if(Parser *self) {
  * @param self
  * @return
  */
-static AstNodeStmt *parse_stmt_return(Parser * self) {
+static AstNodeStmt *parse_stmt_return(Parser *self) {
     AstNodeStmt *node = ast_node_stmt_return_create();
 
     Token *token = peek(self, 0);
@@ -936,7 +1012,16 @@ static AstNodeStmt *parse_stmt(Parser *self) {
         case TOKEN_VAR:
             return parse_stmt_var(self);
         case TOKEN_IDENTIFIER:
-            return parse_stmt_assignment(self);
+            switch (peek(self, 1)->type) {
+                case TOKEN_EQUAL :
+                    return parse_stmt_assignment(self);
+                case TOKEN_LPAR:
+                    return parse_stmt_function_call(self);
+                default:
+                    advance(self);
+                    print_token_expected_error(self, TOKEN_EQUAL, TOKEN_LPAR);
+                    return NULL;
+            }
         case TOKEN_IF:
             return parse_stmt_if(self);
         case TOKEN_RETURN:
@@ -1013,4 +1098,3 @@ AstRoot *parser_parse(Parser *self) {
 }
 
 #pragma endregion
-

@@ -105,6 +105,38 @@ void ast_node_number_print(AstNodeNumber *self) {
 
 #pragma endregion
 
+#pragma region AstNodeFunctionCall
+
+AstNodeFunctionCall *ast_node_function_call_create() {
+    AstNodeFunctionCall *node = malloc(sizeof(AstNodeFunctionCall));
+    node->parameters = list_create();
+    return node;
+}
+
+void ast_node_function_call_destroy(AstNodeFunctionCall *self) {
+    if (self->function_name != NULL) {
+        ast_node_identifier_destroy(self->function_name);
+    }
+    list_foreach(self->parameters, FN_CONSUMER(ast_node_expression_destroy));
+    list_destroy(self->parameters);
+    free(self);
+}
+
+void ast_node_function_call_print(AstNodeFunctionCall *self) {
+    printf("%s(", self->function_name->name);
+    for (size_t i = 0; i < list_size(self->parameters); i++) {
+        if (i > 0) {
+            printf(", ");
+        }
+        AstNodeExpression *parameter = list_get(self->parameters, i);
+        ast_node_expression_print(parameter);
+    }
+    printf(")");
+}
+
+#pragma endregion
+
+
 #pragma region AstNodeOperator
 
 AstNodeOperator *ast_node_operator_create(EOperator op) {
@@ -191,13 +223,22 @@ AstNodeExpression *ast_node_expression_create() {
 void ast_node_expression_destroy(AstNodeExpression *self) {
     switch (self->kind) {
         case EXPRESSION_NUMBER:
-            ast_node_number_destroy(self->number_expression);
+            if (self->number_expression != NULL) {
+                ast_node_number_destroy(self->number_expression);
+            }
             break;
         case EXPRESSION_IDENTIFIER:
-            ast_node_identifier_destroy(self->identifier_expression);
+            if (self->identifier_expression) {
+                ast_node_identifier_destroy(self->identifier_expression);
+            }
             break;
         case EXPRESSION_BINARY:
             ast_node_binary_expression_destroy(self->binary_expression);
+            break;
+        case EXPRESSION_FUNCTION_CALL:
+            if (self->function_call_expression != NULL) {
+                ast_node_function_call_destroy(self->function_call_expression);
+            }
             break;
         default:
             assert(false);
@@ -215,6 +256,9 @@ void ast_node_expression_print(AstNodeExpression *self) {
             break;
         case EXPRESSION_BINARY:
             ast_node_binary_expression_print(self->binary_expression);
+            break;
+        case EXPRESSION_FUNCTION_CALL:
+            ast_node_function_call_print(self->function_call_expression);
             break;
         default:
             assert(false);
@@ -425,6 +469,9 @@ static AstNodeStmt *ast_node_stmt_create(EStmtKind kind) {
         case STMT_ASSIGNMENT:
             node->assignment_stmt = malloc(sizeof(AstNodeStmtAssignment));
             break;
+        case STMT_FUNCTION_CALL:
+            node->function_call_stmt = malloc(sizeof(AstNodeStmtFunctionCall));
+            break;
         case STMT_CONST:
             node->assignment_stmt = malloc(sizeof(AstNodeStmtConst));
             break;
@@ -531,6 +578,29 @@ static void ast_node_stmt_assignment_print(AstNodeStmtAssignment *self, int iden
     str_repeat(ident_str, " ", ident * 2);
     printf("%s%s = ", ident_str, self->identifier->name);
     ast_node_expression_print(self->expression);
+    printf(";\n");
+}
+
+#pragma endregion
+
+#pragma region AstNodeStmtFunctionCall
+
+AstNodeStmt *ast_node_stmt_function_call_create(void) {
+    return ast_node_stmt_create(STMT_FUNCTION_CALL);
+}
+
+static void ast_node_stmt_function_call_destroy(AstNodeStmtFunctionCall *self) {
+    if (self->call != NULL) {
+        ast_node_function_call_destroy(self->call);
+    }
+    free(self);
+}
+
+static void ast_node_stmt_function_call_print(AstNodeStmtFunctionCall *self, int ident) {
+    char *ident_str = calloc(ident * 2 + 1, sizeof(char));
+    str_repeat(ident_str, " ", ident * 2);
+    printf("%s", ident_str);
+    ast_node_function_call_print(self->call);
     printf(";\n");
 }
 
@@ -643,6 +713,9 @@ void ast_node_stmt_destroy(AstNodeStmt *self) {
         case STMT_ASSIGNMENT:
             ast_node_stmt_assignment_destroy(self->assignment_stmt);
             break;
+        case STMT_FUNCTION_CALL:
+            ast_node_stmt_function_call_destroy(self->function_call_stmt);
+            break;
         case STMT_IF:
             ast_node_stmt_if_destroy(self->if_stmt);
             break;
@@ -668,6 +741,9 @@ void ast_node_stmt_print(AstNodeStmt *self, int ident) {
             break;
         case STMT_ASSIGNMENT:
             ast_node_stmt_assignment_print(self->assignment_stmt, ident);
+            break;
+        case STMT_FUNCTION_CALL:
+            ast_node_stmt_function_call_print(self->function_call_stmt, ident);
             break;
         case STMT_IF:
             ast_node_stmt_if_print(self->if_stmt, ident);

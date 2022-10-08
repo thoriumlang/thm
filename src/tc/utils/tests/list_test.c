@@ -59,8 +59,9 @@ static void add_then_size(void **state) {
     assert_int_equal(0, cpocl_list_size(list));
 
     cpocl_list_add(list, &item);
+    cpocl_list_add(list, &item);
 
-    assert_int_equal(1, cpocl_list_size(list));
+    assert_int_equal(2, cpocl_list_size(list));
 
     cpocl_list_destroy(list);
 }

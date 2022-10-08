@@ -77,6 +77,22 @@ void ast_node_number_print(AstNodeNumber *self);
 
 #pragma endregion
 
+#pragma region AstNodeFunctionCall
+
+typedef struct AstNodeFunctionCall {
+    AstNode base;
+    AstNodeIdentifier *function_name;
+    List/*AstNodeExpression*/ *parameters;
+} AstNodeFunctionCall;
+
+AstNodeFunctionCall *ast_node_function_call_create();
+
+void ast_node_function_call_destroy(AstNodeFunctionCall *self);
+
+void ast_node_function_call_print(AstNodeFunctionCall *self);
+
+#pragma  endregion
+
 typedef struct AstNodeExpression AstNodeExpression;
 
 #pragma region Operator
@@ -131,7 +147,8 @@ AstNodeBinaryExpression *ast_node_binary_expression_create(AstNodeExpression *l,
 typedef enum {
     EXPRESSION_NUMBER,
     EXPRESSION_IDENTIFIER,
-    EXPRESSION_BINARY
+    EXPRESSION_BINARY,
+    EXPRESSION_FUNCTION_CALL
 } EExpressionKind;
 
 typedef struct AstNodeExpression {
@@ -139,6 +156,7 @@ typedef struct AstNodeExpression {
         AstNodeNumber *number_expression;
         AstNodeIdentifier *identifier_expression;
         AstNodeBinaryExpression *binary_expression;
+        AstNodeFunctionCall *function_call_expression;
     };
     EExpressionKind kind;
 } AstNodeExpression;
@@ -290,6 +308,17 @@ AstNodeStmt *ast_node_stmt_assignment_create(void);
 
 #pragma endregion
 
+#pragma region AstNodeStmtFunctionCall
+
+typedef struct AstNodeStmtFunctionCall {
+    AstNode base;
+    AstNodeFunctionCall *call;
+} AstNodeStmtFunctionCall;
+
+AstNodeStmt *ast_node_stmt_function_call_create(void);
+
+#pragma endregion
+
 #pragma region AstNodeStmtIf
 
 typedef struct {
@@ -333,6 +362,7 @@ typedef enum {
     STMT_CONST,
     STMT_VAR,
     STMT_ASSIGNMENT,
+    STMT_FUNCTION_CALL,
     STMT_IF,
     STMT_RETURN,
     STMT_WHILE,
@@ -344,6 +374,7 @@ typedef struct AstNodeStmt {
         AstNodeStmtConst *const_stmt;
         AstNodeStmtVar *var_stmt;
         AstNodeStmtAssignment *assignment_stmt;
+        AstNodeStmtFunctionCall *function_call_stmt;
         AstNodeStmtIf *if_stmt;
         AstNodeStmtReturn *return_stmt;
         AstNodeStmtWhile *while_stmt;

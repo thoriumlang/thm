@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <assert.h>
 #include "lexer.h"
 #include "parser.h"
 #include "ast.h"
@@ -92,7 +93,6 @@ void compile(char *filename) {
     }
 
     char *file_content = result_unwrap(file_content_result);
-    Analyser *analyser = analyzer_create();
     Lexer *lexer = lexer_create(file_content, 1, 1);
     Parser *parser = parser_create(lexer);
     AstRoot *root = parser_parse(parser);
@@ -102,16 +102,16 @@ void compile(char *filename) {
 
     if (root == NULL) {
         fprintf(stderr, "Found syntax errors in %s", filename);
-        exit(1);
+        // exit(1);
+    } else {
+        Analyser *analyser = analyzer_create();
+        //analyzer_analyse(analyser, root);
+        ast_print(root);
+        analyser_dump_symbol_table(analyser);
+        analyzer_destroy(analyser);
+        ast_root_destroy(root);
     }
 
-    analyzer_analyse(analyser, root);
-
-    ast_print(root);
-    analyser_dump_symbol_table(analyser);
-
-    analyzer_destroy(analyser);
-    ast_root_destroy(root);
     free(file_content);
 }
 
