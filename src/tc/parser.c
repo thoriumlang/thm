@@ -271,7 +271,6 @@ typedef enum EPrecedence {
     PREC_SUM = 4,
     PREC_PRODUCT = 5,
     PREC_PREFIX = 6,
-    PREC_CALL = 7,
 } EPrecedence;
 
 static EPrecedence get_precedence(EOperator op) {
@@ -333,7 +332,10 @@ inline static bool next_token_is_operator(Parser *self) {
 }
 
 static AstNodeFunctionCall *parse_function_call(Parser *self);
+
 static AstNodeExpression *parse_infix_expression(Parser *self, AstNodeExpression *left);
+
+static AstNodeOperator *parse_operator(Parser *self);
 
 /**
  * rule [expression] := [number] | [identifier] | [call] | ( [number] | [identifier] | [call] ) [infixExpression]
@@ -381,6 +383,36 @@ static AstNodeExpression *parse_expression(Parser *self, EPrecedence precedence)
         assert(expression->kind != EXPRESSION_BINARY || expression->binary_expression != NULL);
         assert(expression->kind != EXPRESSION_IDENTIFIER || expression->identifier_expression != NULL);
         assert(expression->kind != EXPRESSION_FUNCTION_CALL || expression->function_call_expression != NULL);
+        return expression;
+    }
+}
+
+/**
+ * rule [infixExpression] := [operator] [expression]
+ * @param self
+ * @param left
+ * @return
+ */
+static AstNodeExpression *parse_infix_expression(Parser *self, AstNodeExpression *left) {
+    AstNodeOperator *operator = parse_operator(self);
+    AstNodeExpression *right = parse_expression(self, get_precedence(operator->op));
+
+    if (operator == NULL || right == NULL) {
+        if (left != NULL) {
+            ast_node_expression_destroy(left);
+        }
+        if (operator != NULL) {
+            ast_node_operator_destroy(operator);
+        }
+        if (right != NULL) {
+            ast_node_expression_destroy(right);
+        }
+        return NULL;
+    } else {
+        AstNodeExpression *expression = ast_node_expression_create();
+        expression->kind = EXPRESSION_BINARY;
+        expression->binary_expression = ast_node_binary_expression_create(left, right, operator);
+
         return expression;
     }
 }
@@ -449,36 +481,6 @@ static AstNodeOperator *parse_operator(Parser *self) {
         return NULL;
     } else {
         return node;
-    }
-}
-
-/**
- * rule [infixExpression] := [operator] [expression]
- * @param self
- * @param left
- * @return
- */
-static AstNodeExpression *parse_infix_expression(Parser *self, AstNodeExpression *left) {
-    AstNodeOperator *operator = parse_operator(self);
-    AstNodeExpression *right = parse_expression(self, get_precedence(operator->op));
-
-    if (operator == NULL || right == NULL) {
-        if (left != NULL) {
-            ast_node_expression_destroy(left);
-        }
-        if (operator != NULL) {
-            ast_node_operator_destroy(operator);
-        }
-        if (right != NULL) {
-            ast_node_expression_destroy(right);
-        }
-        return NULL;
-    } else {
-        AstNodeExpression *expression = ast_node_expression_create();
-        expression->kind = EXPRESSION_BINARY;
-        expression->binary_expression = ast_node_binary_expression_create(left, right, operator);
-
-        return expression;
     }
 }
 
@@ -869,7 +871,7 @@ static AstNodeStmt *parse_stmt_assignment(Parser *self) {
  * @param self
  * @return
  */
-static AstNodeStmt* parse_stmt_function_call(Parser*self) {
+static AstNodeStmt *parse_stmt_function_call(Parser *self) {
     AstNodeStmt *node = ast_node_stmt_function_call_create();
 
     node->function_call_stmt->call = parse_function_call(self);

@@ -4,6 +4,9 @@ fn main(): void {
 }
 
 fn f(i: word): word {
+
+    var vara: word;
+
     if (i == 0) {
         return 0;
     }
